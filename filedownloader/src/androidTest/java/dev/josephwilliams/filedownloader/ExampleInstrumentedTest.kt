@@ -1,4 +1,4 @@
-package dev.josephwilliams.freecasts
+package dev.josephwilliams.filedownloader
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("dev.josephwilliams.freecasts", appContext.packageName)
+        assertEquals("dev.josephwilliams.filedownloader.test", appContext.packageName)
     }
 }
