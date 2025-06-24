@@ -8,12 +8,12 @@ data class DownloadInfo(
     val url: String,
     val fileName: String,
     val destination: String,
-    val totalBytes: Long,
-    val downloadedByteCount: Long = 0,
-    val state: DownloadState = DownloadState.QUEUED,
+    var totalBytes: Long,
+    var downloadedByteCount: Long = 0,
+    var state: DownloadState = DownloadState.QUEUED,
     val created: Instant = Instant.now(),
     val lastModified: Instant = Instant.now(),
-    val error: String? = null,
+    var error: String? = null,
     val headers: String? = null
 ) {
     val progress: Float

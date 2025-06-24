@@ -2,6 +2,7 @@ package dev.josephwilliams.filedownloader.service
 
 import android.content.Context
 import dev.josephwilliams.filedownloader.model.DownloadInfo
+import dev.josephwilliams.filedownloader.model.DownloadState
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -23,7 +24,7 @@ class FileDownloader(
 
     private val activeDownloads = ConcurrentHashMap<String, Call>()
 
-    fun download(downloadInfo: DownloadInfo, headers: Map<String, String> = emptyMap()) {
+    suspend fun download(downloadInfo: DownloadInfo, headers: Map<String, String> = emptyMap()) {
         val file = File(downloadInfo.destination, downloadInfo.fileName)
         val tempFile = File("${file.absolutePath}.tmp")
 
@@ -64,7 +65,8 @@ class FileDownloader(
                 }
 
                 if (totalBytes != -1L && downloadInfo.totalBytes != totalBytes) {
-                    // Update download info total bytes in persistence
+                    downloadInfo.totalBytes = totalBytes
+                    persistenceManager.updateDownloadInfo(downloadInfo)
                 }
 
                 val outputStream = if (downloadedBytes > 0) {
@@ -83,24 +85,29 @@ class FileDownloader(
                         output.write(buffer, 0, bytesRead)
                         downloadedBytes += bytesRead
 
-                        // Don't update the database too frequently
                         val now = System.currentTimeMillis()
                         if (now - lastProgressUpdate >= PROGRESS_UPDATE_INTERVAL) {
-                            // Update download info downloaded byte count in persistence
+                            downloadInfo.state = DownloadState.DOWNLOADING
+                            downloadInfo.downloadedByteCount = downloadedBytes
+                            persistenceManager.updateDownloadInfo(downloadInfo)
                             lastProgressUpdate = now
                         }
                     }
                 }
 
                 if (tempFile.renameTo(file)) {
-                    // Update download info state to completed in persistence
-                    // Update download info downloaded byte count in persistence
+                    downloadInfo.state = DownloadState.COMPLETED
+                    downloadInfo.downloadedByteCount = downloadedBytes
+                    persistenceManager.updateDownloadInfo(downloadInfo)
                 } else {
                     throw IOException("Failed to rename temp file")
                 }
             }
         } catch (e: IOException) {
-            // Update download info state based on exception
+            downloadInfo.state = DownloadState.FAILED
+            downloadInfo.downloadedByteCount = downloadedBytes
+            downloadInfo.error = e.message
+            persistenceManager.updateDownloadInfo(downloadInfo)
         } finally {
             activeDownloads.remove(downloadInfo.id)
         }

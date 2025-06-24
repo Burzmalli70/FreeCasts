@@ -39,10 +39,8 @@ class DownloadWorker(
         } ?: emptyMap()
 
         return try {
-            // Perform the download
             fileDownloader.download(downloadInfo, headers)
 
-            // Check final state
             val finalState = persistenceManager.getDownloadInfo(downloadId)?.state
 
             when (finalState) {
@@ -52,7 +50,14 @@ class DownloadWorker(
                 else -> Result.failure()
             }
         } catch (e: Exception) {
-            // Update download info error in persistence
+            persistenceManager.getDownloadInfo(downloadId)?.let {
+                persistenceManager.updateDownloadInfo(
+                    it.copy(
+                        state = DownloadState.FAILED,
+                        error = e.message
+                    )
+                )
+            }
             Result.failure()
         }
     }

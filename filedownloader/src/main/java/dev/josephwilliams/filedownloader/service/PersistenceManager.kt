@@ -10,4 +10,8 @@ class PersistenceManager {
     suspend fun getDownloadInfo(id: String): DownloadInfo? {
         return null
     }
+
+    suspend fun updateDownloadInfo(info: DownloadInfo) {
+
+    }
 }
