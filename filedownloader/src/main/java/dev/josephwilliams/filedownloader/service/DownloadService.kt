@@ -12,8 +12,6 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 
 class DownloadService : Service() {
 
@@ -101,8 +100,7 @@ class DownloadService : Service() {
 
                 // Parse headers from JSON
                 val headers: Map<String, String> = downloadInfo.headers?.let {
-                    val type = object: TypeToken<Map<String, String>>(){}.type
-                    Gson().fromJson(it, type)
+                    Json.decodeFromString(it)
                 } ?: emptyMap()
 
                 // Start the download

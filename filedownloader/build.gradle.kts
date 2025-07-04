@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -38,10 +39,16 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.workmanager)
     implementation(libs.okhttp)
-    implementation(libs.gson)
+    implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.mockk)
+    testImplementation(kotlin("test"))
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.workmanager.test)
+    androidTestImplementation(libs.mockk)
+    androidTestImplementation(kotlin("test"))
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }

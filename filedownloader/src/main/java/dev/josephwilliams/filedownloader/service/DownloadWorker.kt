@@ -10,9 +10,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkRequest
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import dev.josephwilliams.filedownloader.model.DownloadState
+import kotlinx.serialization.json.Json
 import java.util.concurrent.TimeUnit
 
 class DownloadWorker(
@@ -34,8 +33,7 @@ class DownloadWorker(
         val downloadInfo = persistenceManager.getDownloadInfo(downloadId) ?: return Result.failure()
 
         val headers: Map<String, String> = downloadInfo.headers?.let {
-            val type = object: TypeToken<Map<String, String>>(){}.type
-            Gson().fromJson(it, type)
+            Json.decodeFromString(it)
         } ?: emptyMap()
 
         return try {
@@ -53,7 +51,7 @@ class DownloadWorker(
             persistenceManager.getDownloadInfo(downloadId)?.let {
                 persistenceManager.updateDownloadInfo(
                     it.copy(
-                        state = DownloadState.FAILED,
+                        _state = DownloadState.FAILED.name,
                         error = e.message
                     )
                 )

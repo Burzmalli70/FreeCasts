@@ -1,21 +1,23 @@
 [versions]
+activityCompose = "1.8.0"
 agp = "8.10.1"
-kotlin = "2.0.21"
+appcompat = "1.6.1"
+composeBom = "2024.09.00"
 coreKtx = "1.10.1"
+espressoCore = "3.5.1"
 junit = "4.13.2"
 junitVersion = "1.1.5"
-espressoCore = "3.5.1"
-lifecycleRuntimeKtx = "2.6.1"
-activityCompose = "1.8.0"
-composeBom = "2024.09.00"
-room = "2.7.1"
 koin = "4.0.3"
+kotlin = "2.0.21"
+kotlinx = "1.10.2"
+kotlinx-serialization-json = "1.8.1"
 ksp = "2.0.21-1.0.27"
-appcompat = "1.6.1"
+lifecycleRuntimeKtx = "2.6.1"
 material = "1.10.0"
-workManager = "2.10.2"
+mockk = "1.13.8"
 okhttp = "4.12.0"
-gson = "2.13.1"
+room = "2.7.2"
+workManager = "2.10.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -41,8 +43,10 @@ material = { group = "com.google.android.material", name = "material", version.r
 androidx-workmanager = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }
 androidx-workmanager-test = { group = "androidx.work", name = "work-testing", version.ref = "workManager" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
-okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "workManager" }
-gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
+mockk = { group = "io.mockk", name = "mockk-android", version.ref = "mockk" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -51,4 +55,5 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 

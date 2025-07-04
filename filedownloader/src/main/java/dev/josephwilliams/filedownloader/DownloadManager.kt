@@ -2,13 +2,13 @@ package dev.josephwilliams.filedownloader
 
 import android.content.Context
 import androidx.work.WorkManager
-import com.google.gson.Gson
 import dev.josephwilliams.filedownloader.model.DownloadInfo
 import dev.josephwilliams.filedownloader.model.DownloadRequest
 import dev.josephwilliams.filedownloader.model.DownloadState
 import dev.josephwilliams.filedownloader.service.DownloadService
 import dev.josephwilliams.filedownloader.service.PersistenceManager
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.Json
 import java.io.File
 
 class DownloadManager(private val context: Context) {
@@ -57,7 +57,7 @@ class DownloadManager(private val context: Context) {
             url = downloadRequest.url,
             fileName = downloadRequest.fileName,
             destination = downloadRequest.destinationPath,
-            headers = Gson().toJson(downloadRequest.headers),
+            headers = Json.encodeToString(downloadRequest.headers),
             totalBytes = -1
         )
 
