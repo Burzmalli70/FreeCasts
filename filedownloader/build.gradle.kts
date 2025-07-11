@@ -31,6 +31,18 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
+    packaging {
+        resources {
+            excludes.add("META-INF/LICENSE.md")
+            excludes.add("META-INF/LICENSE-notice.md")
+            excludes.add("META-INF/LICENSE.txt")
+            excludes.add("META-INF/NOTICE.txt")
+            excludes.add("META-INF/NOTICE.md")
+            excludes.add("META-INF/LICENSE")
+            excludes.add("META-INF/NOTICE")
+        }
+    }
 }
 
 dependencies {
