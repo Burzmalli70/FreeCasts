@@ -38,7 +38,6 @@ class PodcastRepositoryTests {
 
     @Before
     fun setup() {
-        stopKoin()
         startKoin {
             androidContext(ApplicationProvider.getApplicationContext())
             modules(testAppModules)
