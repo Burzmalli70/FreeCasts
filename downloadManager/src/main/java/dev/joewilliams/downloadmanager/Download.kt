@@ -1,7 +1,7 @@
 package dev.joewilliams.downloadmanager
 
 data class Download(
-    val id: String,
+    val id: Int,
     val currentBytes: Long,
     val totalBytes: Long,
     val status: DownloadStatus,
@@ -18,5 +18,11 @@ enum class DownloadStatus {
     DOWNLOADING,
     PAUSED,
     COMPLETED,
-    FAILED
+    FAILED;
+
+    companion object {
+        fun safeFromString(value: String): DownloadStatus {
+            return DownloadStatus.entries.firstOrNull { it.name.equals(value, ignoreCase = true) } ?: FAILED
+        }
+    }
 }

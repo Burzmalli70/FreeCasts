@@ -1,5 +1,6 @@
 package dev.josephwilliams.freecasts.repositories
 
+import dev.josephwilliams.freecasts.model.daos.DownloadDao
 import dev.josephwilliams.freecasts.model.daos.EpisodeDao
 import dev.josephwilliams.freecasts.model.daos.PlaylistDao
 import dev.josephwilliams.freecasts.model.daos.PodcastDao
@@ -16,7 +17,6 @@ class PodcastRepository(
     private val episodeDao: EpisodeDao,
     private val playlistDao: PlaylistDao
 ) {
-
     suspend fun addPodcast(podcast: Podcast): Long {
         return podcastDao.insert(podcast)
     }

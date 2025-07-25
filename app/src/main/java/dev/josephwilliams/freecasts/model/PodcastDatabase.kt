@@ -4,9 +4,12 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
+import dev.josephwilliams.freecasts.model.daos.DownloadDao
 import dev.josephwilliams.freecasts.model.daos.EpisodeDao
 import dev.josephwilliams.freecasts.model.daos.PlaylistDao
 import dev.josephwilliams.freecasts.model.daos.PodcastDao
+import dev.josephwilliams.freecasts.model.entities.DownloadStatusOrdinalConverter
 import dev.josephwilliams.freecasts.model.entities.Episode
 import dev.josephwilliams.freecasts.model.entities.Playlist
 import dev.josephwilliams.freecasts.model.entities.Podcast
@@ -21,11 +24,13 @@ import dev.josephwilliams.freecasts.model.relationships.PlaylistEpisode
     ],
     version = 1
 )
+@TypeConverters(DownloadStatusOrdinalConverter::class)
 abstract class PodcastDatabase : RoomDatabase() {
 
     abstract fun podcastDao(): PodcastDao
     abstract fun episodeDao(): EpisodeDao
     abstract fun playlistDao(): PlaylistDao
+    abstract fun downloadDao(): DownloadDao
 
     companion object {
         @Volatile
