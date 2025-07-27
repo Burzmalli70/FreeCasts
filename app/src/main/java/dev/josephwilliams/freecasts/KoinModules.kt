@@ -1,5 +1,6 @@
 package dev.josephwilliams.freecasts
 
+import dev.josephwilliams.freecasts.downloader.SystemDownloader
 import dev.josephwilliams.freecasts.model.PodcastDatabase
 import dev.josephwilliams.freecasts.repositories.PodcastRepository
 import org.koin.android.ext.koin.androidApplication
@@ -17,8 +18,17 @@ val repositoryModule = module {
     single { PodcastRepository(get(), get(), get()) }
 }
 
-val viewModelModule = module {
-    viewModel { PodcastViewModel(get()) }
+val downloaderModule = module {
+    single { SystemDownloader(androidApplication()) }
 }
 
-val appModules = listOf(databaseModule, repositoryModule, viewModelModule)
+val viewModelModule = module {
+    viewModel { PodcastViewModel(get(), get()) }
+}
+
+val appModules = listOf(
+    databaseModule,
+    repositoryModule,
+    downloaderModule,
+    viewModelModule
+)
