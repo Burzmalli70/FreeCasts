@@ -16,9 +16,9 @@ class SystemDownloader(private val context: Context) {
 
     fun startDownload(
         url: String,
-        title: String, // Title for the download notification
-        description: String, // Description for the download notification
-        destinationFileName: String // e.g., "episode_audio.mp3"
+        title: String,
+        description: String,
+        destinationFileName: String
     ): Long? {
         if (downloadManager == null) {
             Toast.makeText(context, "DownloadManager not available", Toast.LENGTH_LONG).show()
@@ -28,33 +28,24 @@ class SystemDownloader(private val context: Context) {
         val request = DownloadManager.Request(Uri.parse(url))
             .setTitle(title)
             .setDescription(description)
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED) // Show notification during and after download
-            .setAllowedOverMetered(true) // Allow download over mobile data (configurable)
-            .setAllowedOverRoaming(false) // Disallow download over roaming (configurable)
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            .setAllowedOverMetered(true)
+            .setAllowedOverRoaming(false)
 
-        // --- Choose Destination ---
-        // Option 1: App-specific directory (Recommended for most cases, no extra permissions needed post API 18)
-        // Files are private to your app and are removed when the app is uninstalled.
-        val destinationDir = context.getExternalFilesDir(Environment.DIRECTORY_PODCASTS) // Or DIRECTORY_MUSIC, DIRECTORY_DOWNLOADS etc.
+        val destinationDir = context.getExternalFilesDir(Environment.DIRECTORY_PODCASTS)
         if (destinationDir != null) {
             if (!destinationDir.exists()) {
                 destinationDir.mkdirs()
             }
             request.setDestinationInExternalFilesDir(context, Environment.DIRECTORY_PODCASTS, destinationFileName)
         } else {
-            // Fallback or error handling if external files dir is not available
             Toast.makeText(context, "Cannot access app-specific storage", Toast.LENGTH_LONG).show()
             return null
         }
 
-        // Option 2: Public Downloads directory (Requires more careful handling with Scoped Storage on API 29+)
-        // If you use this, you might need to handle MediaStore for files to be visible to other apps.
-        // request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, destinationFileName)
-
         try {
-            return downloadManager.enqueue(request) // Returns a unique download ID
+            return downloadManager.enqueue(request)
         } catch (e: Exception) {
-            // Handle potential exceptions, e.g., SecurityException if permissions are missing for public dirs on older APIs
             Toast.makeText(context, "Error starting download: ${e.message}", Toast.LENGTH_LONG).show()
             return null
         }
@@ -63,7 +54,7 @@ class SystemDownloader(private val context: Context) {
     suspend fun getDownloadStatus(downloadId: Long): DownloadStatusInfo? {
         if (downloadManager == null) return null
 
-        return withContext(Dispatchers.IO) { // Querying DownloadManager can be slow
+        return withContext(Dispatchers.IO) {
             val query = DownloadManager.Query().setFilterById(downloadId)
             var cursor: Cursor? = null
             try {
@@ -90,10 +81,9 @@ class SystemDownloader(private val context: Context) {
                         localUri = localUri?.let { Uri.parse(it) }
                     )
                 } else {
-                    null // Download ID not found
+                    null
                 }
             } catch (e: Exception) {
-                // Handle cursor exceptions
                 null
             } finally {
                 cursor?.close()
@@ -105,7 +95,6 @@ class SystemDownloader(private val context: Context) {
         return downloadManager?.remove(downloadId) ?: 0
     }
 
-    // You can also get the MIME type of a downloaded file
     fun getMimeTypeForDownloadedFile(downloadId: Long): String? {
         return downloadManager?.getMimeTypeForDownloadedFile(downloadId)
     }
@@ -113,11 +102,11 @@ class SystemDownloader(private val context: Context) {
 
 data class DownloadStatusInfo(
     val downloadId: Long,
-    val status: Int, // e.g., DownloadManager.STATUS_SUCCESSFUL, STATUS_FAILED, etc.
-    val reason: Int, // Reason for failure, if applicable
+    val status: Int,
+    val reason: Int,
     val totalBytes: Long,
     val downloadedBytes: Long,
-    val localUri: Uri? // URI to the downloaded file if successful
+    val localUri: Uri?
 ) {
     val isSuccessful: Boolean
         get() = status == DownloadManager.STATUS_SUCCESSFUL

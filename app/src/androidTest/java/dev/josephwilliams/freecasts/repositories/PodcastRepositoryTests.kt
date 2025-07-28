@@ -53,7 +53,6 @@ class PodcastRepositoryTests {
     fun testAddPodcast() = runTest {
         val repository: PodcastRepository by inject(PodcastRepository::class.java)
 
-        // Test repository functions
         val podcast = Podcast(
             title = "Test Podcast",
             author = "Test Author",
