@@ -2,11 +2,13 @@ package dev.josephwilliams.freecasts.repositories
 
 import dev.josephwilliams.freecasts.model.entities.Episode
 import dev.josephwilliams.freecasts.model.entities.Podcast
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format.DateTimeComponents
 import java.io.BufferedReader
 import java.io.InputStream
-import java.time.LocalDateTime
-import java.time.ZoneId
-import kotlin.math.absoluteValue
+import kotlinx.datetime.parse
+import kotlinx.datetime.toInstant
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -17,8 +19,7 @@ object RssParser {
         inputStream.bufferedReader().use { stream ->
             var line: String? = ""
             while(stream.readLine().also { line = it?.trim() } != null) {
-                val tag = line?.getTagName()
-                when(tag) {
+                when(val tag = line?.getTagName()) {
                     ShowTag.TITLE.tagName -> {
                         val title = getTagText(tag, line, stream)
                         podcast = podcast?.copy(title = title) ?: Podcast(title = title)
@@ -52,12 +53,11 @@ object RssParser {
         return if (podcast != null) ParseResult(podcast, episodes) else null
     }
 
-    fun parseEpisodeItem(reader: BufferedReader): Episode? {
+    private fun parseEpisodeItem(reader: BufferedReader): Episode? {
         var line: String? = ""
         var episode: Episode? = null
         while(reader.readLine().also { line = it?.trim() } != null) {
-            val tag = line?.getTagName()
-            when (tag) {
+            when (val tag = line?.getTagName()) {
                 EpisodeTag.TITLE.tagName -> {
                     val title = getTagText(tag, line, reader)
                     episode = episode?.copy(title = title) ?: Episode(title = title)
@@ -72,7 +72,7 @@ object RssParser {
                 }
                 EpisodeTag.PUB_DATE.tagName -> {
                     val pubDate = getTagText(tag, line, reader)
-                    episode = episode?.copy(publicationDate = pubDate.toTimeMillis()) ?: Episode(publicationDate = pubDate.toLong())
+                    episode = episode?.copy(publicationDate = pubDate?.toTimeMillis()) ?: Episode(publicationDate = pubDate?.toTimeMillis())
                 }
                 EpisodeTag.DESCRIPTION.tagName -> {
                     val description = getTagText(tag, line, reader)
@@ -85,8 +85,9 @@ object RssParser {
         return episode
     }
 
-    fun getTagText(tag: String, start: String, reader: BufferedReader): String {
-        if (start.indexOf("<$tag") < 0) return ""
+    fun getTagText(tag: String, start: String?, reader: BufferedReader): String? {
+        start ?: return null
+        if (start.indexOf("<$tag") < 0) return null
         val fullTag = start.substring(0, start.indexOf('>'))
         val tagStartLen = fullTag.length
         if (start.indexOf("</$tag>") > 0) return start.substring(tagStartLen + 1, start.indexOf("</$tag>"))
@@ -141,10 +142,17 @@ fun String.checkEndTag(tagName: String): Boolean {
 
 @OptIn(ExperimentalTime::class)
 fun String.toTimeMillis(): Long {
-    try {
-        val ldt = LocalDateTime.parse(this)
-        return ldt.atZone(ZoneId.systemDefault()).toInstant()?.toEpochMilli() ?: 0
+    return try {
+        LocalDateTime.parse(this).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
     } catch (ex: Exception) {
-        return 0
+        for (format in DEFINED_FORMATS) {
+            return Instant.parse(this, format).toEpochMilliseconds()
+        }
+        0
     }
 }
+
+val DEFINED_FORMATS = listOf(
+    DateTimeComponents.Formats.RFC_1123,
+    DateTimeComponents.Formats.ISO_DATE_TIME_OFFSET
+)
