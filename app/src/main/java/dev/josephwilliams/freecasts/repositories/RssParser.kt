@@ -78,6 +78,10 @@ object RssParser {
                     val description = getTagText(tag, line, reader)
                     episode = episode?.copy(description = description) ?: Episode(description = description)
                 }
+                EpisodeTag.DURATION.tagName -> {
+                    val duration = getTagText(tag, line, reader)
+                    episode = episode?.copy(duration = duration?.toLong()) ?: Episode(duration = duration?.toLong())
+                }
                 else -> if(line?.checkEndTag("item") == true) return episode
             }
         }
@@ -119,7 +123,8 @@ object RssParser {
         LINK("link"),
         GUID("guid"),
         PUB_DATE("pubDate"),
-        DESCRIPTION("description")
+        DESCRIPTION("description"),
+        DURATION("itunes:duration")
     }
 
     val showTags = ShowTag.entries.map { it.tagName }
