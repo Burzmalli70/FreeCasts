@@ -1,0 +1,52 @@
+<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:podcast="https://podcastindex.org/namespace/1.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:googleplay="http://www.google.com/schemas/play-podcasts/1.0" version="2.0">
+    <channel>
+        <title>Cog Diss Patron Feed</title>
+        <link>https://www.patreon.com/dissonancepod</link>
+        <description>Creating Podcasts</description>
+        <atom:link href="https://www.patreon.com/dissonancepod" rel="self" type="application/rss+xml"/>
+        <itunes:owner>
+            <itunes:name>Cog Diss Patron Feed</itunes:name>
+            <itunes:email>dissonance.podcast@gmail.com</itunes:email>
+        </itunes:owner>
+        <itunes:type>episodic</itunes:type>
+        <itunes:author>Cognitive Dissonance Podcast</itunes:author>
+        <itunes:explicit>false</itunes:explicit>
+        <itunes:image href="https://c10.patreonusercontent.com/4/patreon-media/p/campaign/80642/51ae99f8fab143dd8e36a98fb38acaea/eyJkIjo3MiwiaCI6MTQwMCwic3RyaXBfYWxwaGEiOjEsInciOjE0MDAsIndlYnAiOjB9/1.jpg?token-hash=5lvVSDRGtmkZZd27PaKtrsO6fQzJmJTUMztUHK0G3Po%3D"/>
+        <itunes:category text="News">
+            <itunes:category text="Politics"/>
+        </itunes:category>
+        <googleplay:block>yes</googleplay:block>
+        <itunes:block>Yes</itunes:block>
+        <language>en-US</language>
+        <pubDate>Mon, 28 Jul 2025 03:00:51 GMT</pubDate>
+        <lastBuildDate>Mon, 28 Jul 2025 03:00:51 GMT</lastBuildDate>
+        <generator>Patreon</generator>
+        <image>
+            <url>https://c10.patreonusercontent.com/4/patreon-media/p/campaign/80642/51ae99f8fab143dd8e36a98fb38acaea/eyJkIjo3MiwiaCI6MTQwMCwic3RyaXBfYWxwaGEiOjEsInciOjE0MDAsIndlYnAiOjB9/1.jpg?token-hash=5lvVSDRGtmkZZd27PaKtrsO6fQzJmJTUMztUHK0G3Po%3D</url>
+            <title>Cog Diss Patron Feed</title>
+            <link>https://www.patreon.com/dissonancepod</link>
+        </image>
+        <item>
+            <title>Episode 856: GOP Megabill Final Medicare Toll and Trump Targets Obama</title>
+            <link>https://www.patreon.com/posts/episode-856-gop-135068250</link>
+            <itunes:image href="https://c10.patreonusercontent.com/4/patreon-media/p/campaign/80642/51ae99f8fab143dd8e36a98fb38acaea/eyJkIjo3MiwiaCI6MzAwMCwic3RyaXBfYWxwaGEiOjEsInciOjMwMDAsIndlYnAiOjB9/1.jpg?token-hash=yHprSlnRnprhRS2I7l5R5zEfkeUzS2yMkcZhzOSsY2Y%3D"/>
+            <itunes:explicit>false</itunes:explicit>
+            <itunes:episode>856</itunes:episode>
+            <description><p><a href="https://www.joemygod.com/2025/07/senate-confirms-judge-who-compares-lgbtq-rights-to-pedophilia-and-says-christianity-must-be-imposed/" rel="nofollow noopener" target="_blank"><u>Senate Confirms Judge Who Compares LGBTQ Rights To Pedophilia And Declares Christianity "Must Be Imposed" - Joe.My.God.</u></a></p><p><a href="https://www.telegraph.co.uk/news/2025/07/22/secret-recordings-trump-epstein-relationship/" rel="nofollow noopener" target="_blank"><u>The secret recordings that could blow open Trump’s true relationship with Epstein</u><br><br></a></p><p><a href="https://www.ft.com/content/d9bf7d2b-b834-4c19-8c66-8629e3046f24" rel="nofollow noopener" target="_blank"><u>Macrons file US lawsuit over claims France’s first lady was born male</u></a></p><p><a href="https://finance.yahoo.com/news/american-dream-no-longer-red-101600077.html" rel="nofollow noopener" target="_blank"><u>Today’s housing market is so upside down there are more senior citizens buying homes than Gen Z and millennials</u></a></p><p><a href="https://www.independent.co.uk/news/world/americas/us-politics/canada-american-liquor-sales-tariffs-b2793751.html" rel="nofollow noopener" target="_blank"><u>Tapped out: Canada kicks American booze as US alcohol sales plunge by 66% amid tariff war | The Independent</u></a></p><p><a href="https://www.nytimes.com/2025/07/23/us/politics/trump-obama-retribution.html" rel="nofollow noopener" target="_blank"><u>Targeting Obama, Trump’s Retribution Campaign Takes Another Turn - The New York Times</u></a></p><p><a href="https://www.nytimes.com/2025/07/23/business/economy/trump-tariffs-japan.html" rel="nofollow noopener" target="_blank"><u>Trump’s Tariffs Are the Highest in a Century. But After His Threats, They Seem Like a Relief. - The New York Times</u></a></p><p><a href="https://www.politico.com/news/2025/07/21/gop-megabills-final-score-3-4t-in-red-ink-and-10-million-kicked-off-health-insurance-cbo-says-00465546?fbclid=IwZXh0bgNhZW0CMTEAAR4acNub4BXWoN5AyL_wmI6Bgljt9scpHGT2Suuo5fheOXhwlQ33rl7UlExmQw_aem_-dT6wIRyIhbwAZHs3WfhMA" rel="nofollow noopener" target="_blank"><u>GOP megabill’s final score: $3.4T in red ink and 10 million kicked off health insurance, CBO says - POLITICO</u></a></p><p><a href="https://www.theguardian.com/us-news/2025/jul/21/anti-vaxxer-measles-texas" rel="nofollow noopener" target="_blank"><u>Prominent US anti-vaxxer says he caught measles and traveled back home | Texas | The Guardian</u></a></p></description>
+            <enclosure url="https://c10.patreonusercontent.com/4/patreon-media/p/post/135068250/bf2d60d2d70a452aa4fd2d3115f6a8b0/eyJhIjoxLCJpc19hdWRpbyI6MSwicCI6MX0%3D/1.mp3?token-hash=WbTQKPwohfq8BfesAED0hx-yUecykZ477guqaqj20LQ%3D&token-time=1754352000" length="78707810" type="audio/mpeg"/>
+            <guid isPermaLink="false">135068250</guid>
+            <pubDate>Sun, 27 Jul 2025 18:11:51 GMT</pubDate>
+        </item>
+        <item>
+            <title>Episode 855: An Embarrassingly Small Amount of Ice Cream</title>
+            <link>https://www.patreon.com/posts/episode-855-of-134811407</link>
+            <itunes:image href="https://c10.patreonusercontent.com/4/patreon-media/p/campaign/80642/51ae99f8fab143dd8e36a98fb38acaea/eyJkIjo3MiwiaCI6MzAwMCwic3RyaXBfYWxwaGEiOjEsInciOjMwMDAsIndlYnAiOjB9/1.jpg?token-hash=yHprSlnRnprhRS2I7l5R5zEfkeUzS2yMkcZhzOSsY2Y%3D"/>
+            <itunes:explicit>false</itunes:explicit>
+            <itunes:episode>855</itunes:episode>
+            <description><p><a href="https://www.independent.co.uk/travel/news-and-advice/china-hotel-red-panda-wake-up-lehe-ledu-liangjiang-b2774649.html" rel="nofollow noopener" target="_blank"><u>Chinese hotel told ‘wake-up service’ of red pandas climbing onto guest beds must stop | The Independent</u></a></p><p><a href="https://www.vice.com/en/article/people-with-swamp-crotch-keep-setting-off-tsa-alarms/" rel="nofollow noopener" target="_blank"><u>People With Swamp Crotch Keep Setting Off TSA Alarms</u></a></p><p><a href="https://abc7.com/post/hundreds-amazon-car-seat-covers-packages-fill-san-jose-womans-garage-year-long-mishap-overseas-seller/17035752/" rel="nofollow noopener" target="_blank"><u>Hundreds of Amazon packages mistakenly shipped to woman's home for over a year: 'It's been hell'</u></a></p><p><a href="https://www.cbsnews.com/news/bears-escape-wildlife-park-enclosure-eat-honey-fall-asleep/" rel="nofollow noopener" target="_blank"><u>2 bears escape wildlife park enclosure, devour a 7-day supply of honey, then fall asleep - CBS News</u></a></p><p><a href="https://www.cbsnews.com/news/hiker-dies-bear-ravine-greece-witness/" rel="nofollow noopener" target="_blank"><u>Hiker dies after bear knocks him into 2,600-foot ravine in Greece, witness says - CBS News</u></a></p><p><a href="https://sports.yahoo.com/article/trump-kept-fifa-club-world-174318344.html?guce_referrer=aHR0cHM6Ly93d3cuZ29vZ2xlLmNvbS8&amp;guce_referrer_sig=AQAAAJaDCgYvWmK-pNYmRBdNbAgNyMi5-HKMsDb49RK4EOttmnoFgO7no1bCKUTyV4XUZkYlZwD7GpxxULEgahrLMC-GQJSGhHH_4e501X4LcIi59x8why47fu1bogMxSqg-nFbiAOpbeAlQVvZzIw39Xb4RKH7S8vsmkyTb_EwhhkaD&amp;guccounter=2" rel="nofollow noopener" target="_blank"><u>Trump kept FIFA Club World Cup trophy for himself - leaving champions Chelsea to lift a replica | The Independent</u></a></p><p><a href="https://patch.com/alabama/tuscaloosa/jinkies-duncanville-burglary-suspect-clad-scooby-doo-costume" rel="nofollow noopener" target="_blank"><u>JINKIES! Duncanville Burglary Suspect Clad In Scooby-Doo Costume | Tuscaloosa, AL Patch</u></a></p><p><a href="https://www.independent.co.uk/news/world/americas/us-politics/in-n-out-white-house-beef-tallow-b2789414.html" rel="nofollow noopener" target="_blank"><u>White House duped by April Fools’ tweet about In-N-Out ingredient changes | The Independent</u></a></p><p><a href="https://apnews.com/article/appalachian-trail-hiker-ice-cream-challenge-dd293db68ec54812658347a1ea23d954" rel="nofollow noopener" target="_blank"><u>Appalachian Trail thru-hikers take on half-gallon ice cream eating</u></a></p></description>
+            <enclosure url="https://c10.patreonusercontent.com/4/patreon-media/p/post/134811407/6f5e2f0d0e824d64861101c3ffa9ea28/eyJhIjoxLCJpc19hdWRpbyI6MSwicCI6MX0%3D/1.mp3?token-hash=E12eXId6eT3oTcsYVb6T5SnBOESWrqrhvbkLJigahNw%3D&token-time=1754352000" length="61342958" type="audio/mpeg"/>
+            <guid isPermaLink="false">134811407</guid>
+            <pubDate>Thu, 24 Jul 2025 12:08:59 GMT</pubDate>
+        </item>
+    </channel>
+</rss>

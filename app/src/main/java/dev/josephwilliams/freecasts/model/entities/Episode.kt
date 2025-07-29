@@ -23,22 +23,22 @@ data class Episode(
     val id: Int = 0,
 
     @ColumnInfo(name = "podcast_id")
-    val podcastId: Int,
+    val podcastId: String? = null,
 
-    val title: String,
+    val title: String? = null,
 
-    val description: String,
+    val description: String? = null,
 
     @ColumnInfo(name = "audio_url")
-    val audioUrl: String,
+    val audioUrl: String? = null,
 
     @ColumnInfo(name = "local_uri")
     val localUri: String? = null,
 
-    val duration: Long,
+    val duration: Long? = null,
 
     @ColumnInfo(name = "publication_date")
-    val publicationDate: Long,
+    val publicationDate: Long? = null,
 
     @ColumnInfo(name = "played_position")
     val playedPosition: Long = 0,

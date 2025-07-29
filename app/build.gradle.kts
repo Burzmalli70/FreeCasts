@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.android.room)
     alias(libs.plugins.kotlin.ksp)
 }
 
@@ -40,8 +42,11 @@ android {
     }
 }
 
-dependencies {
+room {
+    schemaDirectory("$projectDir/schemas")
+}
 
+dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.koin.android)
     implementation(libs.androidx.room.runtime)
@@ -54,6 +59,11 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.retrofit.converter.serialization)
+    implementation(libs.okhttp)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

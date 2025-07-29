@@ -72,14 +72,14 @@ class PodcastViewModel(
             title = title,
             author = author,
             description = description,
-            imageUrl = imageUrl,
+            largeImageUrl = imageUrl,
             feedUrl = feedUrl
         )
         repository.addPodcast(podcast)
     }
 
     fun addEpisode(
-        podcastId: Int,
+        podcastId: String,
         title: String,
         description: String,
         audioUrl: String,
