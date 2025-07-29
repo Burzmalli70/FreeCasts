@@ -1,0 +1,69 @@
+<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:podcast="https://podcastindex.org/namespace/1.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:googleplay="http://www.google.com/schemas/play-podcasts/1.0" version="2.0">
+    <channel>
+        <title>Where There's Woke Patron Feed</title>
+        <link>https://www.patreon.com/wherethereswoke</link>
+        <description>Where There's Woke's Private RSS Feed for Burzmali </description>
+        <atom:link href="https://www.patreon.com/wherethereswoke" rel="self" type="application/rss+xml"/>
+        <itunes:owner>
+            <itunes:name>Where There's Woke Patron Feed</itunes:name>
+            <itunes:email>support@patreon.com</itunes:email>
+        </itunes:owner>
+        <itunes:type>episodic</itunes:type>
+        <itunes:author>Where There's Woke Patron Feed</itunes:author>
+        <itunes:explicit>false</itunes:explicit>
+        <itunes:image href="https://c10.patreonusercontent.com/4/patreon-media/p/campaign/10662909/ee704f3102154599bd430969f3dd62de/eyJkIjo3MiwiaCI6MTQwMCwidyI6MTQwMH0%3D/1.jpg?token-hash=J7767ZRSz-l21UGwvgBRbGrBptux8T6q_jTiRQp92TY%3D"/>
+        <googleplay:block>yes</googleplay:block>
+        <itunes:block>Yes</itunes:block>
+        <language>en-US</language>
+        <pubDate>Mon, 28 Jul 2025 03:41:24 GMT</pubDate>
+        <lastBuildDate>Mon, 28 Jul 2025 03:41:24 GMT</lastBuildDate>
+        <generator>Patreon</generator>
+        <image>
+            <url>https://c10.patreonusercontent.com/4/patreon-media/p/campaign/10662909/ee704f3102154599bd430969f3dd62de/eyJkIjo3MiwiaCI6MTQwMCwidyI6MTQwMH0%3D/1.jpg?token-hash=J7767ZRSz-l21UGwvgBRbGrBptux8T6q_jTiRQp92TY%3D</url>
+            <title>Where There's Woke Patron Feed</title>
+            <link>https://www.patreon.com/wherethereswoke</link>
+        </image>
+        <item>
+            <title>WTW85: Christopher Rufo v. Harvard University</title>
+            <link>https://www.patreon.com/posts/wtw85-rufo-v-130403255</link>
+            <itunes:image href="https://c10.patreonusercontent.com/4/patreon-media/p/campaign/10662909/ee704f3102154599bd430969f3dd62de/eyJkIjo3MiwiaCI6MzAwMCwic3RyaXBfYWxwaGEiOjEsInciOjMwMDAsIndlYnAiOjB9/1.jpg?token-hash=3JGcFG1gl1GzcPpahfQlgdMHy5U2V9sPVfrAb34Hfls%3D"/>
+            <itunes:explicit>true</itunes:explicit>
+            <itunes:episode>85</itunes:episode>
+            <description><p>An unsurprising figure is involved in the current battle between Harvard University and the federal government, and he has come out to EXPOSE Harvard's racist and discriminatory practices by sharing a "trove" of internal documents they don't want you to see. Lydia walks us through what these documents are, how things escalated to this point, and what Christopher Rufo wants us to think it all means - which The New York Times helped platform on an episode of The Daily. Cool.</p><ul><li><p><a href="https://media4.manhattan-institute.org/wp-content/uploads/sites/5/Faculty-Searches.pdf" rel="nofollow noopener" target="_blank">Best Practices for Conducting Faculty Searches</a></p></li><li><p>Rufo's smoking gun that makes no sense: <a href="https://media4.manhattan-institute.org/wp-content/uploads/sites/5/Harvard-placement-goals.pdf" rel="nofollow noopener" target="_blank">Harvard's "Placement Goals"</a> - <strong>HELP US FIGURE OUT WHAT THIS IS!</strong></p></li></ul><p>**If you enjoy our work, please consider leaving a 5-star review! You can always email questions, comments, and leads to <a href="mailto:lydia@seriouspod.com" rel="nofollow noopener" target="_blank">lydia@seriouspod.com</a>.**</p><p><strong>Please pretty please consider becoming a patron at </strong><a href="https://patreon.com/wherethereswoke!">patreon.com/wherethereswoke!</a></p><p><em>This content is CAN credentialed, which means you can report instances of harassment, abuse, or other harm on their hotline at (617) 249-4255, or on their website at </em><a href="https://creatoraccountabilitynetwork.org" rel="nofollow noopener" target="_blank">creatoraccountabilitynetwork.org</a>.</p></description>
+            <enclosure url="https://c10.patreonusercontent.com/4/patreon-media/p/post/130403255/32344eabc9d1446290dc33283679b5de/eyJhIjoxLCJpc19hdWRpbyI6MSwicCI6MX0%3D/1.mp3?token-hash=87Trt7dK35R0B17xovHXdBbwX-OLhjn6piYuyQeykCY%3D&token-time=1754352000" length="71757725" type="audio/mpeg"/>
+            <guid isPermaLink="false">130403255</guid>
+            <pubDate>Sun, 01 Jun 2025 06:45:01 GMT</pubDate>
+        </item>
+        <item>
+            <title>MAY BONUS!</title>
+            <link>https://www.patreon.com/posts/may-bonus-130401449</link>
+            <itunes:image href="https://c10.patreonusercontent.com/4/patreon-media/p/campaign/10662909/ee704f3102154599bd430969f3dd62de/eyJkIjo3MiwiaCI6MzAwMCwic3RyaXBfYWxwaGEiOjEsInciOjMwMDAsIndlYnAiOjB9/1.jpg?token-hash=3JGcFG1gl1GzcPpahfQlgdMHy5U2V9sPVfrAb34Hfls%3D"/>
+            <itunes:explicit>true</itunes:explicit>
+            <itunes:episodeType>bonus</itunes:episodeType>
+            <description><p>Every May brings us a heck of a lot of caps and gowns, as well as various commencement speakers, and today we'll be watching one of them from a school near and dear to all wokie hearts. I wish it were Kermit the Frog or Jennifer Coolidge, but alas.</p></description>
+            <enclosure url="https://c10.patreonusercontent.com/4/patreon-media/p/post/130401449/23df43142a2c43fc9ab9914572f02a15/eyJhIjoxLCJpc19hdWRpbyI6MSwicCI6MX0%3D/1.mp3?token-hash=94HyAoMZouzJUqv5PDfzqAztuf84SCuU40zwbO1zztQ%3D&token-time=1754352000" length="49195840" type="audio/mpeg"/>
+            <guid isPermaLink="false">130401449</guid>
+            <pubDate>Sun, 01 Jun 2025 06:11:25 GMT</pubDate>
+        </item>
+        <item>
+            <title>WTW84: RFK’s Choice to Head Autism Study? A Total Fraud Who Abused Autistic Kids While Posing as a Doctor</title>
+            <link>https://www.patreon.com/posts/wtw84-rfks-to-as-130393740</link>
+            <itunes:image href="https://c10.patreonusercontent.com/4/patreon-media/p/campaign/10662909/ee704f3102154599bd430969f3dd62de/eyJkIjo3MiwiaCI6MzAwMCwic3RyaXBfYWxwaGEiOjEsInciOjMwMDAsIndlYnAiOjB9/1.jpg?token-hash=3JGcFG1gl1GzcPpahfQlgdMHy5U2V9sPVfrAb34Hfls%3D"/>
+            <itunes:explicit>true</itunes:explicit>
+            <itunes:episode>84</itunes:episode>
+            <description><p>Health and Human Services Secretary RFK Jr. and his second-in-command, Mr. Brain Worm, have appointed a real piece of work to lead the supposed "autism study" that HHS is conducting; and we had to call in for backup as we take on these anti-vaxxers: Dr. Jenessa Seymour! Jenessa takes us on a deep dive about David Geier and tells us all about the way he's approached science, ethics, and human beings in the past. Spoiler: it's not great!</p><p><strong>**If you enjoy our work, please consider leaving a 5-star review! You can always email questions, comments, and leads to </strong><a href="mailto:lydia@seriouspod.com" rel="nofollow noopener" target="_blank">lydia@seriouspod.com</a>.**<br><strong><br></strong><em>This content is CAN credentialed, which means you can report instances of harassment, abuse, or other harm on their hotline at (617) 249-4255, or on their website at </em><a href="https://creatoraccountabilitynetwork.org" rel="nofollow noopener" target="_blank">creatoraccountabilitynetwork.org</a><em>.</em></p></description>
+            <enclosure url="https://c10.patreonusercontent.com/4/patreon-media/p/post/130393740/2b0c4821931f412e8a57652c966f6859/eyJhIjoxLCJpc19hdWRpbyI6MSwicCI6MX0%3D/1.mp3?token-hash=DTBPqDWhsxLzG7NAMw1uONhxfcCi1QiWefTBbqJqyNE%3D&token-time=1754352000" length="64363804" type="audio/mpeg"/>
+            <guid isPermaLink="false">130393740</guid>
+            <pubDate>Sun, 01 Jun 2025 02:58:13 GMT</pubDate>
+        </item>
+        <item>
+            <title>WTW83: Columbia University Cancelled Her Class, but She's Doing It Anyway</title>
+            <link>https://www.patreon.com/posts/wtw83-columbia-127856767</link>
+            <itunes:image href="https://c10.patreonusercontent.com/4/patreon-media/p/campaign/10662909/ee704f3102154599bd430969f3dd62de/eyJkIjo3MiwiaCI6MzAwMCwic3RyaXBfYWxwaGEiOjEsInciOjMwMDAsIndlYnAiOjB9/1.jpg?token-hash=3JGcFG1gl1GzcPpahfQlgdMHy5U2V9sPVfrAb34Hfls%3D"/>
+            <description><p><a href="https://karenattiah.substack.com/" rel="nofollow noopener" target="_blank">Karen Attiah</a>, columnist with <a href="https://www.washingtonpost.com/people/karen-attiah/" rel="nofollow noopener" target="_blank">The Washington Post</a>, was looking forward to teaching her second iteration of the Race, Media, and International Affairs course she developed for Columbia University's School of International and Public Affairs, when it was abruptly cancelled - with no explanation as to why. We chat with her about the inaugural session of the course in an environment where the Israel-Palestine protests were happening on campus and the President was called into Congress to answer Elise Stefanik's "questions," what the media twisted about what was actually happening in those encampments, how she felt when Columbia cancelled her course, and the eventual decision she made to teach it anyway.</p><p><strong>**If you enjoy our work, please consider leaving a 5-star review! You can always email questions, comments, and leads to </strong><a href="mailto:lydia@seriouspod.com" rel="nofollow noopener" target="_blank">lydia@seriouspod.com</a>.**<br><strong><br></strong><em>This content is CAN credentialed, which means you can report instances of harassment, abuse, or other harm on their hotline at (617) 249-4255, or on their website at </em><a href="https://creatoraccountabilitynetwork.org" rel="nofollow noopener" target="_blank">creatoraccountabilitynetwork.org</a><em>.</em></p><p></p></description>
+            <enclosure url="https://c10.patreonusercontent.com/4/patreon-media/p/post/127856767/91b9a67b7b1c4108a2a479d290e9ac06/eyJhIjoxLCJpc19hdWRpbyI6MSwicCI6MX0%3D/1.mp3?token-hash=wL5fm4UXph5FWQjQyNMHYJn80sppa1-Vv6nqOobZk1c%3D&token-time=1754352000" length="66835332" type="audio/mpeg"/>
+            <guid isPermaLink="false">127856767</guid>
+            <pubDate>Thu, 01 May 2025 06:55:09 GMT</pubDate>
+        </item>
+    </channel>
+</rss>

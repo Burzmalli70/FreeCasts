@@ -3,24 +3,31 @@ package dev.josephwilliams.freecasts.model.entities
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(tableName = "podcasts")
 data class Podcast(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
+    @SerialName("collectionName")
+    val title: String? = null,
 
-    val title: String,
+    @SerialName("artistName")
+    val author: String? = null,
 
-    val author: String,
+    @SerialName("trackName")
+    val description: String? = null,
 
-    val description: String,
+    @SerialName("artworkUrl60")
+    @ColumnInfo(name = "small_image_url")
+    val smallImageUrl: String? = null,
 
-    @ColumnInfo(name = "image_url")
-    val imageUrl: String,
-
-    @ColumnInfo(name = "image_uri")
-    val imageUri: String? = null,
+    @SerialName("artworkUrl600")
+    @ColumnInfo(name = "large_image_url")
+    val largeImageUrl: String? = null,
 
     @ColumnInfo(name = "feed_url")
-    val feedUrl: String
+    val feedUrl: String? = null
 )
