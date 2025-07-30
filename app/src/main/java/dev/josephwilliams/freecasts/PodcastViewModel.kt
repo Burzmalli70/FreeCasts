@@ -11,6 +11,7 @@ import dev.josephwilliams.freecasts.model.entities.Podcast
 import dev.josephwilliams.freecasts.repositories.PodcastRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
@@ -19,6 +20,9 @@ class PodcastViewModel(
     private val repository: PodcastRepository,
     private val systemDownloader: SystemDownloader
 ) : ViewModel() {
+
+    private val mutableMainUiStateFlow = MutableStateFlow(MainUiState())
+    val mainUiStateFlow = mutableMainUiStateFlow
 
     val allPodcasts: Flow<List<Podcast>> = repository.getAllPodcasts()
 
@@ -101,4 +105,31 @@ class PodcastViewModel(
         val playlist = Playlist(name = name)
         repository.createPlaylist(playlist)
     }
+
+    fun selectPodcast(podcast: Podcast?) {
+        viewModelScope.launch {
+            mutableMainUiStateFlow.value = mutableMainUiStateFlow.value.copy(
+                selectedPodcast = podcast
+            )
+        }
+    }
+
+    fun searchPodcasts(query: String) = viewModelScope.launch {
+
+    }
+}
+
+data class MainUiState(
+    val nowPlaying: Episode? = null,
+    val playlist: Playlist? = null,
+    val nowPlayingExpanded: Boolean = false,
+    val nowPlayingScreen: NowPlayingScreen = NowPlayingScreen.CURRENT,
+    val selectedPodcast: Podcast? = null,
+    val searchResults: List<Podcast>? = null
+)
+
+enum class NowPlayingScreen {
+    CURRENT,
+    DETAILS,
+    PLAYLIST
 }
