@@ -67,6 +67,8 @@ dependencies {
     implementation(libs.datetime)
     implementation(libs.androidx.navigation)
     implementation(libs.androidx.animation)
+    implementation(libs.coil)
+    implementation(libs.coil.base)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
