@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.josephwilliams.freecasts.model.PodcastDatabase
 import dev.josephwilliams.freecasts.model.entities.Podcast
+import dev.josephwilliams.freecasts.setupItunesApi
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -30,11 +31,15 @@ class PodcastRepositoryTests {
         single { get<PodcastDatabase>().playlistDao() }
     }
 
-    private val testRepositoryModule = module {
-        single { PodcastRepository(get(), get(), get()) }
+    private val testApiModule = module {
+        single { setupItunesApi() }
     }
 
-    private val testAppModules = listOf(testDatabaseModule, testRepositoryModule)
+    private val testRepositoryModule = module {
+        single { PodcastRepository(get(), get(), get(), get()) }
+    }
+
+    private val testAppModules = listOf(testApiModule, testDatabaseModule, testRepositoryModule)
 
     @Before
     fun setup() {
@@ -57,7 +62,7 @@ class PodcastRepositoryTests {
             title = "Test Podcast",
             author = "Test Author",
             description = "Test Description",
-            imageUrl = "https://example.com/test.jpg",
+            smallImageUrl = "https://example.com/test.jpg",
             feedUrl = "https://feeds.example.com/test"
         )
 
