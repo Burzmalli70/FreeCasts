@@ -3,6 +3,7 @@ package dev.josephwilliams.freecasts.ui.screens.search
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
@@ -11,15 +12,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.model.entities.Podcast
+import dev.josephwilliams.freecasts.ui.debugPlaceholder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PodcastSearch(
     modifier: Modifier = Modifier,
-    searchViewModel: SearchViewModel,
-    onSearch: (String) -> Unit
+    searchViewModel: SearchViewModel
 ) {
     val searchQuery by searchViewModel.searchQuery.collectAsState()
     val isActive by searchViewModel.isActive.collectAsState()
@@ -34,8 +39,8 @@ fun PodcastSearch(
             query = searchQuery,
             onQueryChange = { searchViewModel.onQueryChange(it) },
             onSearch = {
-                searchViewModel.onActiveChange(false) // Typically close search bar
-                // Perform search or navigate to results screen
+                searchViewModel.onActiveChange(false)
+                searchViewModel.executeSearch(it)
             },
             active = isActive,
             onActiveChange = { searchViewModel.onActiveChange(it) },
@@ -62,13 +67,12 @@ fun PodcastSearch(
                     LazyColumn(modifier = Modifier.fillMaxWidth()) {
                         items(results.size) { item ->
                             val result = results[item]
-                            ListItem(
-                                headlineContent = { Text(result.title ?: "") },
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    .clickable {
-                                        searchViewModel.onActiveChange(false)   // Close search
-                                    }
+                            PodcastResult(
+                                modifier = Modifier.clickable {
+                                    searchViewModel.onActiveChange(false)
+                                    searchViewModel.selectPodcast(result)
+                                },
+                                podcast = result
                             )
                         }
                     }
@@ -90,5 +94,24 @@ fun PodcastResult(
     modifier: Modifier = Modifier,
     podcast: Podcast
 ) {
-
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AsyncImage(
+            model = podcast.smallImageUrl,
+            contentDescription = null,
+            placeholder = debugPlaceholder(R.drawable.debug_preview_img),
+            fallback = debugPlaceholder(R.drawable.ic_launcher_foreground),
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.clip(RoundedCornerShape(4.dp))
+        )
+        Text(
+            text = podcast.title ?: "",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(start = 16.dp)
+        )
+    }
 }

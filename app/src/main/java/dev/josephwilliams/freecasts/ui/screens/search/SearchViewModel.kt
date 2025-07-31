@@ -19,8 +19,21 @@ class SearchViewModel(private val podcastRepository: PodcastRepository): ViewMod
     private val mutableSearchResults = MutableStateFlow<List<Podcast>?>(null)
     val searchResults: StateFlow<List<Podcast>?> = mutableSearchResults.asStateFlow()
 
+    private val mutableSelectedPodcast = MutableStateFlow<Podcast?>(null)
+    val selectedPodcast: StateFlow<Podcast?> = mutableSelectedPodcast.asStateFlow()
+
     fun onQueryChange(query: String) {
         mutableSearchQuery.value = query
+        if (query.isBlank()) {
+            mutableSearchResults.value = null
+        } else {
+            viewModelScope.launch {
+                mutableSearchResults.value = podcastRepository.findNewPodcasts(query)
+            }
+        }
+    }
+
+    fun executeSearch(query: String) {
         if (query.isBlank()) {
             mutableSearchResults.value = null
         } else {
@@ -40,5 +53,11 @@ class SearchViewModel(private val podcastRepository: PodcastRepository): ViewMod
 
     fun clearSearchQuery() {
         mutableSearchQuery.value = ""
+    }
+
+    fun selectPodcast(podcast: Podcast) {
+        viewModelScope.launch {
+            mutableSelectedPodcast.value = podcast
+        }
     }
 }

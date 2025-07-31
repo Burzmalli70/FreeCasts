@@ -4,11 +4,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -28,7 +34,14 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val mainUiState = viewModel.mainUiStateFlow.collectAsState()
             FreeCastsTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    bottomBar = {
+                        PodcastBottomBar(
+                            onButtonTapped = { navController.navigate(it.name) }
+                        )
+                    }
+                ) { innerPadding ->
                     NavHost(
                         navController = navController,
                         startDestination = NavRoute.PODCASTS.name,
@@ -50,10 +63,7 @@ class MainActivity : ComponentActivity() {
                         composable(NavRoute.SEARCH.name) {
                             val searchViewModel: SearchViewModel by inject(SearchViewModel::class.java)
                             PodcastSearch(
-                                searchViewModel = searchViewModel,
-                                onSearch = { query ->
-                                    viewModel.searchPodcasts(query)
-                                }
+                                searchViewModel = searchViewModel
                             )
                         }
                     }
@@ -61,6 +71,32 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+
+@Composable
+fun PodcastBottomBar(
+    modifier: Modifier = Modifier,
+    onButtonTapped: (NavRoute) -> Unit
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        for(route in NavRoute.entries) {
+            BottomBarButton(
+                modifier = Modifier.padding(20.dp).clickable { onButtonTapped(route) },
+                route = route
+            )
+        }
+    }
+}
+
+@Composable
+fun BottomBarButton(
+    modifier: Modifier = Modifier,
+    route: NavRoute
+) {
+    Text(route.name, modifier = modifier)
 }
 
 enum class NavRoute {
