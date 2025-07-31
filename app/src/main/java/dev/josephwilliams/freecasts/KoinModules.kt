@@ -5,6 +5,7 @@ import dev.josephwilliams.freecasts.downloader.SystemDownloader
 import dev.josephwilliams.freecasts.model.PodcastDatabase
 import dev.josephwilliams.freecasts.network.iTunesAPI
 import dev.josephwilliams.freecasts.repositories.PodcastRepository
+import dev.josephwilliams.freecasts.ui.screens.search.SearchViewModel
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import org.koin.android.ext.koin.androidApplication
@@ -31,6 +32,7 @@ val itunesModule = module {
 
 val viewModelModule = module {
     viewModel { PodcastViewModel(get(), get()) }
+    viewModel { SearchViewModel(get()) }
 }
 
 val repositoryModule = module {

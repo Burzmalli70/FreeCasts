@@ -7,16 +7,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import dev.josephwilliams.freecasts.ui.screens.PodcastsView
-import dev.josephwilliams.freecasts.ui.screens.SearchView
+import dev.josephwilliams.freecasts.ui.screens.search.PodcastSearch
+import dev.josephwilliams.freecasts.ui.screens.search.SearchViewModel
 import dev.josephwilliams.freecasts.ui.theme.FreeCastsTheme
 import org.koin.java.KoinJavaComponent.inject
 
@@ -50,8 +48,9 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(NavRoute.SEARCH.name) {
-                            SearchView(
-                                results = mainUiState.value.searchResults,
+                            val searchViewModel: SearchViewModel by inject(SearchViewModel::class.java)
+                            PodcastSearch(
+                                searchViewModel = searchViewModel,
                                 onSearch = { query ->
                                     viewModel.searchPodcasts(query)
                                 }
