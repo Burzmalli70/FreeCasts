@@ -6,16 +6,33 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.List
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -35,6 +52,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
         enableEdgeToEdge()
         setContent {
             val navController = rememberNavController()
@@ -44,6 +63,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     bottomBar = {
                         PodcastBottomBar(
+                            modifier = Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars),
                             onButtonTapped = { navController.navigate(it.name) }
                         )
                     }
@@ -51,7 +71,7 @@ class MainActivity : ComponentActivity() {
                     NavHost(
                         navController = navController,
                         startDestination = NavRoute.PODCASTS.name,
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)
                     ) {
                         composable(NavRoute.PODCASTS.name) {
                             val podcasts by viewModel.allPodcasts.collectAsState(initial = emptyList())
@@ -73,7 +93,9 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(NavRoute.PLAYLISTS.name) {
-                            val playlistsViewModel: PlaylistsViewModel by inject(PlaylistsViewModel::class.java)
+                            val playlistsViewModel: PlaylistsViewModel by inject(
+                                PlaylistsViewModel::class.java
+                            )
                             PlaylistsView(
                                 playlistsViewModel = playlistsViewModel
                             )
@@ -86,12 +108,14 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
-                }
-            }
-
-            mainUiState.value.selectedPodcast?.let {
-                PodcastDetail(podcast = it) {
-                    viewModel.selectPodcast(null)
+                    mainUiState.selectedPodcast?.let {
+                        PodcastDetail(
+                            modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).consumeWindowInsets(innerPadding),
+                            podcast = it
+                        ) {
+                            viewModel.selectPodcast(null)
+                        }
+                    }
                 }
             }
         }
@@ -109,7 +133,7 @@ fun PodcastBottomBar(
     ) {
         for(route in NavRoute.entries) {
             BottomBarButton(
-                modifier = Modifier.padding(20.dp).clickable { onButtonTapped(route) },
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 20.dp).clickable { onButtonTapped(route) },
                 route = route
             )
         }
@@ -121,14 +145,20 @@ fun BottomBarButton(
     modifier: Modifier = Modifier,
     route: NavRoute
 ) {
-    Text(route.name, modifier = modifier)
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(route.icon, contentDescription = null)
+        Text(text = route.name, modifier = modifier, fontSize = 12.sp)
+    }
 }
 
-enum class NavRoute {
-    PODCASTS,
-    SEARCH,
-    PLAYLISTS,
-    SETTINGS
+enum class NavRoute(val icon: ImageVector) {
+    PODCASTS(icon = Icons.Default.Home),
+    SEARCH(icon = Icons.Default.Search),
+    PLAYLISTS(icon = Icons.AutoMirrored.Default.List),
+    SETTINGS(icon = Icons.Default.Settings)
 }
 
 val MAIN_NAV_ROUTES = listOf(NavRoute.PODCASTS, NavRoute.SEARCH, NavRoute.PLAYLISTS, NavRoute.SETTINGS)
