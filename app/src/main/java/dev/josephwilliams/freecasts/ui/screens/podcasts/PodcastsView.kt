@@ -1,10 +1,12 @@
-package dev.josephwilliams.freecasts.ui.screens
+package dev.josephwilliams.freecasts.ui.screens.podcasts
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -24,18 +26,21 @@ fun PodcastsView(
 ) {
     if (selectedPodcast == null) {
         LazyVerticalGrid(
+            modifier = modifier,
             columns = GridCells.Adaptive(minSize = 40.dp)
         ) {
             items(podcasts.size) {
                 val podcast = podcasts[it]
-                Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
+                Box(contentAlignment = Alignment.Center) {
                     AsyncImage(
                         model = podcast.smallImageUrl,
                         contentDescription = null,
                         placeholder = debugPlaceholder(R.drawable.debug_preview_img),
                         fallback = debugPlaceholder(R.drawable.ic_launcher_foreground),
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier.clip(RoundedCornerShape(4.dp))
+                        modifier = Modifier.clip(RoundedCornerShape(4.dp)).clickable {
+                            onPodcastTapped(podcast)
+                        }
                     )
                 }
             }

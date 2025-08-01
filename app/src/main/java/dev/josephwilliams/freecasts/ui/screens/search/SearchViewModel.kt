@@ -2,6 +2,7 @@ package dev.josephwilliams.freecasts.ui.screens.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.josephwilliams.freecasts.model.entities.Episode
 import dev.josephwilliams.freecasts.model.entities.Podcast
 import dev.josephwilliams.freecasts.repositories.PodcastRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,10 @@ class SearchViewModel(private val podcastRepository: PodcastRepository): ViewMod
 
     private val mutableSelectedPodcast = MutableStateFlow<Podcast?>(null)
     val selectedPodcast: StateFlow<Podcast?> = mutableSelectedPodcast.asStateFlow()
+
+    private val fetchedEpisodes: MutableMap<Podcast, List<Episode>> = mutableMapOf()
+    private val mutablePodcastEpisodes: MutableStateFlow<List<Episode>> = MutableStateFlow(emptyList())
+    val podcastEpisodes: StateFlow<List<Episode>> = mutablePodcastEpisodes.asStateFlow()
 
     fun onQueryChange(query: String) {
         mutableSearchQuery.value = query
@@ -55,7 +60,7 @@ class SearchViewModel(private val podcastRepository: PodcastRepository): ViewMod
         mutableSearchQuery.value = ""
     }
 
-    fun selectPodcast(podcast: Podcast) {
+    fun selectPodcast(podcast: Podcast?) {
         viewModelScope.launch {
             mutableSelectedPodcast.value = podcast
         }

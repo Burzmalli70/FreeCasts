@@ -25,9 +25,9 @@ interface PodcastDao {
     fun getAllPodcasts(): Flow<List<Podcast>>
 
     @Query("SELECT * FROM podcasts WHERE id = :id")
-    suspend fun getPodcastById(id: Int): Podcast?
+    suspend fun getPodcastById(id: Long): Podcast?
 
     @Transaction
     @Query("SELECT * FROM podcasts WHERE id = :podcastId")
-    fun getPodcastWithEpisodes(podcastId: Int): Flow<PodcastWithEpisodes>
+    fun getPodcastWithEpisodes(podcastId: Long): Flow<PodcastWithEpisodes>
 }

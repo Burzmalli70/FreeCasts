@@ -20,10 +20,10 @@ import androidx.room.PrimaryKey
 )
 data class Episode(
     @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
+    val id: Long = 0,
 
     @ColumnInfo(name = "podcast_id")
-    val podcastId: String? = null,
+    val podcastId: Long? = null,
 
     val title: String? = null,
 

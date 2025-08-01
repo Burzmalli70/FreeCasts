@@ -4,9 +4,12 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.josephwilliams.freecasts.model.PodcastDatabase
+import dev.josephwilliams.freecasts.model.entities.Episode
+import dev.josephwilliams.freecasts.model.entities.Playlist
 import dev.josephwilliams.freecasts.model.entities.Podcast
 import dev.josephwilliams.freecasts.setupItunesApi
 import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
@@ -69,5 +72,37 @@ class PodcastRepositoryTests {
         val id = repository.addPodcast(podcast)
 
         assertTrue(id > 0)
+    }
+
+    @Test
+    fun testPlaylistCreation() = runBlocking {
+        val repository: PodcastRepository by inject(PodcastRepository::class.java)
+
+        var playlist = Playlist(name = "Test Playlist")
+        val playlistId = repository.createPlaylist(playlist)
+
+        assertTrue(playlistId > 0)
+
+        playlist = repository.getPlaylistById(playlistId) ?: error("Playlist not found")
+
+        var episode = Episode(
+            podcastId = null,
+            title = "Test Episode",
+            description = "Test Description",
+            audioUrl = "https://example.com/test.mp3",
+            duration = 300,
+        )
+
+        val episodeId = repository.addEpisode(episode)
+
+        assertTrue(episodeId > 0)
+
+        episode = repository.getEpisodeById(episodeId) ?: error("Episode not found")
+
+        repository.addEpisodeToPlaylist(playlistId, episodeId, 0)
+
+        val playlistWithEpisodes = repository.getPlaylistWithEpisodes(playlistId.toInt())
+
+        assertTrue(playlistWithEpisodes.episodes.contains(episode))
     }
 }

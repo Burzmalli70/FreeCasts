@@ -31,10 +31,10 @@ import dev.josephwilliams.freecasts.model.entities.Playlist
 )
 data class PlaylistEpisode(
     @ColumnInfo(name = "playlist_id")
-    val playlistId: Int,
+    val playlistId: Long,
 
     @ColumnInfo(name = "episode_id")
-    val episodeId: Int,
+    val episodeId: Long,
 
     val position: Int
 )

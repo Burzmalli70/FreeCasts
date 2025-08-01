@@ -28,7 +28,7 @@ class PodcastRepository(
         return podcastDao.getAllPodcasts()
     }
 
-    fun getPodcastWithEpisodes(podcastId: Int): Flow<PodcastWithEpisodes> {
+    fun getPodcastWithEpisodes(podcastId: Long): Flow<PodcastWithEpisodes> {
         return podcastDao.getPodcastWithEpisodes(podcastId)
     }
 
@@ -36,11 +36,11 @@ class PodcastRepository(
         return episodeDao.insert(episode)
     }
 
-    fun getEpisodesForPodcast(podcastId: Int): Flow<List<Episode>> {
+    fun getEpisodesForPodcast(podcastId: Long): Flow<List<Episode>> {
         return episodeDao.getEpisodesForPodcast(podcastId)
     }
 
-    suspend fun updatePlaybackPosition(episodeId: Int, position: Long) {
+    suspend fun updatePlaybackPosition(episodeId: Long, position: Long) {
         episodeDao.updatePlayedPosition(episodeId, position)
     }
 
@@ -48,12 +48,24 @@ class PodcastRepository(
         return playlistDao.insert(playlist)
     }
 
-    suspend fun addEpisodeToPlaylist(playlistId: Int, episodeId: Int, position: Int) {
+    suspend fun getPlaylistById(playlistId: Long): Playlist? {
+        return playlistDao.getPlaylistById(playlistId)
+    }
+
+    fun getAllPlaylists(): Flow<List<PlaylistWithEpisodes>> {
+        return playlistDao.getAllPlaylistsWithEpisodes()
+    }
+
+    suspend fun addEpisodeToPlaylist(playlistId: Long, episodeId: Long, position: Int) {
         val playlistEpisode = PlaylistEpisode(playlistId, episodeId, position)
         playlistDao.addEpisodeToPlaylist(playlistEpisode)
     }
 
-    fun getPlaylistWithEpisodes(playlistId: Int): Flow<PlaylistWithEpisodes> {
+    suspend fun getEpisodeById(episodeId: Long): Episode? {
+        return episodeDao.getEpisodeById(episodeId)
+    }
+
+    suspend fun getPlaylistWithEpisodes(playlistId: Int): PlaylistWithEpisodes {
         return playlistDao.getPlaylistWithEpisodes(playlistId)
     }
 

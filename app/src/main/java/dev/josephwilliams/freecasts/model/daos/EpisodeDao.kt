@@ -20,16 +20,16 @@ interface EpisodeDao {
     suspend fun delete(episode: Episode)
 
     @Query("SELECT * FROM episodes WHERE podcast_id = :podcastId ORDER BY publication_date DESC")
-    fun getEpisodesForPodcast(podcastId: Int): Flow<List<Episode>>
+    fun getEpisodesForPodcast(podcastId: Long): Flow<List<Episode>>
 
     @Query("SELECT * FROM episodes WHERE id = :id")
-    suspend fun getEpisodeById(id: Int): Episode?
+    suspend fun getEpisodeById(id: Long): Episode?
 
     @Query("UPDATE episodes SET played_position = :position WHERE id = :episodeId")
-    suspend fun updatePlayedPosition(episodeId: Int, position: Long)
+    suspend fun updatePlayedPosition(episodeId: Long, position: Long)
 
     @Query("UPDATE episodes SET played_count = played_count + 1 WHERE id = :episodeId")
-    suspend fun incrementPlayedCount(episodeId: Int)
+    suspend fun incrementPlayedCount(episodeId: Long)
 
     @Query("UPDATE episodes SET favorite = :isFavorite WHERE id = :episodeId")
     suspend fun updateFavoriteStatus(episodeId: Int, isFavorite: Boolean)

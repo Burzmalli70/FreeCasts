@@ -26,7 +26,7 @@ interface PlaylistDao {
     fun getAllPlaylists(): Flow<List<Playlist>>
 
     @Query("SELECT * FROM playlists WHERE id = :id")
-    suspend fun getPlaylistById(id: Int): Playlist?
+    suspend fun getPlaylistById(id: Long): Playlist?
 
     @Insert
     suspend fun addEpisodeToPlaylist(playlistEpisode: PlaylistEpisode)
@@ -36,5 +36,9 @@ interface PlaylistDao {
 
     @Transaction
     @Query("SELECT * FROM playlists WHERE id = :playlistId")
-    fun getPlaylistWithEpisodes(playlistId: Int): Flow<PlaylistWithEpisodes>
+    suspend fun getPlaylistWithEpisodes(playlistId: Int): PlaylistWithEpisodes
+
+    @Transaction
+    @Query("SELECT * FROM playlists")
+    fun getAllPlaylistsWithEpisodes(): Flow<List<PlaylistWithEpisodes>>
 }

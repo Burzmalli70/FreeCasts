@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -19,6 +19,7 @@ import coil.compose.AsyncImage
 import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.model.entities.Podcast
 import dev.josephwilliams.freecasts.ui.debugPlaceholder
+import dev.josephwilliams.freecasts.ui.screens.podcasts.PodcastDetail
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,31 +37,40 @@ fun PodcastSearch(
                 .fillMaxWidth()
                 .padding(horizontal = if (isActive) 0.dp else 16.dp) // Full width when active
                 .padding(vertical = 8.dp),
-            query = searchQuery,
-            onQueryChange = { searchViewModel.onQueryChange(it) },
-            onSearch = {
-                searchViewModel.onActiveChange(false)
-                searchViewModel.executeSearch(it)
-            },
-            active = isActive,
-            onActiveChange = { searchViewModel.onActiveChange(it) },
-            placeholder = { Text("Search something...") },
-            leadingIcon = {
-                if (isActive) {
-                    IconButton(onClick = { searchViewModel.onActiveChange(false) }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            inputField = {
+                SearchBarDefaults.InputField(
+                    query = searchQuery,
+                    onQueryChange = { searchViewModel.onQueryChange(it) },
+                    onSearch = {
+                        searchViewModel.onActiveChange(false)
+                        searchViewModel.executeSearch(it)
+                    },
+                    expanded = isActive,
+                    onExpandedChange = { searchViewModel.onActiveChange(it) },
+                    placeholder = { Text("Search") },
+                    leadingIcon = {
+                        if (isActive) {
+                            IconButton(onClick = { searchViewModel.onActiveChange(false) }) {
+                                Icon(
+                                    Icons.AutoMirrored.Default.ArrowBack,
+                                    contentDescription = "Back"
+                                )
+                            }
+                        } else {
+                            Icon(Icons.Default.Search, contentDescription = "Search")
+                        }
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchViewModel.clearSearchQuery() }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                            }
+                        }
                     }
-                } else {
-                    Icon(Icons.Default.Search, contentDescription = "Search")
-                }
+                )
             },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { searchViewModel.clearSearchQuery() }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Clear search")
-                    }
-                }
-            }
+            expanded = isActive,
+            onExpandedChange = { searchViewModel.onActiveChange(it) }
         ) {
             if (searchResults?.isNotEmpty() == true) {
                 searchResults?.let { results ->
@@ -87,6 +97,14 @@ fun PodcastSearch(
             }
         }
     }
+
+    val selectedPodcast by searchViewModel.selectedPodcast.collectAsState()
+
+    selectedPodcast?.let {
+        PodcastDetail(podcast = it) {
+            searchViewModel.selectPodcast(null)
+        }
+    }
 }
 
 @Composable
@@ -109,7 +127,7 @@ fun PodcastResult(
             modifier = Modifier.clip(RoundedCornerShape(4.dp))
         )
         Text(
-            text = podcast.title ?: "",
+            text = podcast.title,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(start = 16.dp)
         )

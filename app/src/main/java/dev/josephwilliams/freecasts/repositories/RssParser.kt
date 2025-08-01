@@ -21,8 +21,9 @@ object RssParser {
             while(stream.readLine().also { line = it?.trim() } != null) {
                 when(val tag = line?.getTagName()) {
                     ShowTag.TITLE.tagName -> {
-                        val title = getTagText(tag, line, stream)
-                        podcast = podcast?.copy(title = title) ?: Podcast(title = title)
+                        getTagText(tag, line, stream)?.let { title ->
+                            podcast = podcast?.copy(title = title) ?: Podcast(title = title)
+                        }
                     }
                     ShowTag.LINK.tagName -> {
                         val link = getTagText(tag, line, stream)
@@ -65,10 +66,6 @@ object RssParser {
                 EpisodeTag.LINK.tagName -> {
                     val link = getTagText(tag, line, reader)
                     episode = episode?.copy(audioUrl = link) ?: Episode(audioUrl = link)
-                }
-                EpisodeTag.GUID.tagName -> {
-                    val guid = getTagText(tag, line, reader)
-                    episode = episode?.copy(podcastId = guid) ?: Episode(podcastId = guid)
                 }
                 EpisodeTag.PUB_DATE.tagName -> {
                     val pubDate = getTagText(tag, line, reader)

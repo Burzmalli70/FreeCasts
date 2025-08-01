@@ -83,7 +83,7 @@ class PodcastViewModel(
     }
 
     fun addEpisode(
-        podcastId: String,
+        podcastId: Long,
         title: String,
         description: String,
         audioUrl: String,

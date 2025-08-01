@@ -7,10 +7,13 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "playlists")
 data class Playlist(
     @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
+    val id: Long = 0,
 
     val name: String,
 
     @ColumnInfo(name = "creation_date")
-    val creationDate: Long = System.currentTimeMillis()
+    val creationDate: Long = System.currentTimeMillis(),
+
+    @ColumnInfo(name = "unplayed_only")
+    val unplayedOnly: Boolean = false
 )

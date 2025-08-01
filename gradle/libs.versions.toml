@@ -55,7 +55,6 @@ datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version
 androidx-navigation = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 androidx-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
 coil = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
-coil-base = { group = "io.coil-kt", name = "coil-compose-base", version.ref = "coil" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

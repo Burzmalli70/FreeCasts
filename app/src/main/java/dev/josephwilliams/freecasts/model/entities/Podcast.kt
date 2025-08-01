@@ -10,9 +10,9 @@ import kotlinx.serialization.Serializable
 @Entity(tableName = "podcasts")
 data class Podcast(
     @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
+    val id: Long = 0,
     @SerialName("collectionName")
-    val title: String? = null,
+    val title: String = "",
 
     @SerialName("artistName")
     val author: String? = null,

@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "ebf5c137edf3bd153d797bc6f7ffdf72",
+    "identityHash": "55964f27e146c4a6c761676f426456db",
     "entities": [
       {
         "tableName": "podcasts",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT, `author` TEXT, `description` TEXT, `small_image_url` TEXT, `large_image_url` TEXT, `feed_url` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `author` TEXT, `description` TEXT, `small_image_url` TEXT, `large_image_url` TEXT, `feed_url` TEXT)",
         "fields": [
           {
             "fieldPath": "id",
@@ -17,7 +17,8 @@
           {
             "fieldPath": "title",
             "columnName": "title",
-            "affinity": "TEXT"
+            "affinity": "TEXT",
+            "notNull": true
           },
           {
             "fieldPath": "author",
@@ -54,7 +55,7 @@
       },
       {
         "tableName": "episodes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `podcast_id` TEXT, `title` TEXT, `description` TEXT, `audio_url` TEXT, `local_uri` TEXT, `duration` INTEGER, `publication_date` INTEGER, `played_position` INTEGER NOT NULL, `played_count` INTEGER NOT NULL, `favorite` INTEGER NOT NULL, FOREIGN KEY(`podcast_id`) REFERENCES `podcasts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `podcast_id` INTEGER, `title` TEXT, `description` TEXT, `audio_url` TEXT, `local_uri` TEXT, `duration` INTEGER, `publication_date` INTEGER, `played_position` INTEGER NOT NULL, `played_count` INTEGER NOT NULL, `favorite` INTEGER NOT NULL, FOREIGN KEY(`podcast_id`) REFERENCES `podcasts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -65,7 +66,7 @@
           {
             "fieldPath": "podcastId",
             "columnName": "podcast_id",
-            "affinity": "TEXT"
+            "affinity": "INTEGER"
           },
           {
             "fieldPath": "title",
@@ -255,7 +256,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ebf5c137edf3bd153d797bc6f7ffdf72')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '55964f27e146c4a6c761676f426456db')"
     ]
   }
 }
