@@ -5,18 +5,27 @@ import dev.josephwilliams.freecasts.model.entities.Podcast
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format.DateTimeComponents
-import java.io.BufferedReader
-import java.io.InputStream
 import kotlinx.datetime.parse
 import kotlinx.datetime.toInstant
+import java.io.BufferedReader
+import java.io.InputStream
+import java.io.StringReader
+import java.io.StringWriter
+import javax.xml.transform.OutputKeys
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.stream.StreamResult
+import javax.xml.transform.stream.StreamSource
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
+
 object RssParser {
     fun parsePodcastFeed(inputStream: InputStream): ParseResult? {
+        val prettyXml = prettifyXml(inputStream, 2) ?: return null
+        val stream = prettyXml.byteInputStream()
         var podcast: Podcast? = null
         var episodes: MutableList<Episode> = mutableListOf()
-        inputStream.bufferedReader().use { stream ->
+        stream.bufferedReader().use { stream ->
             var line: String? = ""
             while(stream.readLine().also { line = it?.trim() } != null) {
                 when(val tag = line?.getTagName()) {
@@ -77,7 +86,8 @@ object RssParser {
                 }
                 EpisodeTag.DURATION.tagName -> {
                     val duration = getTagText(tag, line, reader)
-                    episode = episode?.copy(duration = duration?.toLong()) ?: Episode(duration = duration?.toLong())
+                    val time = duration?.toLongOrNull() ?: 0
+                    episode = episode?.copy(duration = time) ?: Episode(duration = time)
                 }
                 else -> if(line?.checkEndTag("item") == true) return episode
             }
@@ -106,6 +116,38 @@ object RssParser {
         val episodes: List<Episode>
     )
 
+    fun prettifyXml(input: String, indent: Int): String? {
+        try {
+            val xmlInput = StreamSource(StringReader(input))
+            val stringWriter = StringWriter()
+            val xmlOutput = StreamResult(stringWriter)
+            val transformerFactory = TransformerFactory.newInstance()
+            transformerFactory.setAttribute("indent-number", indent)
+            val transformer = transformerFactory.newTransformer()
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes")
+            transformer.transform(xmlInput, xmlOutput)
+            return xmlOutput.writer.toString()
+        } catch (e: java.lang.Exception) {
+            return null
+        }
+    }
+
+    fun prettifyXml(inputStream: InputStream, indent: Int): String? {
+        try {
+            val xmlInput = StreamSource(inputStream)
+            val stringWriter = StringWriter()
+            val xmlOutput = StreamResult(stringWriter)
+            val transformerFactory = TransformerFactory.newInstance()
+//            transformerFactory.setAttribute("indent-number", indent)
+            val transformer = transformerFactory.newTransformer()
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes")
+            transformer.transform(xmlInput, xmlOutput)
+            return xmlOutput.writer.toString()
+        } catch (e: java.lang.Exception) {
+            return null
+        }
+    }
+
     enum class ShowTag(val tagName: String) {
         TITLE("title"),
         LINK("link"),
@@ -129,7 +171,7 @@ object RssParser {
 }
 
 fun String.getTagName(): String? {
-    return if (this.firstOrNull() == '<') {
+    return if (this.firstOrNull() == '<' && this.contains('>')) {
         if (this.indexOf(' ') < 0) return this.substring(1, this.indexOf('>'))
         val firstEnd = minOf(this.indexOf(' '), this.indexOf('>'))
         this.substring(1, firstEnd)

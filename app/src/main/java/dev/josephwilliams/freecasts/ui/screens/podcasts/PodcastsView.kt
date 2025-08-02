@@ -15,13 +15,14 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.model.entities.Podcast
+import dev.josephwilliams.freecasts.model.relationships.PodcastWithEpisodes
 import dev.josephwilliams.freecasts.ui.debugPlaceholder
 
 @Composable
 fun PodcastsView(
     modifier: Modifier = Modifier,
     podcasts: List<Podcast>,
-    selectedPodcast: Podcast? = null,
+    selectedPodcast: PodcastWithEpisodes? = null,
     onPodcastTapped: (Podcast) -> Unit
 ) {
     if (selectedPodcast == null) {

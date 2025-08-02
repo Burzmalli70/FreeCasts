@@ -29,5 +29,9 @@ interface PodcastDao {
 
     @Transaction
     @Query("SELECT * FROM podcasts WHERE id = :podcastId")
-    fun getPodcastWithEpisodes(podcastId: Long): Flow<PodcastWithEpisodes>
+    fun getPodcastFlowWithEpisodes(podcastId: Long): Flow<PodcastWithEpisodes>
+
+    @Transaction
+    @Query("SELECT * FROM podcasts WHERE id = :podcastId")
+    fun getPodcastWithEpisodes(podcastId: Long): PodcastWithEpisodes
 }

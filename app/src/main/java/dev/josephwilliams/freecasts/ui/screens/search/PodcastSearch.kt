@@ -99,9 +99,10 @@ fun PodcastSearch(
     }
 
     val selectedPodcast by searchViewModel.selectedPodcast.collectAsState()
+    val podcastEpisodes by searchViewModel.podcastEpisodes.collectAsState()
 
     selectedPodcast?.let {
-        PodcastDetail(podcast = it) {
+        PodcastDetail(podcast = it, episodes = podcastEpisodes) {
             searchViewModel.selectPodcast(null)
         }
     }

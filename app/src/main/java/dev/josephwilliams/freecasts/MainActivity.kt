@@ -21,7 +21,6 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.List
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -52,7 +51,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
 
         enableEdgeToEdge()
         setContent {
@@ -111,7 +109,8 @@ class MainActivity : ComponentActivity() {
                     mainUiState.selectedPodcast?.let {
                         PodcastDetail(
                             modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).consumeWindowInsets(innerPadding),
-                            podcast = it
+                            podcast = it.podcast,
+                            episodes = it.episodes
                         ) {
                             viewModel.selectPodcast(null)
                         }
@@ -131,7 +130,7 @@ fun PodcastBottomBar(
         modifier = modifier,
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        for(route in NavRoute.entries) {
+        for(route in MAIN_NAV_ROUTES) {
             BottomBarButton(
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 20.dp).clickable { onButtonTapped(route) },
                 route = route

@@ -12,6 +12,8 @@ import dev.josephwilliams.freecasts.model.relationships.PlaylistWithEpisodes
 import dev.josephwilliams.freecasts.model.relationships.PodcastWithEpisodes
 import dev.josephwilliams.freecasts.network.iTunesAPI
 import kotlinx.coroutines.flow.Flow
+import retrofit2.http.Url
+import java.net.URL
 
 class PodcastRepository(
     private val podcastDao: PodcastDao,
@@ -28,7 +30,11 @@ class PodcastRepository(
         return podcastDao.getAllPodcasts()
     }
 
-    fun getPodcastWithEpisodes(podcastId: Long): Flow<PodcastWithEpisodes> {
+    fun getPodcastFlowWithEpisodes(podcastId: Long): Flow<PodcastWithEpisodes> {
+        return podcastDao.getPodcastFlowWithEpisodes(podcastId)
+    }
+
+    fun getPodcastWithEpisodes(podcastId: Long): PodcastWithEpisodes {
         return podcastDao.getPodcastWithEpisodes(podcastId)
     }
 
@@ -72,10 +78,9 @@ class PodcastRepository(
     suspend fun findNewPodcasts(query: String? = null): List<Podcast> {
         return try {
             if (query?.startsWith(URL_PREFIX) == true) {
-//                parseUrlForPodcast(query)?.let {
-//                    listOf(it)
-//                } ?: emptyList()
-                emptyList()
+                RssParser.parsePodcastFeed(URL(query).openStream())?.podcast?.let {
+                    listOf(it)
+                } ?: emptyList()
             } else {
                 val result = iTunesAPI.searchITunes(query ?: "")
 
@@ -87,6 +92,17 @@ class PodcastRepository(
             }
         } catch(ex: Exception) {
             Log.e("Pod Search", "Search failed: ${ex.cause}")
+            emptyList()
+        }
+    }
+
+    suspend fun fetchPodcastEpisodes(podcast: Podcast): List<Episode> {
+        return try {
+            podcast.feedUrl?.let {
+//                val rawRss = URL(it).readText()
+                RssParser.parsePodcastFeed(URL(it).openStream())?.episodes
+            } ?: emptyList()
+        } catch(ex: Exception) {
             emptyList()
         }
     }
