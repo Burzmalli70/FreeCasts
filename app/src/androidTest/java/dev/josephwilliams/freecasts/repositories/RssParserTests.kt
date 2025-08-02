@@ -13,11 +13,14 @@ class RssParserTests {
 
     @Test
     fun test_parsePodcastFeed() = runBlocking {
-        val inputFeed = InstrumentationRegistry.getInstrumentation().context.assets.open("cog-dis-rss.txt")
-        val result = RssParser.parsePodcastFeed(inputFeed)
-        assertNotNull(result)
-        assertNotNull(result?.podcast)
-        assertTrue(result?.episodes?.isNotEmpty() == true)
+        TEST_FILES.forEach {
+            val inputFeed =
+                InstrumentationRegistry.getInstrumentation().context.assets.open(it)
+            val result = RssParser.parsePodcastFeed(inputFeed)
+            assertNotNull("Results from $it were null", result)
+            assertNotNull("Podcast from $it was null", result?.podcast)
+            assertTrue("No episodes parsed for $it", result?.episodes?.isNotEmpty() == true)
+        }
     }
 
     @Test
@@ -33,3 +36,9 @@ class RssParserTests {
         }
     }
 }
+
+val TEST_FILES = listOf(
+    "cog-dis-rss.txt",
+    "criminal-plus-rss.txt",
+    "wtw-rss.txt"
+)

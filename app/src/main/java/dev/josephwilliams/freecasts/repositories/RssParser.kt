@@ -21,7 +21,8 @@ import kotlin.time.Instant
 
 object RssParser {
     fun parsePodcastFeed(inputStream: InputStream): ParseResult? {
-        val prettyXml = prettifyXml(inputStream, 2) ?: return null
+        val backup = inputStream.bufferedReader().readText()
+        val prettyXml = prettifyXml(backup.byteInputStream(), 2) ?: backup
         val stream = prettyXml.byteInputStream()
         var podcast: Podcast? = null
         var episodes: MutableList<Episode> = mutableListOf()
