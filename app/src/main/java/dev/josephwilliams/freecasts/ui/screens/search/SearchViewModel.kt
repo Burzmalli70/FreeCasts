@@ -6,11 +6,11 @@ import dev.josephwilliams.freecasts.model.entities.Episode
 import dev.josephwilliams.freecasts.model.entities.Podcast
 import dev.josephwilliams.freecasts.repositories.PodcastRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
 class SearchViewModel(private val podcastRepository: PodcastRepository): ViewModel() {
@@ -30,22 +30,25 @@ class SearchViewModel(private val podcastRepository: PodcastRepository): ViewMod
     private val mutablePodcastEpisodes: MutableStateFlow<List<Episode>> = MutableStateFlow(emptyList())
     val podcastEpisodes: StateFlow<List<Episode>> = mutablePodcastEpisodes.asStateFlow()
 
+    private var searchJob: Job? = null
+
     fun onQueryChange(query: String) {
         mutableSearchQuery.value = query
         if (query.isBlank()) {
+            searchJob?.cancel()
             mutableSearchResults.value = null
         } else {
-            viewModelScope.launch {
-                mutableSearchResults.value = podcastRepository.findNewPodcasts(query)
-            }
+            executeSearch(query)
         }
     }
 
     fun executeSearch(query: String) {
+        searchJob?.cancel()
         if (query.isBlank()) {
             mutableSearchResults.value = null
         } else {
-            viewModelScope.launch {
+            searchJob = viewModelScope.launch {
+                delay(300)
                 mutableSearchResults.value = podcastRepository.findNewPodcasts(query)
             }
         }
