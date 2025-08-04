@@ -1,5 +1,6 @@
 package dev.josephwilliams.freecasts.ui.screens.search
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +31,7 @@ fun PodcastSearch(
     val searchQuery by searchViewModel.searchQuery.collectAsState()
     val isActive by searchViewModel.isActive.collectAsState()
     val searchResults by searchViewModel.searchResults.collectAsState()
+    val searchingState by searchViewModel.searchingState.collectAsState()
 
     Column(modifier = modifier) {
         SearchBar(
@@ -72,28 +74,105 @@ fun PodcastSearch(
             expanded = isActive,
             onExpandedChange = { searchViewModel.onActiveChange(it) }
         ) {
-            if (searchResults?.isNotEmpty() == true) {
-                searchResults?.let { results ->
-                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                        items(results.size) { item ->
-                            val result = results[item]
-                            PodcastResult(
-                                modifier = Modifier.clickable {
-                                    searchViewModel.onActiveChange(false)
-                                    searchViewModel.selectPodcast(result)
-                                },
-                                podcast = result
-                            )
+            when(searchingState) {
+                is SearchingState.Searching -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp), contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                is SearchingState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp), contentAlignment = Alignment.Center
+                    ) {
+                        Text("Error: ${(searchingState as? SearchingState.Error)?.exception?.message}")
+                    }
+                }
+                is SearchingState.Done -> {
+                    if (searchResults?.isNotEmpty() == true) {
+                        searchResults?.let { results ->
+                            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                                items(results.size) { item ->
+                                    val result = results[item]
+                                    PodcastResult(
+                                        modifier = Modifier.clickable {
+                                            searchViewModel.onActiveChange(false)
+                                            searchViewModel.selectPodcast(result)
+                                        },
+                                        podcast = result
+                                    )
+                                }
+                            }
+                        }
+                    } else if (searchQuery.isNotBlank()) {
+                        // Show if query is not blank but no results
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp), contentAlignment = Alignment.Center
+                        ) {
+                            Text("No results found for \"$searchQuery\"")
                         }
                     }
                 }
-            } else if (searchQuery.isNotBlank()) {
-                // Show if query is not blank but no results
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp), contentAlignment = Alignment.Center) {
-                    Text("No results found for \"$searchQuery\"")
+                else -> {
+
                 }
+            }
+        }
+        when(searchingState) {
+            is SearchingState.Searching -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp), contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            is SearchingState.Error -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp), contentAlignment = Alignment.Center
+                ) {
+                    Text("Error: ${(searchingState as? SearchingState.Error)?.exception?.message}")
+                }
+            }
+            is SearchingState.Done -> {
+                if (searchResults?.isNotEmpty() == true) {
+                    searchResults?.let { results ->
+                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                            items(results.size) { item ->
+                                val result = results[item]
+                                PodcastResult(
+                                    modifier = Modifier.clickable {
+                                        searchViewModel.onActiveChange(false)
+                                        searchViewModel.selectPodcast(result)
+                                    },
+                                    podcast = result
+                                )
+                            }
+                        }
+                    }
+                } else if (searchQuery.isNotBlank()) {
+                    // Show if query is not blank but no results
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp), contentAlignment = Alignment.Center
+                    ) {
+                        Text("No results found for \"$searchQuery\"")
+                    }
+                }
+            }
+            else -> {
+
             }
         }
     }
@@ -102,7 +181,11 @@ fun PodcastSearch(
     val podcastEpisodes by searchViewModel.podcastEpisodes.collectAsState()
 
     selectedPodcast?.let {
-        PodcastDetail(podcast = it, episodes = podcastEpisodes) {
+        PodcastDetail(
+            modifier = Modifier.background(MaterialTheme.colorScheme.background),
+            podcast = it,
+            episodes = podcastEpisodes
+        ) {
             searchViewModel.selectPodcast(null)
         }
     }
@@ -124,8 +207,8 @@ fun PodcastResult(
             contentDescription = null,
             placeholder = debugPlaceholder(R.drawable.debug_preview_img),
             fallback = debugPlaceholder(R.drawable.ic_launcher_foreground),
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.clip(RoundedCornerShape(4.dp))
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier.width(40.dp).clip(RoundedCornerShape(4.dp))
         )
         Text(
             text = podcast.title,

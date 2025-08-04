@@ -1,14 +1,11 @@
 package dev.josephwilliams.freecasts.ui.screens.podcasts
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
@@ -42,7 +39,7 @@ fun PodcastDetail(
             modifier = Modifier.align(Alignment.End).clickable { onDismiss() }
         )
         AsyncImage(
-            model = podcast.smallImageUrl,
+            model = podcast.largeImageUrl,
             contentDescription = null
         )
 
@@ -65,9 +62,14 @@ fun PodcastDetail(
                 )
             }
             PodcastDetailTab.EPISODES -> {
-                Column(modifier = Modifier.weight(1f).scrollable(rememberScrollState(), orientation = Orientation.Vertical)) {
-                    for (episode in episodes) {
-                        EpisodeItem(episode = episode)
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    items(episodes.size) {
+                        EpisodeItem(
+                            modifier = Modifier.fillMaxWidth().clickable {
+
+                            },
+                            episode = episodes[it]
+                        )
                     }
                 }
             }

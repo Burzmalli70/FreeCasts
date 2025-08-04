@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -69,7 +71,7 @@ class MainActivity : ComponentActivity() {
                     NavHost(
                         navController = navController,
                         startDestination = NavRoute.PODCASTS.name,
-                        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)
+                        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(innerPadding)
                     ) {
                         composable(NavRoute.PODCASTS.name) {
                             val podcasts by viewModel.allPodcasts.collectAsState(initial = emptyList())
@@ -108,7 +110,10 @@ class MainActivity : ComponentActivity() {
                     }
                     mainUiState.selectedPodcast?.let {
                         PodcastDetail(
-                            modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).consumeWindowInsets(innerPadding),
+                            modifier = Modifier
+                                .windowInsetsPadding(WindowInsets.statusBars)
+                                .consumeWindowInsets(innerPadding)
+                                .background(MaterialTheme.colorScheme.background),
                             podcast = it.podcast,
                             episodes = it.episodes
                         ) {

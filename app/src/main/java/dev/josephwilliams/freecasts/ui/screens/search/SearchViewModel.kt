@@ -26,6 +26,9 @@ class SearchViewModel(private val podcastRepository: PodcastRepository): ViewMod
     private val mutableSelectedPodcast = MutableStateFlow<Podcast?>(null)
     val selectedPodcast: StateFlow<Podcast?> = mutableSelectedPodcast.asStateFlow()
 
+    private val mutableSearchingState: MutableStateFlow<SearchingState> = MutableStateFlow(SearchingState.None)
+    val searchingState: StateFlow<SearchingState> = mutableSearchingState.asStateFlow()
+
     private val fetchedEpisodes: MutableMap<Podcast, List<Episode>> = mutableMapOf()
     private val mutablePodcastEpisodes: MutableStateFlow<List<Episode>> = MutableStateFlow(emptyList())
     val podcastEpisodes: StateFlow<List<Episode>> = mutablePodcastEpisodes.asStateFlow()
@@ -36,7 +39,10 @@ class SearchViewModel(private val podcastRepository: PodcastRepository): ViewMod
         mutableSearchQuery.value = query
         if (query.isBlank()) {
             searchJob?.cancel()
-            mutableSearchResults.value = null
+            viewModelScope.launch {
+                mutableSearchResults.emit(null)
+                mutableSearchingState.emit(SearchingState.None)
+            }
         } else {
             executeSearch(query)
         }
@@ -45,17 +51,24 @@ class SearchViewModel(private val podcastRepository: PodcastRepository): ViewMod
     fun executeSearch(query: String) {
         searchJob?.cancel()
         if (query.isBlank()) {
-            mutableSearchResults.value = null
+            viewModelScope.launch {
+                mutableSearchResults.emit(null)
+                mutableSearchingState.emit(SearchingState.None)
+            }
         } else {
             searchJob = viewModelScope.launch {
+                mutableSearchingState.emit(SearchingState.Searching)
                 delay(300)
                 mutableSearchResults.value = podcastRepository.findNewPodcasts(query)
+                mutableSearchingState.emit(SearchingState.Done)
             }
         }
     }
 
     fun onActiveChange(active: Boolean) {
-        mutableActiveState.value = active
+        viewModelScope.launch {
+            mutableActiveState.emit(active)
+        }
         if (!active) {
             // Optionally clear query when search bar is closed
             // _searchQuery.value = ""
@@ -63,7 +76,11 @@ class SearchViewModel(private val podcastRepository: PodcastRepository): ViewMod
     }
 
     fun clearSearchQuery() {
-        mutableSearchQuery.value = ""
+        viewModelScope.launch {
+            mutableSearchingState.emit(SearchingState.None)
+            mutableSearchQuery.emit("")
+            mutableSearchResults.emit(null)
+        }
     }
 
     fun selectPodcast(podcast: Podcast?) {
@@ -83,4 +100,11 @@ class SearchViewModel(private val podcastRepository: PodcastRepository): ViewMod
             }
         }
     }
+}
+
+sealed class SearchingState {
+    object None: SearchingState()
+    object Searching: SearchingState()
+    object Done: SearchingState()
+    class Error(val exception: Exception): SearchingState()
 }

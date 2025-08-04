@@ -6,8 +6,9 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface iTunesAPI {
-    @GET("/search?media=podcast&limit=25")
+    @GET("/search?media=podcast")
     suspend fun searchITunes(
-        @Query("term") terms: String
+        @Query("term") terms: String,
+        @Query("limit") pageSize: Int = 50
     ): Response<ItunesResponse>
 }
