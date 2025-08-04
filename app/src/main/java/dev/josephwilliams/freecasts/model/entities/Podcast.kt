@@ -29,5 +29,7 @@ data class Podcast(
     val largeImageUrl: String? = null,
 
     @ColumnInfo(name = "feed_url")
-    val feedUrl: String? = null
+    val feedUrl: String? = null,
+
+    val subscribed: Boolean = false
 )

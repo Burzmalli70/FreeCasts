@@ -1,6 +1,7 @@
 package dev.josephwilliams.freecasts.repositories
 
 import android.util.Log
+import androidx.compose.runtime.collectAsState
 import dev.josephwilliams.freecasts.model.daos.EpisodeDao
 import dev.josephwilliams.freecasts.model.daos.PlaylistDao
 import dev.josephwilliams.freecasts.model.daos.PodcastDao
@@ -12,6 +13,7 @@ import dev.josephwilliams.freecasts.model.relationships.PlaylistWithEpisodes
 import dev.josephwilliams.freecasts.model.relationships.PodcastWithEpisodes
 import dev.josephwilliams.freecasts.network.iTunesAPI
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.lastOrNull
 import retrofit2.http.Url
 import java.net.URL
 
@@ -30,12 +32,28 @@ class PodcastRepository(
         return podcastDao.getAllPodcasts()
     }
 
+    fun getSubscribedPodcasts(): Flow<List<Podcast>> {
+        return podcastDao.getSubscribedPodcasts()
+    }
+
+    suspend fun getCurrentListOfPodcasts(): List<Podcast> {
+        return podcastDao.getListOfPodcasts()
+    }
+
     fun getPodcastFlowWithEpisodes(podcastId: Long): Flow<PodcastWithEpisodes> {
         return podcastDao.getPodcastFlowWithEpisodes(podcastId)
     }
 
-    fun getPodcastWithEpisodes(podcastId: Long): PodcastWithEpisodes {
+    suspend fun getPodcastWithEpisodes(podcastId: Long): PodcastWithEpisodes {
         return podcastDao.getPodcastWithEpisodes(podcastId)
+    }
+
+    suspend fun updatePodcastSubscription(toUpdate: Podcast, subscribed: Boolean) {
+        if (toUpdate.id > 0) {
+            podcastDao.update(toUpdate.copy(subscribed = subscribed))
+        } else {
+            podcastDao.insert(toUpdate.copy(subscribed = subscribed))
+        }
     }
 
     suspend fun addEpisode(episode: Episode): Long {
@@ -85,7 +103,10 @@ class PodcastRepository(
                 val result = iTunesAPI.searchITunes(query ?: "")
 
                 if (result.isSuccessful) {
-                    result.body()?.results ?: emptyList()
+                    val pods = getCurrentListOfPodcasts()
+                    (result.body()?.results ?: emptyList()).map {
+                        pods.find { pod -> pod.feedUrl == it.feedUrl } ?: it
+                    }
                 } else {
                     emptyList()
                 }

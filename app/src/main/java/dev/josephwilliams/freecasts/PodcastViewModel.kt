@@ -10,6 +10,7 @@ import dev.josephwilliams.freecasts.model.entities.Playlist
 import dev.josephwilliams.freecasts.model.entities.Podcast
 import dev.josephwilliams.freecasts.model.relationships.PodcastWithEpisodes
 import dev.josephwilliams.freecasts.repositories.PodcastRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,18 +26,19 @@ class PodcastViewModel(
     private val mutableMainUiStateFlow = MutableStateFlow(MainUiState())
     val mainUiStateFlow = mutableMainUiStateFlow
 
-    val allPodcasts: Flow<List<Podcast>> = repository.getAllPodcasts()
+    val subscribedPodcasts: Flow<List<Podcast>> = repository.getSubscribedPodcasts()
 
     private val _downloadEvents = MutableSharedFlow<Pair<Long, DownloadStatusInfo?>>()
     val downloadEvents: SharedFlow<Pair<Long, DownloadStatusInfo?>> = _downloadEvents.asSharedFlow()
 
     private val downloadsInProgress = mutableMapOf<Long, String>() // downloadId to original URL or identifier
 
-    fun downloadEpisode(episodeUrl: String, title: String, fileName: String) {
+    fun downloadEpisode(episodeUrl: String, title: String, podcastName: String, fileName: String) {
         val downloadId = systemDownloader.startDownload(
             url = episodeUrl,
             title = title,
             description = "Downloading $title",
+            subfolder = podcastName,
             destinationFileName = fileName
         )
 
@@ -108,17 +110,13 @@ class PodcastViewModel(
     }
 
     fun selectPodcast(podcast: Podcast?) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             mutableMainUiStateFlow.value = mutableMainUiStateFlow.value.copy(
                 selectedPodcast = podcast?.let {
                     repository.getPodcastWithEpisodes(it.id)
                 }
             )
         }
-    }
-
-    fun searchPodcasts(query: String) = viewModelScope.launch {
-
     }
 }
 

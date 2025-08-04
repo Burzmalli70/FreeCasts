@@ -18,12 +18,15 @@ class SystemDownloader(private val context: Context) {
         url: String,
         title: String,
         description: String,
+        subfolder: String,
         destinationFileName: String
     ): Long? {
         if (downloadManager == null) {
             Toast.makeText(context, "DownloadManager not available", Toast.LENGTH_LONG).show()
             return null
         }
+
+        val targetFolder = "${Environment.DIRECTORY_PODCASTS}/$subfolder"
 
         val request = DownloadManager.Request(Uri.parse(url))
             .setTitle(title)
@@ -32,12 +35,12 @@ class SystemDownloader(private val context: Context) {
             .setAllowedOverMetered(true)
             .setAllowedOverRoaming(false)
 
-        val destinationDir = context.getExternalFilesDir(Environment.DIRECTORY_PODCASTS)
+        val destinationDir = context.getExternalFilesDir(targetFolder)
         if (destinationDir != null) {
             if (!destinationDir.exists()) {
                 destinationDir.mkdirs()
             }
-            request.setDestinationInExternalFilesDir(context, Environment.DIRECTORY_PODCASTS, destinationFileName)
+            request.setDestinationInExternalFilesDir(context, targetFolder, destinationFileName)
         } else {
             Toast.makeText(context, "Cannot access app-specific storage", Toast.LENGTH_LONG).show()
             return null
@@ -119,4 +122,7 @@ data class DownloadStatusInfo(
 
     val isRunningOrPending: Boolean
         get() = status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PENDING
+
+    val progress: Float
+        get() = downloadedBytes.toFloat() / totalBytes.toFloat()
 }

@@ -19,7 +19,7 @@ import dev.josephwilliams.freecasts.model.relationships.PlaylistEpisode
         Playlist::class,
         PlaylistEpisode::class
     ],
-    version = 2
+    version = 4
 )
 abstract class PodcastDatabase : RoomDatabase() {
 

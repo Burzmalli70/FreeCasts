@@ -4,10 +4,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +30,9 @@ fun PodcastDetail(
     modifier: Modifier = Modifier,
     podcast: Podcast,
     episodes: List<Episode>,
+    onUpdateSubscription: (Podcast) -> Unit = {},
+    onDownloadEpisode: (Episode) -> Unit = {},
+    onDeleteEpisode: (Episode) -> Unit = {},
     onDismiss: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(PodcastDetailTab.DESCRIPTION) }
@@ -33,11 +40,19 @@ fun PodcastDetail(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = Icons.Default.Close,
-            contentDescription = null,
-            modifier = Modifier.align(Alignment.End).clickable { onDismiss() }
-        )
+        Row {
+            Icon(
+                imageVector = if (podcast.subscribed) Icons.Default.Check else Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.clickable { onUpdateSubscription(podcast) }
+            )
+            Spacer(Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = null,
+                modifier = Modifier.clickable { onDismiss() }
+            )
+        }
         AsyncImage(
             model = podcast.largeImageUrl,
             contentDescription = null
@@ -68,7 +83,13 @@ fun PodcastDetail(
                             modifier = Modifier.fillMaxWidth().clickable {
 
                             },
-                            episode = episodes[it]
+                            episode = episodes[it],
+                            downloadEpisode = {
+                                onDownloadEpisode(episodes[it])
+                            },
+                            deleteEpisode = {
+                                onDeleteEpisode(episodes[it])
+                            }
                         )
                     }
                 }
@@ -80,9 +101,24 @@ fun PodcastDetail(
 @Composable
 fun EpisodeItem(
     modifier: Modifier = Modifier,
-    episode: Episode
+    episode: Episode,
+    downloadEpisode: () -> Unit,
+    deleteEpisode: () -> Unit
 ) {
     Row(modifier = modifier) {
+        if (episode.downloaded) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null,
+                modifier = Modifier.clickable { deleteEpisode() }
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.clickable { downloadEpisode() }
+            )
+        }
         Text(episode.title ?: "")
     }
 }

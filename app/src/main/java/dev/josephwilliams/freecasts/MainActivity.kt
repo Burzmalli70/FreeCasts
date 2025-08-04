@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(innerPadding)
                     ) {
                         composable(NavRoute.PODCASTS.name) {
-                            val podcasts by viewModel.allPodcasts.collectAsState(initial = emptyList())
+                            val podcasts by viewModel.subscribedPodcasts.collectAsState(initial = emptyList())
 
                             PodcastsView(
                                 podcasts = podcasts,

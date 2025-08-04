@@ -46,5 +46,7 @@ data class Episode(
     @ColumnInfo(name = "played_count")
     val playedCount: Int = 0,
 
-    val favorite: Boolean = false
+    val favorite: Boolean = false,
+
+    val downloaded: Boolean = false
 )

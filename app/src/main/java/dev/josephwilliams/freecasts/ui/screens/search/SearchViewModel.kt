@@ -100,6 +100,22 @@ class SearchViewModel(private val podcastRepository: PodcastRepository): ViewMod
             }
         }
     }
+
+    fun updatePodcastSubscription(podcast: Podcast, subscribed: Boolean, isSelected: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            podcastRepository.updatePodcastSubscription(podcast, subscribed)
+            mutableSearchResults.value = mutableSearchResults.value?.map {
+                if (it.id == podcast.id) {
+                    it.copy(subscribed = subscribed)
+                } else {
+                    it
+                }
+            }
+            if (isSelected) {
+                mutableSelectedPodcast.value = podcast.copy(subscribed = subscribed)
+            }
+        }
+    }
 }
 
 sealed class SearchingState {

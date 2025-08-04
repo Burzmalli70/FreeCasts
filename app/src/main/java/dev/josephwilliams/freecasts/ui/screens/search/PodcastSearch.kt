@@ -37,7 +37,7 @@ fun PodcastSearch(
         SearchBar(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = if (isActive) 0.dp else 16.dp) // Full width when active
+                .padding(horizontal = if (isActive) 0.dp else 16.dp)
                 .padding(vertical = 8.dp),
             inputField = {
                 SearchBarDefaults.InputField(
@@ -161,7 +161,6 @@ fun PodcastSearch(
                         }
                     }
                 } else if (searchQuery.isNotBlank()) {
-                    // Show if query is not blank but no results
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -184,7 +183,10 @@ fun PodcastSearch(
         PodcastDetail(
             modifier = Modifier.background(MaterialTheme.colorScheme.background),
             podcast = it,
-            episodes = podcastEpisodes
+            episodes = podcastEpisodes,
+            onUpdateSubscription = {
+                searchViewModel.updatePodcastSubscription(it, !it.subscribed, true)
+            }
         ) {
             searchViewModel.selectPodcast(null)
         }

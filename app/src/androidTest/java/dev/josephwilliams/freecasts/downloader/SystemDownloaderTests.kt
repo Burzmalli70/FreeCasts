@@ -102,7 +102,8 @@ class SystemDownloaderTest {
             url = mockUrl,
             title = "Test Episode",
             description = "Downloading a test episode",
-            destinationFileName = fileName
+            destinationFileName = fileName,
+            subfolder = "test_pod"
         ) ?: throw AssertionError("downloadId should not be null")
 
         var receivedDownloadId: Long? = null
@@ -157,7 +158,8 @@ class SystemDownloaderTest {
             url = mockUrl,
             title = "Non Existent Episode",
             description = "Attempting to download a non-existent episode",
-            destinationFileName = fileName
+            destinationFileName = fileName,
+            subfolder = "test_pod"
         )
 
         downloadId ?: throw AssertionError("downloadId should not be null")
