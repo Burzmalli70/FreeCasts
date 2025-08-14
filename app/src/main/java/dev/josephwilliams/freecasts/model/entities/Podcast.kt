@@ -14,6 +14,9 @@ data class Podcast(
     @SerialName("collectionName")
     val title: String = "",
 
+    @SerialName("trackId")
+    val podcastApiId: Long = 0,
+
     @SerialName("artistName")
     val author: String? = null,
 

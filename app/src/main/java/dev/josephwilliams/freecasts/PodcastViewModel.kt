@@ -28,49 +28,21 @@ class PodcastViewModel(
 
     val subscribedPodcasts: Flow<List<Podcast>> = repository.getSubscribedPodcasts()
 
-    private val _downloadEvents = MutableSharedFlow<Pair<Long, DownloadStatusInfo?>>()
-    val downloadEvents: SharedFlow<Pair<Long, DownloadStatusInfo?>> = _downloadEvents.asSharedFlow()
+    private val downloadsInProgress = mutableMapOf<Long, Episode>() // downloadId to original URL or identifier
 
-    private val downloadsInProgress = mutableMapOf<Long, String>() // downloadId to original URL or identifier
-
-    fun downloadEpisode(episodeUrl: String, title: String, podcastName: String, fileName: String) {
+    fun downloadEpisode(episode: Episode) {
         val downloadId = systemDownloader.startDownload(
-            url = episodeUrl,
-            title = title,
-            description = "Downloading $title",
-            subfolder = podcastName,
-            destinationFileName = fileName
+            episode
         )
 
         if (downloadId != null) {
-            downloadsInProgress[downloadId] = episodeUrl
+            downloadsInProgress[downloadId] = episode
             // You might want to store this downloadId in your Room database
             // associated with the episode to track its status later.
-            Log.d("PodcastViewModel", "Download started with ID: $downloadId for URL: $episodeUrl")
+            Log.d("PodcastViewModel", "Download started with ID: $downloadId for URL: ${episode.audioUrl}")
             // Start monitoring progress if needed (see section 4)
         } else {
-            Log.e("PodcastViewModel", "Failed to start download for URL: $episodeUrl")
-        }
-    }
-
-    // Function to check status, perhaps periodically or when view is active
-    fun checkDownloadProgress(downloadId: Long) {
-        viewModelScope.launch {
-            val statusInfo = systemDownloader.getDownloadStatus(downloadId)
-            _downloadEvents.emit(downloadId to statusInfo)
-            if (statusInfo?.isSuccessful == true || statusInfo?.isFailed == true) {
-                downloadsInProgress.remove(downloadId)
-            }
-            // Update your UI or Room database based on statusInfo
-            if (statusInfo != null) {
-                Log.d("PodcastViewModel", "Download ID $downloadId: Status ${statusInfo.status}, Progress: ${statusInfo.downloadedBytes}/${statusInfo.totalBytes}")
-                if (statusInfo.isSuccessful) {
-                    Log.d("PodcastViewModel", "File downloaded to: ${statusInfo.localUri}")
-                    // TODO: Update your Room entity with the local file path from statusInfo.localUri
-                    // You might need to convert the content URI to a file path if you need direct file access,
-                    // but often using the URI with a ContentResolver is better.
-                }
-            }
+            Log.e("PodcastViewModel", "Failed to start download for URL: ${episode.audioUrl}")
         }
     }
 

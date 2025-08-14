@@ -7,30 +7,44 @@ import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
+import dev.josephwilliams.freecasts.model.daos.EpisodeDao
+import dev.josephwilliams.freecasts.model.entities.Episode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.net.URL
 
-class SystemDownloader(private val context: Context) {
+class SystemDownloader(private val context: Context, private val episodeDao: EpisodeDao) {
 
     private val downloadManager = ContextCompat.getSystemService(context, DownloadManager::class.java)
 
+    suspend fun startDownload(episodeId: Long?): Long? {
+        if (downloadManager == null) {
+            Toast.makeText(context, "DownloadManager not available", Toast.LENGTH_LONG).show()
+            return null
+        }
+
+        episodeId ?: return null
+        val episode = episodeDao.getEpisodeById(episodeId) ?: return null
+        return startDownload(episode)
+    }
+
     fun startDownload(
-        url: String,
-        title: String,
-        description: String,
-        subfolder: String,
-        destinationFileName: String
+        episode: Episode
     ): Long? {
         if (downloadManager == null) {
             Toast.makeText(context, "DownloadManager not available", Toast.LENGTH_LONG).show()
             return null
         }
 
-        val targetFolder = "${Environment.DIRECTORY_PODCASTS}/$subfolder"
+        val mimeType = URL(episode.audioUrl).openConnection().contentType.split("/").last()
+        val ep = episode.copy(mimeExtension = mimeType)
 
-        val request = DownloadManager.Request(Uri.parse(url))
-            .setTitle(title)
-            .setDescription(description)
+        val targetFolder = "${Environment.DIRECTORY_PODCASTS}/${ep.folderPath}"
+
+        val request = DownloadManager.Request(ep.audioUrl?.toUri())
+            .setTitle(ep.title)
+            .setDescription(ep.description)
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setAllowedOverMetered(true)
             .setAllowedOverRoaming(false)
@@ -40,7 +54,7 @@ class SystemDownloader(private val context: Context) {
             if (!destinationDir.exists()) {
                 destinationDir.mkdirs()
             }
-            request.setDestinationInExternalFilesDir(context, targetFolder, destinationFileName)
+            request.setDestinationInExternalFilesDir(context, targetFolder, ep.title)
         } else {
             Toast.makeText(context, "Cannot access app-specific storage", Toast.LENGTH_LONG).show()
             return null

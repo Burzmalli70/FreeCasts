@@ -7,10 +7,13 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Environment
 import androidx.core.content.ContextCompat
+import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.google.common.truth.Truth.assertThat
+import dev.josephwilliams.freecasts.model.PodcastDatabase
+import dev.josephwilliams.freecasts.model.entities.Episode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
@@ -52,7 +55,10 @@ class SystemDownloaderTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        systemDownloader = SystemDownloader(context)
+        val db = Room.inMemoryDatabaseBuilder(context, PodcastDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        systemDownloader = SystemDownloader(context, db.episodeDao())
         mockWebServer = MockWebServer()
         mockWebServer.start()
 
@@ -98,12 +104,17 @@ class SystemDownloaderTest {
 
         if (expectedAppSpecificFile.exists()) expectedAppSpecificFile.delete()
 
-        val downloadId = systemDownloader.startDownload(
-            url = mockUrl,
+        val episode = Episode(
+            podcastId = null,
             title = "Test Episode",
             description = "Downloading a test episode",
-            destinationFileName = fileName,
-            subfolder = "test_pod"
+            audioUrl = mockUrl,
+            podcastTitle = "Test Podcast",
+            duration = 300
+        )
+
+        val downloadId = systemDownloader.startDownload(
+            episode
         ) ?: throw AssertionError("downloadId should not be null")
 
         var receivedDownloadId: Long? = null
@@ -154,13 +165,16 @@ class SystemDownloaderTest {
             MockResponse().setResponseCode(404)
         )
 
-        val downloadId = systemDownloader.startDownload(
-            url = mockUrl,
-            title = "Non Existent Episode",
-            description = "Attempting to download a non-existent episode",
-            destinationFileName = fileName,
-            subfolder = "test_pod"
+        val episode = Episode(
+            podcastId = null,
+            title = "Test Episode",
+            description = "Downloading a test episode",
+            audioUrl = mockUrl,
+            podcastTitle = "Test Podcast",
+            duration = 300
         )
+
+        val downloadId = systemDownloader.startDownload(episode)
 
         downloadId ?: throw AssertionError("downloadId should not be null")
 

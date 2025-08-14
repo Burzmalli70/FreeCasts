@@ -25,15 +25,15 @@ data class Episode(
     @ColumnInfo(name = "podcast_id")
     val podcastId: Long? = null,
 
+    @ColumnInfo
+    val podcastTitle: String? = null,
+
     val title: String? = null,
 
     val description: String? = null,
 
     @ColumnInfo(name = "audio_url")
     val audioUrl: String? = null,
-
-    @ColumnInfo(name = "local_uri")
-    val localUri: String? = null,
 
     val duration: Long? = null,
 
@@ -48,5 +48,14 @@ data class Episode(
 
     val favorite: Boolean = false,
 
-    val downloaded: Boolean = false
-)
+    val downloaded: Boolean = false,
+
+    @ColumnInfo(name = "mime_extension")
+    val mimeExtension: String? = "mp3"
+) {
+    val folderPath: String
+        get() = podcastTitle ?: "Unknown Podcast"
+
+    val path: String
+        get() = "$folderPath/${title ?: "Unknown Episode"}.$mimeExtension"
+}

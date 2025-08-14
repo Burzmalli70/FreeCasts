@@ -5,6 +5,7 @@ import dev.josephwilliams.freecasts.downloader.SystemDownloader
 import dev.josephwilliams.freecasts.model.PodcastDatabase
 import dev.josephwilliams.freecasts.network.iTunesAPI
 import dev.josephwilliams.freecasts.repositories.PodcastRepository
+import dev.josephwilliams.freecasts.ui.screens.downloads.DownloadsViewModel
 import dev.josephwilliams.freecasts.ui.screens.playlists.PlaylistsViewModel
 import dev.josephwilliams.freecasts.ui.screens.search.SearchViewModel
 import dev.josephwilliams.freecasts.ui.screens.settings.SettingsViewModel
@@ -20,10 +21,11 @@ val databaseModule = module {
     single { get<PodcastDatabase>().podcastDao() }
     single { get<PodcastDatabase>().episodeDao() }
     single { get<PodcastDatabase>().playlistDao() }
+    single { get<PodcastDatabase>().downloadDao() }
 }
 
 val downloaderModule = module {
-    single { SystemDownloader(androidApplication()) }
+    single { SystemDownloader(androidApplication(), get()) }
 }
 
 val itunesModule = module {
@@ -37,6 +39,7 @@ val viewModelModule = module {
     viewModel { SearchViewModel(get()) }
     viewModel { SettingsViewModel() }
     viewModel { PlaylistsViewModel(get()) }
+    viewModel { DownloadsViewModel(get()) }
 }
 
 val repositoryModule = module {
