@@ -1,0 +1,10 @@
+<description-single-line>Creating Podcasts</description-single-line>
+<description-with-html><p>Every May brings us a heck of a lot of caps and gowns, as well as various commencement speakers, and today we'll be watching one of them from a school near and dear to all wokie hearts. I wish it were Kermit the Frog or Jennifer Coolidge, but alas.</p></description-with-html>
+<description-multiline>Today, a conversation with Amanda Knox about her life after she was exonerated by an Italian court for the murder of her roommate – and what it’s like when everyone has an opinion about you.
+
+Amanda Knox’s new memoir is Free: My Search for Meaning.
+
+Thank you for being a member of Criminal Plus. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850.
+
+Say hello on Facebook and Instagram. We also make This is Love and Phoebe Reads a Mystery which you can subscribe to ad-free on your account page.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description-multiline>
