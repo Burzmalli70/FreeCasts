@@ -1,0 +1,561 @@
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:googleplay="http://www.google.com/schemas/play-podcasts/1.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel><itunes:block>Yes</itunes:block>
+    <atom:link   href="https://plus.thisiscriminal.com/content/eyJ0IjoicCIsImMiOiI0NjE0IiwidSI6IjExOTAwMjEiLCJkIjoiMTY4MTMwNTIxNSIsImsiOjQ3OH18YTNlNDhhODExMmIxOWM2NmE3ZTA2NTM0ZWJhNjQxMzFmZWE2MzRjMjcyOTdkZWY2YWViODgyNGQzNTQ2MDY4Yg.rss" rel="self" type="application/rss+xml"/>
+    <title>Criminal Plus (Ad-Free with Bonus Episodes)</title>
+    <link>http://criminal.supportingcast.fm</link>
+    <language>en</language>
+    <copyright>Copyright 2021, Criminal Productions </copyright>
+    <description>This members-only feed includes ad-free episodes of Criminal, plus twice monthly episodes from Phoebe Judge and Criminal co-creator Lauren Spohrer that take you behind the scenes.
+Learn more about your Criminal Plus membership at thisiscriminal.com/plus.</description>
+    <image>
+      <url>https://megaphone.imgix.net/podcasts/78824876-ff2f-11ed-b011-b3be074fd696/image/CRIMPlus_CrimTile3000.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress</url>
+      <title>Criminal Plus (Ad-Free with Bonus Episodes)</title>
+      <link>http://criminal.supportingcast.fm</link>
+    </image>
+    <itunes:explicit>no</itunes:explicit>
+    <itunes:type>episodic</itunes:type>
+    <itunes:subtitle>Exclusive subscription feed for Criminal Plus members. </itunes:subtitle>
+    <itunes:author>Vox Media Podcast Network</itunes:author>
+    <itunes:summary>This members-only feed includes ad-free episodes of Criminal, plus twice monthly episodes from Phoebe Judge and Criminal co-creator Lauren Spohrer that take you behind the scenes.
+Learn more about your Criminal Plus membership at thisiscriminal.com/plus.</itunes:summary>
+    <content:encoded>
+      <![CDATA[<p>This members-only feed includes ad-free episodes of <em>Criminal</em>, plus twice monthly episodes from Phoebe Judge and <em>Criminal</em> co-creator Lauren Spohrer that take you behind the scenes.</p><p>Learn more about your Criminal Plus membership at <a href="http://thisiscriminal.com/plus">thisiscriminal.com/plus</a>.</p>]]>
+    </content:encoded>
+    <itunes:owner>
+      <itunes:name>Vox Media Podcast Network</itunes:name>
+      <itunes:email>liana.greenway@voxmedia.com </itunes:email>
+    </itunes:owner>
+    <itunes:image href="https://megaphone.imgix.net/podcasts/78824876-ff2f-11ed-b011-b3be074fd696/image/CRIMPlus_CrimTile3000.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+    <itunes:category text="True Crime">
+    </itunes:category>
+    <itunes:category text="Society &amp; Culture">
+      <itunes:category text="Documentary"/>
+    </itunes:category>
+    <item>
+      <title>Death in Eden</title>
+      <link>https://thisiscriminal.com</link>
+      <description>In the early 1930s, eight people settled on an uninhabited island in the Galapagos. Within five years, two were missing and two were dead.
+
+Abbott Kahler’s book is Eden Undone: A True Story of Sex, Murder, and Utopia at the Dawn of World War II.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description>
+      <pubDate>Fri, 25 Jul 2025 08:00:00 -0000</pubDate>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:episode>326</itunes:episode>
+      <itunes:author>Vox Media Podcast Network</itunes:author>
+      <itunes:image href="https://megaphone.imgix.net/podcasts/21cfbb88-60be-11f0-99a3-f7599c093b67/image/1d5a6ceae05fab492731ddae9fa83ac4.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+      <itunes:subtitle>In the early 1930s, eight people settled on an uninhabited island in the Galapagos. Within five years, two were missing and two were dead. </itunes:subtitle>
+      <itunes:summary>In the early 1930s, eight people settled on an uninhabited island in the Galapagos. Within five years, two were missing and two were dead.
+
+Abbott Kahler’s book is Eden Undone: A True Story of Sex, Murder, and Utopia at the Dawn of World War II.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</itunes:summary>
+      <content:encoded>
+        <![CDATA[<p>In the early 1930s, eight people settled on an uninhabited island in the Galapagos. Within five years, two were missing and two were dead.</p>
+<p>Abbott Kahler’s book is <a href="https://www.penguinrandomhouse.com/books/549473/eden-undone-by-abbott-kahler/"><em>Eden Undone: A True Story of Sex, Murder, and Utopia at the Dawn of World War II</em></a>.</p>
+<p>Thank you very much for being a member of <a href="https://plus.thisiscriminal.com/"><u>Criminal Plus</u></a>! We’re grateful for your support.</p>
+<p>Say hello on <a href="https://www.facebook.com/ThisIsCriminal/"><u>Facebook</u></a> and <a href="https://www.instagram.com/criminal_podcast/"><u>Instagram</u></a>.</p>
+<p>We also make <em>This is Love </em>and <em>Phoebe Reads a Mystery</em>. Listen to them ad-free by adding them to your podcast player from your Criminal Plus <a href="https://plus.thisiscriminal.com/subscription/"><u>account page</u></a>.</p>
+<p>Artwork by <a href="http://www.yssrs.com/"><u>Julienne Alexander</u></a>.</p>
+<p>Episode transcripts are posted on <a href="https://thisiscriminal.com/"><u>our website</u></a>.</p><p> </p><p>Learn more about your ad choices. Visit <a href="https://podcastchoices.com/adchoices">podcastchoices.com/adchoices</a></p>]]>
+      </content:encoded>
+      <itunes:duration>2417</itunes:duration>
+      <guid isPermaLink="false"><![CDATA[21cfbb88-60be-11f0-99a3-f7599c093b67]]></guid>
+      <enclosure url="https://plus.thisiscriminal.com/content/eyJ0IjoicyIsImMiOiIxNjM5MjU2MCIsInUiOiIxMTkwMDIxIiwiZCI6IjE3NTM0MzA1ODYiLCJrIjo0Nzh9fDQ5ZDg5NWU2NGM1NzExNmYwOTE0NDBkMzY2ZDViOWFhY2RjYTFjOWYyYjAwZGQxNjQ0ZmUwNzk1ZTc5MDZhODk.mp3" length="0" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>The Double</title>
+      <link>https://thisiscriminal.com/</link>
+      <description>In 2023, two men told police the same story: each man said that his name was William Woods, and that his identity had been stolen.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description>
+      <pubDate>Fri, 18 Jul 2025 08:00:00 -0000</pubDate>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:episode>325</itunes:episode>
+      <itunes:author>Vox Media Podcast Network</itunes:author>
+      <itunes:image href="https://megaphone.imgix.net/podcasts/4cad0c5e-5b67-11f0-81ea-2ff5471fecb3/image/5f493e62b47ac88ff378341b83d90043.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+      <itunes:subtitle>In 2023, two men told police the same story: each man said that his name was William Woods, and that his identity had been stolen. </itunes:subtitle>
+      <itunes:summary>In 2023, two men told police the same story: each man said that his name was William Woods, and that his identity had been stolen.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</itunes:summary>
+      <content:encoded>
+        <![CDATA[<p>In 2023, two men told police the same story: each man said that his name was William Woods, and that his identity had been stolen.</p>
+<p>Thank you very much for being a member of <a href="https://plus.thisiscriminal.com/"><u>Criminal Plus</u></a>! We’re grateful for your support.</p>
+<p>Say hello on <a href="https://www.facebook.com/ThisIsCriminal/"><u>Facebook</u></a> and <a href="https://www.instagram.com/criminal_podcast/"><u>Instagram</u></a>.</p>
+<p>We also make <em>This is Love </em>and <em>Phoebe Reads a Mystery</em>. Listen to them ad-free by adding them to your podcast player from your Criminal Plus <a href="https://plus.thisiscriminal.com/subscription/"><u>account page</u></a>.</p>
+<p>Artwork by <a href="http://www.yssrs.com/"><u>Julienne Alexander</u></a>.</p>
+<p>Episode transcripts are posted on <a href="https://thisiscriminal.com/"><u>our website</u></a>.</p><p> </p><p>Learn more about your ad choices. Visit <a href="https://podcastchoices.com/adchoices">podcastchoices.com/adchoices</a></p>]]>
+      </content:encoded>
+      <itunes:duration>1964</itunes:duration>
+      <guid isPermaLink="false"><![CDATA[4cad0c5e-5b67-11f0-81ea-2ff5471fecb3]]></guid>
+      <enclosure url="https://plus.thisiscriminal.com/content/eyJ0IjoicyIsImMiOiIxNjMwNTI5NyIsInUiOiIxMTkwMDIxIiwiZCI6IjE3NTI4MjU3OTEiLCJrIjo0Nzh9fDllN2E2NTlkNTI2MDgyZjEzMTY3MDA3NzRiMzEzN2UwODY2NzY4NWMxMTU1ZjRmNTM1YjE0MjE5NDE2ZjVjZDA.mp3" length="0" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>Going Undercover (Criminal+)</title>
+      <link>https://plus.thisiscriminal.com/</link>
+      <description>Phoebe tells a story about witnessing an undercover operation – and Lauren talks about her own experience going undercover. Plus: a sunscreen recommendation, illegal baby names, and summer reading updates.
+
+Thank you for being a member of Criminal Plus. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850.
+
+Say hello on Facebook and Instagram. We also make This is Love and Phoebe Reads a Mystery which you can subscribe to ad-free on your account page.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description>
+      <pubDate>Thu, 17 Jul 2025 07:00:00 -0000</pubDate>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Vox Media Podcast Network</itunes:author>
+      <itunes:image href="https://megaphone.imgix.net/podcasts/cf7c994e-60fb-11f0-915d-bf5bbae5fa50/image/9c097c5b9045e2d3b28afe088a0351eb.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+      <itunes:subtitle>Phoebe tells a story about witnessing an undercover operation – and Lauren talks about her own experience going undercover. Plus: a sunscreen recommendation, illegal baby names, and summer reading updates.</itunes:subtitle>
+      <itunes:summary>Phoebe tells a story about witnessing an undercover operation – and Lauren talks about her own experience going undercover. Plus: a sunscreen recommendation, illegal baby names, and summer reading updates.
+
+Thank you for being a member of Criminal Plus. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850.
+
+Say hello on Facebook and Instagram. We also make This is Love and Phoebe Reads a Mystery which you can subscribe to ad-free on your account page.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</itunes:summary>
+      <content:encoded>
+        <![CDATA[<p>Phoebe tells a story about witnessing an undercover operation – and Lauren talks about her own experience going undercover. Plus: a sunscreen recommendation, illegal baby names, and summer reading updates.</p>
+<p>Thank you for being a member of <a href="https://plus.thisiscriminal.com/"><u>Criminal Plus</u></a>. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850.</p>
+<p>Say hello on <a href="https://www.facebook.com/ThisIsCriminal/"><u>Facebook</u></a> and <a href="https://www.instagram.com/criminal_podcast/"><u>Instagram</u></a>. We also make <em>This is Love</em> and <em>Phoebe Reads a Mystery</em> which you can subscribe to ad-free on your <a href="https://plus.thisiscriminal.com/subscription/"><u>account page</u></a>.</p><p> </p><p>Learn more about your ad choices. Visit <a href="https://podcastchoices.com/adchoices">podcastchoices.com/adchoices</a></p>]]>
+      </content:encoded>
+      <itunes:duration>2373</itunes:duration>
+      <guid isPermaLink="false"><![CDATA[cf7c994e-60fb-11f0-915d-bf5bbae5fa50]]></guid>
+      <enclosure url="https://plus.thisiscriminal.com/content/eyJ0IjoicyIsImMiOiIxNjI5MDU4NyIsInUiOiIxMTkwMDIxIiwiZCI6IjE3NTI3MzU3OTAiLCJrIjo0Nzh9fGNhNjE4MDAyZGQ1Y2IzYTc2MWYzZTIyNDA2OGFhOWQ4ZDkxMjI2MzI3ZGVhYzM1ZTgzOThlZmRhMWM3Mzg2MjI.mp3" length="0" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>The Man Nobody Killed</title>
+      <link>https://thisiscriminal.com/</link>
+      <description>On September 15, 1983, Michael Stewart was on his way home from a nightclub in New York when police arrested him. Thirteen days later, he was dead.
+
+Elon Green’s book is The Man Nobody Killed: Life, Death, and Art in Michael Stewart’s New York.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description>
+      <pubDate>Fri, 11 Jul 2025 08:00:00 -0000</pubDate>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:episode>324</itunes:episode>
+      <itunes:author>Vox Media Podcast Network</itunes:author>
+      <itunes:image href="https://megaphone.imgix.net/podcasts/27ceadf6-2d14-11f0-aba8-676325473af9/image/0be3840f725b3acc1b66de25389e39b3.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+      <itunes:subtitle>On September 15, 1983, Michael Stewart was on his way home from a nightclub when police arrested him. Thirteen days later, he was dead. </itunes:subtitle>
+      <itunes:summary>On September 15, 1983, Michael Stewart was on his way home from a nightclub in New York when police arrested him. Thirteen days later, he was dead.
+
+Elon Green’s book is The Man Nobody Killed: Life, Death, and Art in Michael Stewart’s New York.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</itunes:summary>
+      <content:encoded>
+        <![CDATA[<p>On September 15, 1983, Michael Stewart was on his way home from a nightclub in New York when police arrested him. Thirteen days later, he was dead.</p>
+<p>Elon Green’s book is <a href="https://us.macmillan.com/books/9781250898227/themannobodykilled/"><em>The Man Nobody Killed: Life, Death, and Art in Michael Stewart’s New York</em></a><em>. </em></p>
+<p>Thank you very much for being a member of <a href="https://plus.thisiscriminal.com/"><u>Criminal Plus</u></a>! We’re grateful for your support.</p>
+<p>Say hello on <a href="https://www.facebook.com/ThisIsCriminal/"><u>Facebook</u></a> and <a href="https://www.instagram.com/criminal_podcast/"><u>Instagram</u></a>.</p>
+<p>We also make <em>This is Love </em>and <em>Phoebe Reads a Mystery</em>. Listen to them ad-free by adding them to your podcast player from your Criminal Plus <a href="https://plus.thisiscriminal.com/subscription/"><u>account page</u></a>.</p>
+<p>Artwork by <a href="http://www.yssrs.com/"><u>Julienne Alexander</u></a>.</p>
+<p>Episode transcripts are posted on <a href="https://thisiscriminal.com/"><u>our website</u></a>.</p><p> </p><p>Learn more about your ad choices. Visit <a href="https://podcastchoices.com/adchoices">podcastchoices.com/adchoices</a></p>]]>
+      </content:encoded>
+      <itunes:duration>2754</itunes:duration>
+      <guid isPermaLink="false"><![CDATA[27ceadf6-2d14-11f0-aba8-676325473af9]]></guid>
+      <enclosure url="https://plus.thisiscriminal.com/content/eyJ0IjoicyIsImMiOiIxNjIyNTIzNyIsInUiOiIxMTkwMDIxIiwiZCI6IjE3NTIyMjA5NzgiLCJrIjo0Nzh9fDcyN2NmMTAyOGM0N2VjYzIzMDUwZTgxZDkzM2E1MTYzY2RjNzdkZjgxYTQ0MzgyZmRjNjdmYTBlYzcxNmM5Mjc.mp3" length="0" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>The Clearwater Monster</title>
+      <link>https://thisiscriminal.com/</link>
+      <description>Early one morning in 1948, a phone call woke up the police chief in the small town of Clearwater, Florida. The caller said he’d seen something strange at the beach. Residents had found an odd set of footprints in the sand, and a rumor began circulating that Clearwater Beach had a sea monster.
+
+Listen to other episodes of This is Love at https://thisislovepodcast.com/.
+
+This episode was first released in 2020.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description>
+      <pubDate>Fri, 04 Jul 2025 08:00:00 -0000</pubDate>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:episode>323</itunes:episode>
+      <itunes:author>Vox Media Podcast Network</itunes:author>
+      <itunes:image href="https://megaphone.imgix.net/podcasts/cafb48be-2133-11f0-bfbb-236feb34a70f/image/0ab2985d4d097adebdd4cd089cc29b81.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+      <itunes:subtitle>Early one morning in 1948, a phone call woke up the police chief in the small town of Clearwater, Florida. The caller said he’d seen something strange at the beach. Residents had found an odd set of footprints in the sand, and a rumor began circulating that Clearwater Beach had a sea monster.</itunes:subtitle>
+      <itunes:summary>Early one morning in 1948, a phone call woke up the police chief in the small town of Clearwater, Florida. The caller said he’d seen something strange at the beach. Residents had found an odd set of footprints in the sand, and a rumor began circulating that Clearwater Beach had a sea monster.
+
+Listen to other episodes of This is Love at https://thisislovepodcast.com/.
+
+This episode was first released in 2020.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</itunes:summary>
+      <content:encoded>
+        <![CDATA[<p>Early one morning in 1948, a phone call woke up the police chief in the small town of Clearwater, Florida. The caller said he’d seen something strange at the beach. Residents had found an odd set of footprints in the sand, and a rumor began circulating that Clearwater Beach had a sea monster.</p>
+<p>Listen to other episodes of <em>This is Love</em> at <a href="https://thisislovepodcast.com/"><u>https://thisislovepodcast.com/</u></a>.</p>
+<p><em>This episode was first released in 2020.</em></p>
+<p>Thank you very much for being a member of <a href="https://plus.thisiscriminal.com/"><u>Criminal Plus</u></a>! We’re grateful for your support.</p>
+<p>Say hello on <a href="https://www.facebook.com/ThisIsCriminal/"><u>Facebook</u></a> and <a href="https://www.instagram.com/criminal_podcast/"><u>Instagram</u></a>.</p>
+<p>We also make <em>This is Love </em>and <em>Phoebe Reads a Mystery</em>. Listen to them ad-free by adding them to your podcast player from your Criminal Plus <a href="https://plus.thisiscriminal.com/subscription/"><u>account page</u></a>.</p>
+<p>Artwork by <a href="http://www.yssrs.com/"><u>Julienne Alexander</u></a>.</p>
+<p>Episode transcripts are posted on <a href="https://thisiscriminal.com/"><u>our website</u></a>.</p><p> </p><p>Learn more about your ad choices. Visit <a href="https://podcastchoices.com/adchoices">podcastchoices.com/adchoices</a></p>]]>
+      </content:encoded>
+      <itunes:duration>1832</itunes:duration>
+      <guid isPermaLink="false"><![CDATA[cafb48be-2133-11f0-bfbb-236feb34a70f]]></guid>
+      <enclosure url="https://plus.thisiscriminal.com/content/eyJ0IjoicyIsImMiOiIxNjE0Njk2NSIsInUiOiIxMTkwMDIxIiwiZCI6IjE3NTE2MTYxNzkiLCJrIjo0Nzh9fDM1MTA5MzA3NDY4OWU3OTZiNWQ0NzNhMjhiYzEwMjcyYTdiMzI0ZGQ0N2EzNWMzZTc0NjlmZTdkYjU3NmY4MzE.mp3" length="0" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>Hot Dog Taste Test (Criminal+)</title>
+      <link>https://plus.thisiscriminal.com/</link>
+      <description>Just in time for the Fourth of July – Phoebe and Lauren do a taste test to pick the best hot dog you can buy. Plus, Phoebe teaches us how to cook a perfect hot dog. “I don’t say I know much about everything, but I do know a lot about hot dogs.”
+
+For more, listen to our brand new This is Love episode, “Hot Dog!”
+
+Thank you for being a member of Criminal Plus. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850.
+
+Say hello on Facebook and Instagram. We also make This is Love and Phoebe Reads a Mystery which you can subscribe to ad-free on your account page.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description>
+      <pubDate>Thu, 03 Jul 2025 07:00:00 -0000</pubDate>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Vox Media Podcast Network</itunes:author>
+      <itunes:image href="https://megaphone.imgix.net/podcasts/56e946b0-373b-11f0-b630-776fb44a2975/image/9c097c5b9045e2d3b28afe088a0351eb.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+      <itunes:subtitle>Just in time for the Fourth of July – Phoebe and Lauren do a taste test to pick the best hot dog you can buy. Plus, Phoebe teaches us how to cook a perfect hot dog. “I don’t say I know much about everything, but I do know a lot about hot dogs.”</itunes:subtitle>
+      <itunes:summary>Just in time for the Fourth of July – Phoebe and Lauren do a taste test to pick the best hot dog you can buy. Plus, Phoebe teaches us how to cook a perfect hot dog. “I don’t say I know much about everything, but I do know a lot about hot dogs.”
+
+For more, listen to our brand new This is Love episode, “Hot Dog!”
+
+Thank you for being a member of Criminal Plus. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850.
+
+Say hello on Facebook and Instagram. We also make This is Love and Phoebe Reads a Mystery which you can subscribe to ad-free on your account page.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</itunes:summary>
+      <content:encoded>
+        <![CDATA[<p>Just in time for the Fourth of July – Phoebe and Lauren do a taste test to pick the best hot dog you can buy. Plus, Phoebe teaches us how to cook a perfect hot dog. “I don’t say I know much about everything, but I do know a lot about hot dogs.”</p>
+<p>For more, listen to our brand new <em>This is Love</em> episode, “<a href="https://pod.link/1337100398/episode/a7e48d6a3db8fff09f79d2796f1fbe86"><u>Hot Dog!</u></a>”</p>
+<p>Thank you for being a member of <a href="https://plus.thisiscriminal.com/"><u>Criminal Plus</u></a>. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850.</p>
+<p>Say hello on <a href="https://www.facebook.com/ThisIsCriminal/"><u>Facebook</u></a> and <a href="https://www.instagram.com/criminal_podcast/"><u>Instagram</u></a>. We also make <em>This is Love</em> and <em>Phoebe Reads a Mystery</em> which you can subscribe to ad-free on your <a href="https://plus.thisiscriminal.com/subscription/"><u>account page</u></a>.</p><p> </p><p>Learn more about your ad choices. Visit <a href="https://podcastchoices.com/adchoices">podcastchoices.com/adchoices</a></p>]]>
+      </content:encoded>
+      <itunes:duration>2290</itunes:duration>
+      <guid isPermaLink="false"><![CDATA[56e946b0-373b-11f0-b630-776fb44a2975]]></guid>
+      <enclosure url="https://plus.thisiscriminal.com/content/eyJ0IjoicyIsImMiOiIxNjEzNDMxMyIsInUiOiIxMTkwMDIxIiwiZCI6IjE3NTE1MjYxODUiLCJrIjo0Nzh9fDEwNGI2NTVkOTRjZGYyOGNhMjU3NTQyZWZmNDFhZjAyMzgzZmY2YWIwOTc5NDAzYjc2YzQ0NDAyMmFlZDg2NWI.mp3" length="0" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>Uncle Harold</title>
+      <link>https://thisiscriminal.com/</link>
+      <description>In 1997, Eric Konigsberg received a strange voicemail from someone in prison — a hit man who had confessed to at least ten murders. Eric and the man had never spoken before, but Eric had a hunch about who it was: his uncle.
+
+Eric Konigsberg’s book is Blood Relation.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description>
+      <pubDate>Fri, 27 Jun 2025 08:00:00 -0000</pubDate>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:episode>322</itunes:episode>
+      <itunes:author>Vox Media Podcast Network</itunes:author>
+      <itunes:image href="https://megaphone.imgix.net/podcasts/c6b9bfd0-2131-11f0-a250-2b6d2d42b37f/image/bb9d3ece84fe322b2ff7edfacef21a19.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+      <itunes:subtitle>In 1997, Eric Konigsberg received a strange voicemail from someone in prison — a hit man who had confessed to at least ten murders. Eric and the man had never spoken before, but Eric had a hunch about who it was: his uncle.</itunes:subtitle>
+      <itunes:summary>In 1997, Eric Konigsberg received a strange voicemail from someone in prison — a hit man who had confessed to at least ten murders. Eric and the man had never spoken before, but Eric had a hunch about who it was: his uncle.
+
+Eric Konigsberg’s book is Blood Relation.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</itunes:summary>
+      <content:encoded>
+        <![CDATA[<p>In 1997, Eric Konigsberg received a strange voicemail from someone in prison — a hit man who had confessed to at least ten murders. Eric and the man had never spoken before, but Eric had a hunch about who it was: his uncle.</p>
+<p>Eric Konigsberg’s book is <a href="https://www.harpercollins.com/products/blood-relation-eric-konigsberg?variant=32207641608226"><em>Blood Relation</em></a>.</p>
+<p>Thank you very much for being a member of <a href="https://plus.thisiscriminal.com/"><u>Criminal Plus</u></a>! We’re grateful for your support.</p>
+<p>Say hello on <a href="https://www.facebook.com/ThisIsCriminal/"><u>Facebook</u></a> and <a href="https://www.instagram.com/criminal_podcast/"><u>Instagram</u></a>.</p>
+<p>We also make <em>This is Love </em>and <em>Phoebe Reads a Mystery</em>. Listen to them ad-free by adding them to your podcast player from your Criminal Plus <a href="https://plus.thisiscriminal.com/subscription/"><u>account page</u></a>.</p>
+<p>Artwork by <a href="http://www.yssrs.com/"><u>Julienne Alexander</u></a>.</p>
+<p>Episode transcripts are posted on <a href="https://thisiscriminal.com/"><u>our website</u></a>.</p><p> </p><p>Learn more about your ad choices. Visit <a href="https://podcastchoices.com/adchoices">podcastchoices.com/adchoices</a></p>]]>
+      </content:encoded>
+      <itunes:duration>1772</itunes:duration>
+      <guid isPermaLink="false"><![CDATA[c6b9bfd0-2131-11f0-a250-2b6d2d42b37f]]></guid>
+      <enclosure url="https://plus.thisiscriminal.com/content/eyJ0IjoicyIsImMiOiIxNjA2NTE0NCIsInUiOiIxMTkwMDIxIiwiZCI6IjE3NTEwMTEzNzkiLCJrIjo0Nzh9fGNkN2U2OTY0ZmVlYTU5ZjgyYmNjNzZiOWJjYzA0OTY0NmVkZWE5Mzc2YTFkNzE4YmY0NjI0ZDA2YmIyNThlMzc.mp3" length="0" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>Bonus: Phoebe Interviews Amanda Knox (Criminal+)</title>
+      <link>https://plus.thisiscriminal.com/</link>
+      <description>Today, a conversation with Amanda Knox about her life after she was exonerated by an Italian court for the murder of her roommate – and what it’s like when everyone has an opinion about you.
+
+Amanda Knox’s new memoir is Free: My Search for Meaning.
+
+Thank you for being a member of Criminal Plus. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850.
+
+Say hello on Facebook and Instagram. We also make This is Love and Phoebe Reads a Mystery which you can subscribe to ad-free on your account page.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description>
+      <pubDate>Thu, 26 Jun 2025 07:00:00 -0000</pubDate>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Vox Media Podcast Network</itunes:author>
+      <itunes:image href="https://megaphone.imgix.net/podcasts/6bf548e4-51dd-11f0-8a13-6f9311f1a552/image/9c097c5b9045e2d3b28afe088a0351eb.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+      <itunes:subtitle>A conversation with Amanda Knox about her life after she was exonerated by an Italian court for the murder of her roommate – and what it’s like when everyone has an opinion about you.</itunes:subtitle>
+      <itunes:summary>Today, a conversation with Amanda Knox about her life after she was exonerated by an Italian court for the murder of her roommate – and what it’s like when everyone has an opinion about you.
+
+Amanda Knox’s new memoir is Free: My Search for Meaning.
+
+Thank you for being a member of Criminal Plus. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850.
+
+Say hello on Facebook and Instagram. We also make This is Love and Phoebe Reads a Mystery which you can subscribe to ad-free on your account page.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</itunes:summary>
+      <content:encoded>
+        <![CDATA[<p>Today, a conversation with Amanda Knox about her life after she was exonerated by an Italian court for the murder of her roommate – and what it’s like when everyone has an opinion about you.</p>
+<p>Amanda Knox’s new memoir is <a href="https://www.hachettebookgroup.com/titles/amanda-knox/free/9781538770719/"><em>Free: My Search for Meaning</em></a>.</p>
+<p>Thank you for being a member of <a href="https://plus.thisiscriminal.com/"><u>Criminal Plus</u></a>. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850. </p>
+<p>Say hello on <a href="https://www.facebook.com/ThisIsCriminal/"><u>Facebook</u></a> and <a href="https://www.instagram.com/criminal_podcast/"><u>Instagram</u></a>. We also make <em>This is Love</em> and <em>Phoebe Reads a Mystery</em> which you can subscribe to ad-free on your <a href="https://plus.thisiscriminal.com/subscription/"><u>account page</u></a>.</p><p> </p><p>Learn more about your ad choices. Visit <a href="https://podcastchoices.com/adchoices">podcastchoices.com/adchoices</a></p>]]>
+      </content:encoded>
+      <itunes:duration>1617</itunes:duration>
+      <guid isPermaLink="false"><![CDATA[6bf548e4-51dd-11f0-8a13-6f9311f1a552]]></guid>
+      <enclosure url="https://plus.thisiscriminal.com/content/eyJ0IjoicyIsImMiOiIxNjA1MDQwNyIsInUiOiIxMTkwMDIxIiwiZCI6IjE3NTA5MjEzOTIiLCJrIjo0Nzh9fDJiNmFjYTQ4NTZmZThmZTI0OGNhZGI5MmQ5ZThkMzhlNjQ0MzQxOTU0N2JlNzBiZmUyMmNiZjQ0ZmE5OTFkZTM.mp3" length="0" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>By Any Means Necessary</title>
+      <link>https://thisiscriminal.com/</link>
+      <description>In July 2010, a woman was on vacation with her boyfriend of six years — they were traveling around Italy in a van. One day, she was looking for a pair of sunglasses in the glove box, and she found a passport. It had her boyfriend’s photo — but a different name.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description>
+      <pubDate>Fri, 20 Jun 2025 08:00:00 -0000</pubDate>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:episode>321</itunes:episode>
+      <itunes:author>Vox Media Podcast Network</itunes:author>
+      <itunes:image href="https://megaphone.imgix.net/podcasts/4df2102a-34c8-11f0-b01c-7b50192426e7/image/2bc62fe618e49051ac722f7d45bcc2e1.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+      <itunes:subtitle>In July 2010, a woman was on vacation with her boyfriend of six years. One day, she was looking for a pair of sunglasses in the glove box of their van, and she found a passport. It had her boyfriend’s photo — but a different name.</itunes:subtitle>
+      <itunes:summary>In July 2010, a woman was on vacation with her boyfriend of six years — they were traveling around Italy in a van. One day, she was looking for a pair of sunglasses in the glove box, and she found a passport. It had her boyfriend’s photo — but a different name.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</itunes:summary>
+      <content:encoded>
+        <![CDATA[<p>In July 2010, a woman was on vacation with her boyfriend of six years — they were traveling around Italy in a van. One day, she was looking for a pair of sunglasses in the glove box, and she found a passport. It had her boyfriend’s photo — but a different name.</p>
+<p>Thank you very much for being a member of <a href="https://plus.thisiscriminal.com/"><u>Criminal Plus</u></a>! We’re grateful for your support.</p>
+<p>Say hello on <a href="https://www.facebook.com/ThisIsCriminal/"><u>Facebook</u></a> and <a href="https://www.instagram.com/criminal_podcast/"><u>Instagram</u></a>.</p>
+<p>We also make <em>This is Love </em>and <em>Phoebe Reads a Mystery</em>. Listen to them ad-free by adding them to your podcast player from your Criminal Plus <a href="https://plus.thisiscriminal.com/subscription/"><u>account page</u></a>.</p>
+<p>Artwork by <a href="http://www.yssrs.com/"><u>Julienne Alexander</u></a>.</p>
+<p>Episode transcripts are posted on <a href="https://thisiscriminal.com/"><u>our website</u></a>.</p><p> </p><p>Learn more about your ad choices. Visit <a href="https://podcastchoices.com/adchoices">podcastchoices.com/adchoices</a></p>]]>
+      </content:encoded>
+      <itunes:duration>2661</itunes:duration>
+      <guid isPermaLink="false"><![CDATA[4df2102a-34c8-11f0-b01c-7b50192426e7]]></guid>
+      <enclosure url="https://plus.thisiscriminal.com/content/eyJ0IjoicyIsImMiOiIxNTk4NDY2NyIsInUiOiIxMTkwMDIxIiwiZCI6IjE3NTA0MDY1NzgiLCJrIjo0Nzh9fDViOGJhYmIwMTQ0ZWM3M2U4NzA3ZWQ2MjliMWNkOTg0YjJlYzU1ZjcxMjFiMDYyYjQ2MGViNTBhMTZlMTkxZWQ.mp3" length="0" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>Beach Read Extravaganza (Criminal+)</title>
+      <link>https://plus.thisiscriminal.com/</link>
+      <description>A beach reads roundup! Phoebe and Lauren get summer reading recommendations from everyone on the team.
+
+Thank you for being a member of Criminal Plus. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850.
+
+Say hello on Facebook and Instagram. We also make This is Love and Phoebe Reads a Mystery which you can subscribe to ad-free on your account page.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description>
+      <pubDate>Thu, 19 Jun 2025 07:00:00 -0000</pubDate>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Vox Media Podcast Network</itunes:author>
+      <itunes:image href="https://megaphone.imgix.net/podcasts/23c40576-4c59-11f0-9333-674e00761134/image/9c097c5b9045e2d3b28afe088a0351eb.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+      <itunes:subtitle>A beach reads roundup! Phoebe and Lauren get summer reading recommendations from everyone on the team.</itunes:subtitle>
+      <itunes:summary>A beach reads roundup! Phoebe and Lauren get summer reading recommendations from everyone on the team.
+
+Thank you for being a member of Criminal Plus. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850.
+
+Say hello on Facebook and Instagram. We also make This is Love and Phoebe Reads a Mystery which you can subscribe to ad-free on your account page.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</itunes:summary>
+      <content:encoded>
+        <![CDATA[<p>A beach reads roundup! Phoebe and Lauren get summer reading recommendations from everyone on the team.</p>
+<p>Thank you for being a member of <a href="https://plus.thisiscriminal.com/"><u>Criminal Plus</u></a>. We’d love for you to send us your questions – give us a call and leave a message at (833) 822-7850.</p>
+<p>Say hello on <a href="https://www.facebook.com/ThisIsCriminal/"><u>Facebook</u></a> and <a href="https://www.instagram.com/criminal_podcast/"><u>Instagram</u></a>. We also make <em>This is Love</em> and <em>Phoebe Reads a Mystery</em> which you can subscribe to ad-free on your <a href="https://plus.thisiscriminal.com/subscription/"><u>account page</u></a>.</p><p> </p><p>Learn more about your ad choices. Visit <a href="https://podcastchoices.com/adchoices">podcastchoices.com/adchoices</a></p>]]>
+      </content:encoded>
+      <itunes:duration>2498</itunes:duration>
+      <guid isPermaLink="false"><![CDATA[23c40576-4c59-11f0-9333-674e00761134]]></guid>
+      <enclosure url="https://plus.thisiscriminal.com/content/eyJ0IjoicyIsImMiOiIxNTk3MTI5NCIsInUiOiIxMTkwMDIxIiwiZCI6IjE3NTAzMTY1ODMiLCJrIjo0Nzh9fGI5MWM2Yjk5ODA0MjlhOWYwYjkxYWZjZTA0N2JmMmJlOWNmZTYyYTIwMzE5MzI2MWVjZGFhYWFlNmQ0ZmMxMDc.mp3" length="0" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>The Guru</title>
+      <link>https://thisiscriminal.com/</link>
+      <description>In the late 1960s, a yogi named Swami Rama came to the United States. His followers believed he could read their minds, visit them in their dreams, and manipulate reality. Shruti Swamy was one of them.
+
+Shruti Swamy wrote a version of this story for the June 12th issue of The Believer. You can find it at https://www.thebeliever.net/.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description>
+      <pubDate>Fri, 13 Jun 2025 10:21:00 -0000</pubDate>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:episode>320</itunes:episode>
+      <itunes:author>Vox Media Podcast Network</itunes:author>
+      <itunes:image href="https://megaphone.imgix.net/podcasts/e082e6c4-4307-11f0-8d1f-77c1f11b06d5/image/9d86a8cbcde6299645ba74cf939f83e6.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+      <itunes:subtitle>In the late 1960s, a yogi named Swami Rama came to the United States. His followers believed he could read their minds, visit them in their dreams, and manipulate reality. Shruti Swamy was one of them.</itunes:subtitle>
+      <itunes:summary>In the late 1960s, a yogi named Swami Rama came to the United States. His followers believed he could read their minds, visit them in their dreams, and manipulate reality. Shruti Swamy was one of them.
+
+Shruti Swamy wrote a version of this story for the June 12th issue of The Believer. You can find it at https://www.thebeliever.net/.
+
+Thank you very much for being a member of Criminal Plus! We’re grateful for your support.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</itunes:summary>
+      <content:encoded>
+        <![CDATA[<p>In the late 1960s, a yogi named Swami Rama came to the United States. His followers believed he could read their minds, visit them in their dreams, and manipulate reality. Shruti Swamy was one of them.</p>
+<p>Shruti Swamy wrote a version of this story for the June 12th issue of <em>The Believer</em>. You can find it at <a href="https://www.thebeliever.net/">https://www.thebeliever.net/</a>.</p>
+<p>Thank you very much for being a member of <a href="https://plus.thisiscriminal.com/"><u>Criminal Plus</u></a>! We’re grateful for your support.</p>
+<p>Say hello on <a href="https://www.facebook.com/ThisIsCriminal/"><u>Facebook</u></a> and <a href="https://www.instagram.com/criminal_podcast/"><u>Instagram</u></a>.</p>
+<p>We also make <em>This is Love </em>and <em>Phoebe Reads a Mystery</em>. Listen to them ad-free by adding them to your podcast player from your Criminal Plus <a href="https://plus.thisiscriminal.com/subscription/"><u>account page</u></a>.</p>
+<p>Artwork by <a href="http://www.yssrs.com/"><u>Julienne Alexander</u></a>.</p>
+<p>Episode transcripts are posted on <a href="https://thisiscriminal.com/"><u>our website</u></a>.</p><p> </p><p>Learn more about your ad choices. Visit <a href="https://podcastchoices.com/adchoices">podcastchoices.com/adchoices</a></p>]]>
+      </content:encoded>
+      <itunes:duration>1828</itunes:duration>
+      <guid isPermaLink="false"><![CDATA[e082e6c4-4307-11f0-8d1f-77c1f11b06d5]]></guid>
+      <enclosure url="https://plus.thisiscriminal.com/content/eyJ0IjoicyIsImMiOiIxNTkwMjM3NyIsInUiOiIxMTkwMDIxIiwiZCI6IjE3NDk4MTAxODMiLCJrIjo0Nzh9fDM0MzA5OTlhZjRhOTBjZjI3NTM2NzBhYTYwNmUyZDk1ZmRmZTUyNWFmNDkzODI1OGRiODBhYWIyNjIxMmJkYmY.mp3" length="0" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>Professor Quaalude</title>
+      <link>https://thisiscriminal.com</link>
+      <description>John Buettner-Janusch was one of the first Americans to study lemurs. He held prestigious faculty positions at Yale, Duke and NYU, before surprising everyone with a series of increasingly bizarre crimes.
+
+Phoebe and Lauren got to visit the Duke Lemur Center in person – hear all about it in our latest episode of Criminal Plus. Thank you very much for being a member! We’re grateful for your support.
+
+Peter Kobel’s book is The Strange Case of the Mad Professor.
+
+This episode was first released in 2019.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</description>
+      <pubDate>Fri, 06 Jun 2025 08:00:00 -0000</pubDate>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:episode>319</itunes:episode>
+      <itunes:author>Vox Media Podcast Network</itunes:author>
+      <itunes:image href="https://megaphone.imgix.net/podcasts/b530b52e-1bba-11f0-bf8b-d3976a9c3ea6/image/7f02d865fedb051692937c7066f64847.png?ixlib=rails-4.3.1&amp;max-w=3000&amp;max-h=3000&amp;fit=crop&amp;auto=format,compress"/>
+      <itunes:subtitle>John Buettner-Janusch was one of the first Americans to study lemurs. He held prestigious faculty positions at Yale, Duke and NYU, before surprising everyone with a series of increasingly bizarre crimes.</itunes:subtitle>
+      <itunes:summary>John Buettner-Janusch was one of the first Americans to study lemurs. He held prestigious faculty positions at Yale, Duke and NYU, before surprising everyone with a series of increasingly bizarre crimes.
+
+Phoebe and Lauren got to visit the Duke Lemur Center in person – hear all about it in our latest episode of Criminal Plus. Thank you very much for being a member! We’re grateful for your support.
+
+Peter Kobel’s book is The Strange Case of the Mad Professor.
+
+This episode was first released in 2019.
+
+Say hello on Facebook and Instagram.
+
+We also make This is Love and Phoebe Reads a Mystery. Listen to them ad-free by adding them to your podcast player from your Criminal Plus account page.
+
+Artwork by Julienne Alexander.
+
+Episode transcripts are posted on our website.
+Learn more about your ad choices. Visit podcastchoices.com/adchoices</itunes:summary>
+      <content:encoded>
+        <![CDATA[<p>John Buettner-Janusch was one of the first Americans to study lemurs. He held prestigious faculty positions at Yale, Duke and NYU, before surprising everyone with a series of increasingly bizarre crimes.</p>
+<p>Phoebe and Lauren got to visit the Duke Lemur Center in person – hear all about it in our latest episode of <a href="https://plus.thisiscriminal.com/"><u>Criminal Plus</u></a>. Thank you very much for being a member! We’re grateful for your support.</p>
+<p>Peter Kobel’s book is <a href="https://www.globepequot.com/9780762773770/strange-case-of-the-mad-professor/"><em>The Strange Case of the Mad Professor</em></a>.</p>
+<p><em>This episode was first released in 2019.</em></p>
+<p>Say hello on <a href="https://www.facebook.com/ThisIsCriminal/"><u>Facebook</u></a> and <a href="https://www.instagram.com/criminal_podcast/"><u>Instagram</u></a>.</p>
+<p>We also make <em>This is Love </em>and <em>Phoebe Reads a Mystery</em>. Listen to them ad-free by adding them to your podcast player from your Criminal Plus <a href="https://plus.thisiscriminal.com/subscription/"><u>account page</u></a>.</p>
+<p>Artwork by <a href="http://www.yssrs.com/"><u>Julienne Alexander</u></a>.</p>
+<p>Episode transcripts are posted on <a href="https://thisiscriminal.com/"><u>our website</u></a>.</p><p> </p><p>Learn more about your ad choices. Visit <a href="https://podcastchoices.com/adchoices">podcastchoices.com/adchoices</a></p>]]>
+      </content:encoded>
+      <itunes:duration>1737</itunes:duration>
+      <guid isPermaLink="false"><![CDATA[b530b52e-1bba-11f0-bf8b-d3976a9c3ea6]]></guid>
+      <enclosure url="https://plus.thisiscriminal.com/content/eyJ0IjoicyIsImMiOiIxNTc0NjY5NyIsInUiOiIxMTkwMDIxIiwiZCI6IjE3NDkxOTY5ODYiLCJrIjo0Nzh9fDFhNWQ1ODllM2Y5YmQzNTUwZGJiMDM1ZDZmNTNkM2QyZmI5NzdmZmEzMDQ2MmJiZDRiYTVmYTM0ZjQyZGMxNjI.mp3" length="0" type="audio/mpeg"/>
+    </item>
+    </channel>
+</rss>

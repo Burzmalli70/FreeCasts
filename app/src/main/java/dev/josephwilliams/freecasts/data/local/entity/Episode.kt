@@ -30,19 +30,19 @@ data class Episode(
     val id: Long = 0,
     
     /** Foreign key to the parent podcast */
-    val podcastId: Long,
+    val podcastId: Long = 0,
     
     /** Unique identifier from the RSS feed (guid) */
-    val guid: String,
+    val guid: String = "",
     
     /** Episode title */
-    val title: String,
+    val title: String = "",
     
     /** Episode description/show notes */
     val description: String? = null,
     
     /** URL to the audio file */
-    val audioUrl: String,
+    val audioUrl: String = "",
     
     /** URL to episode-specific artwork (falls back to podcast artwork) */
     val artworkUrl: String? = null,
@@ -78,6 +78,9 @@ data class Episode(
     val isPlayed: Boolean = false,
     
     /** Timestamp when the episode was last played */
-    val lastPlayedAt: Long? = null
+    val lastPlayedAt: Long? = null,
+
+    /** Indicates whether the episode is a cached entry from the RSS feed */
+    val cached: Boolean = true
 )
 
