@@ -17,10 +17,10 @@ data class Podcast(
     val id: Long = 0,
     
     /** RSS feed URL - unique identifier for the podcast */
-    val feedUrl: String,
+    val feedUrl: String = "",
     
     /** Title of the podcast */
-    val title: String,
+    val title: String = "",
     
     /** Author/creator of the podcast */
     val author: String? = null,
@@ -47,6 +47,9 @@ data class Podcast(
     val episodeCount: Int = 0,
     
     /** Categories/genres */
-    val categories: String? = null
+    val categories: String? = null,
+
+    /** Indicates whether the podcast is a cached entry from the RSS feed */
+    val cached: Boolean = true
 )
 

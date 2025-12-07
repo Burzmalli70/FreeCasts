@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "cc671b608ffaf330ee2d83feb4cde1b0",
+    "identityHash": "f5e649b760b98b4da330991c09a71880",
     "entities": [
       {
         "tableName": "podcasts",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `feedUrl` TEXT NOT NULL, `title` TEXT NOT NULL, `author` TEXT, `description` TEXT, `artworkUrl` TEXT, `websiteUrl` TEXT, `isSubscribed` INTEGER NOT NULL, `subscribedAt` INTEGER, `lastFetchedAt` INTEGER, `episodeCount` INTEGER NOT NULL, `categories` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `feedUrl` TEXT NOT NULL, `title` TEXT NOT NULL, `author` TEXT, `description` TEXT, `artworkUrl` TEXT, `websiteUrl` TEXT, `isSubscribed` INTEGER NOT NULL, `subscribedAt` INTEGER, `lastFetchedAt` INTEGER, `episodeCount` INTEGER NOT NULL, `categories` TEXT, `cached` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -72,6 +72,12 @@
             "fieldPath": "categories",
             "columnName": "categories",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "cached",
+            "columnName": "cached",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -94,7 +100,7 @@
       },
       {
         "tableName": "episodes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `podcastId` INTEGER NOT NULL, `guid` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `audioUrl` TEXT NOT NULL, `artworkUrl` TEXT, `durationSeconds` INTEGER, `fileSizeBytes` INTEGER, `mimeType` TEXT, `publishedAt` INTEGER, `episodeNumber` INTEGER, `seasonNumber` INTEGER, `isFavorite` INTEGER NOT NULL, `favoritedAt` INTEGER, `playbackPositionMs` INTEGER NOT NULL, `isPlayed` INTEGER NOT NULL, `lastPlayedAt` INTEGER, FOREIGN KEY(`podcastId`) REFERENCES `podcasts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `podcastId` INTEGER NOT NULL, `guid` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `audioUrl` TEXT NOT NULL, `artworkUrl` TEXT, `durationSeconds` INTEGER, `fileSizeBytes` INTEGER, `mimeType` TEXT, `publishedAt` INTEGER, `episodeNumber` INTEGER, `seasonNumber` INTEGER, `isFavorite` INTEGER NOT NULL, `favoritedAt` INTEGER, `playbackPositionMs` INTEGER NOT NULL, `isPlayed` INTEGER NOT NULL, `lastPlayedAt` INTEGER, `cached` INTEGER NOT NULL, FOREIGN KEY(`podcastId`) REFERENCES `podcasts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -193,6 +199,12 @@
             "fieldPath": "lastPlayedAt",
             "columnName": "lastPlayedAt",
             "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "cached",
+            "columnName": "cached",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -496,7 +508,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'cc671b608ffaf330ee2d83feb4cde1b0')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f5e649b760b98b4da330991c09a71880')"
     ]
   }
 }
