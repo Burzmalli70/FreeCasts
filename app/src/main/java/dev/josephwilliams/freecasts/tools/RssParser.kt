@@ -49,7 +49,7 @@ object RssParser {
                     }
                     ShowTag.ITUNES_IMAGE.tagName -> {
                         // iTunes image uses href attribute: <itunes:image href="..."/>
-                        line?.getTagAttribute("href")?.let { imageUrl ->
+                        line.getTagAttribute("href")?.let { imageUrl ->
                             podcast = podcast?.copy(artworkUrl = imageUrl) ?: Podcast(artworkUrl = imageUrl)
                         }
                     }

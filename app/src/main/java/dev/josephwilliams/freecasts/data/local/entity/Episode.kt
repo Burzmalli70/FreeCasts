@@ -82,5 +82,11 @@ data class Episode(
 
     /** Indicates whether the episode is a cached entry from the RSS feed */
     val cached: Boolean = true
-)
+) {
+    val isDownloaded: Boolean
+        get() {
+            return false
+        }
+}
+
 
