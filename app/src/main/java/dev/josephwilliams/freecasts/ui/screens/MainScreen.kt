@@ -20,14 +20,21 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import dev.josephwilliams.freecasts.data.remote.model.ItunesPodcast
+import dev.josephwilliams.freecasts.ui.screens.search.SearchPodcastDetailScreen
+import dev.josephwilliams.freecasts.ui.screens.search.SearchScreen
+import kotlinx.serialization.json.Json
 
 @Composable
 fun MainScreen(
@@ -39,7 +46,18 @@ fun MainScreen(
         bottomBar = {
             PodcastBottomBar(
                 modifier = Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars),
-                onButtonTapped = { navController.navigate(it.name) }
+                onButtonTapped = { 
+                    navController.navigate(it.name) {
+                        // Pop up to the start destination to avoid building up a back stack
+                        popUpTo(NavRoute.PODCASTS.name) {
+                            saveState = true
+                        }
+                        // Avoid multiple copies of the same destination
+                        launchSingleTop = true
+                        // Restore state when navigating back to a previously selected tab
+                        restoreState = true
+                    }
+                }
             )
         }
     ) { innerPadding ->
@@ -49,19 +67,44 @@ fun MainScreen(
             modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(innerPadding)
         ) {
             composable(NavRoute.PODCASTS.name) {
-
+                // TODO: Implement subscribed podcasts view
             }
 
             composable(NavRoute.SEARCH.name) {
-
+                SearchScreen(
+                    onPodcastSelected = { podcast ->
+                        // Encode podcast as JSON and navigate to detail
+                        val podcastJson = Json.encodeToString(ItunesPodcast.serializer(), podcast)
+                        val encodedJson = java.net.URLEncoder.encode(podcastJson, "UTF-8")
+                        navController.navigate("${NavRoute.SEARCH_DETAIL.name}/$encodedJson")
+                    }
+                )
+            }
+            
+            composable(
+                route = "${NavRoute.SEARCH_DETAIL.name}/{podcastJson}",
+                arguments = listOf(
+                    navArgument("podcastJson") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val podcastJson = backStackEntry.arguments?.getString("podcastJson") ?: ""
+                val decodedJson = java.net.URLDecoder.decode(podcastJson, "UTF-8")
+                val podcast = remember(decodedJson) {
+                    Json.decodeFromString(ItunesPodcast.serializer(), decodedJson)
+                }
+                
+                SearchPodcastDetailScreen(
+                    itunesPodcast = podcast,
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
 
             composable(NavRoute.PLAYLISTS.name) {
-
+                // TODO: Implement playlists view
             }
 
             composable(NavRoute.SETTINGS.name) {
-
+                // TODO: Implement settings view
             }
         }
     }
@@ -94,14 +137,17 @@ fun BottomBarButton(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(route.icon, contentDescription = null)
-        Text(text = route.name, modifier = modifier, fontSize = 12.sp)
+        route.icon?.let { icon ->
+            Icon(icon, contentDescription = null)
+        }
+        Text(text = route.name, fontSize = 12.sp)
     }
 }
 
-enum class NavRoute(val icon: ImageVector) {
+enum class NavRoute(val icon: ImageVector?) {
     PODCASTS(icon = Icons.Default.Home),
     SEARCH(icon = Icons.Default.Search),
+    SEARCH_DETAIL(icon = null), // Detail screen, not shown in bottom bar
     PLAYLISTS(icon = Icons.AutoMirrored.Default.List),
     SETTINGS(icon = Icons.Default.Settings)
 }
