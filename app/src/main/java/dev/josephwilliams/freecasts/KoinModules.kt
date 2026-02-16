@@ -4,6 +4,8 @@ import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
 import dev.josephwilliams.freecasts.data.local.FreeCastsDatabase
 import dev.josephwilliams.freecasts.data.remote.PodcastSearchApi
 import dev.josephwilliams.freecasts.data.repository.PodcastRepository
+import dev.josephwilliams.freecasts.ui.screens.podcasts.PodcastsViewModel
+import dev.josephwilliams.freecasts.ui.screens.podcasts.SubscribedPodcastDetailViewModel
 import dev.josephwilliams.freecasts.ui.screens.search.SearchPodcastDetailViewModel
 import dev.josephwilliams.freecasts.ui.screens.search.SearchViewModel
 import org.koin.android.ext.koin.androidApplication
@@ -26,6 +28,8 @@ val repositoryModule = module {
 val viewModelModule = module {
     viewModel { SearchViewModel(get()) }
     viewModel { SearchPodcastDetailViewModel(get()) }
+    viewModel { PodcastsViewModel(get()) }
+    viewModel { SubscribedPodcastDetailViewModel(get(), get(), get(), get(), get()) }
 }
 
 val downloadModule = module {

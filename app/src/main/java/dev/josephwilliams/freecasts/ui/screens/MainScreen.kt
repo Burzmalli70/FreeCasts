@@ -32,6 +32,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import dev.josephwilliams.freecasts.data.remote.model.ItunesPodcast
+import dev.josephwilliams.freecasts.ui.screens.podcasts.PodcastsScreen
+import dev.josephwilliams.freecasts.ui.screens.podcasts.SubscribedPodcastDetailScreen
 import dev.josephwilliams.freecasts.ui.screens.search.SearchPodcastDetailScreen
 import dev.josephwilliams.freecasts.ui.screens.search.SearchScreen
 import kotlinx.serialization.json.Json
@@ -67,7 +69,34 @@ fun MainScreen(
             modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(innerPadding)
         ) {
             composable(NavRoute.PODCASTS.name) {
-                // TODO: Implement subscribed podcasts view
+                PodcastsScreen(
+                    onPodcastSelected = { podcast ->
+                        navController.navigate("${NavRoute.PODCAST_DETAIL.name}/${podcast.id}")
+                    },
+                    onNavigateToSearch = {
+                        navController.navigate(NavRoute.SEARCH.name) {
+                            popUpTo(NavRoute.PODCASTS.name) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+            }
+            
+            composable(
+                route = "${NavRoute.PODCAST_DETAIL.name}/{podcastId}",
+                arguments = listOf(
+                    navArgument("podcastId") { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val podcastId = backStackEntry.arguments?.getLong("podcastId") ?: return@composable
+                
+                SubscribedPodcastDetailScreen(
+                    podcastId = podcastId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
 
             composable(NavRoute.SEARCH.name) {
@@ -146,6 +175,7 @@ fun BottomBarButton(
 
 enum class NavRoute(val icon: ImageVector?) {
     PODCASTS(icon = Icons.Default.Home),
+    PODCAST_DETAIL(icon = null), // Detail screen, not shown in bottom bar
     SEARCH(icon = Icons.Default.Search),
     SEARCH_DETAIL(icon = null), // Detail screen, not shown in bottom bar
     PLAYLISTS(icon = Icons.AutoMirrored.Default.List),
