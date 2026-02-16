@@ -107,5 +107,19 @@ interface EpisodeDao {
     @Transaction
     @Query("SELECT * FROM episodes WHERE id = :episodeId")
     fun observeEpisodeWithDownload(episodeId: Long): Flow<EpisodeWithDownload?>
+    
+    // === Listen Count ===
+    
+    @Query("UPDATE episodes SET listenCount = listenCount + 1 WHERE id = :episodeId")
+    suspend fun incrementListenCount(episodeId: Long)
+    
+    @Query("UPDATE episodes SET listenCount = :count WHERE id = :episodeId")
+    suspend fun setListenCount(episodeId: Long, count: Int)
+    
+    @Query("SELECT listenCount FROM episodes WHERE id = :episodeId")
+    suspend fun getListenCount(episodeId: Long): Int?
+    
+    @Query("SELECT * FROM episodes WHERE listenCount > 0 ORDER BY listenCount DESC")
+    fun observeMostListened(): Flow<List<Episode>>
 }
 

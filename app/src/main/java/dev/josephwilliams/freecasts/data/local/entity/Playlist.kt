@@ -24,6 +24,9 @@ data class Playlist(
     val updatedAt: Long = System.currentTimeMillis(),
     
     /** Optional artwork URL (could be auto-generated from episode artwork) */
-    val artworkUrl: String? = null
+    val artworkUrl: String? = null,
+    
+    /** Whether to automatically remove episodes from this playlist after they are played */
+    val removeAfterListening: Boolean = false
 )
 

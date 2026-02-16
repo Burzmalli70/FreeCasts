@@ -73,5 +73,31 @@ interface PodcastDao {
     @Transaction
     @Query("SELECT * FROM podcasts WHERE isSubscribed = 1")
     fun observeSubscribedWithEpisodes(): Flow<List<PodcastWithEpisodes>>
+    
+    // === Subscription Settings ===
+    
+    @Query("UPDATE podcasts SET autoDownloadNewEpisodes = :enabled WHERE id = :podcastId")
+    suspend fun setAutoDownloadNewEpisodes(podcastId: Long, enabled: Boolean)
+    
+    @Query("UPDATE podcasts SET episodeFilterPattern = :pattern WHERE id = :podcastId")
+    suspend fun setEpisodeFilterPattern(podcastId: Long, pattern: String?)
+    
+    @Query("UPDATE podcasts SET autoAddToPlaylistIds = :playlistIds WHERE id = :podcastId")
+    suspend fun setAutoAddToPlaylistIds(podcastId: Long, playlistIds: String?)
+    
+    @Query("UPDATE podcasts SET deleteAfterListening = :enabled WHERE id = :podcastId")
+    suspend fun setDeleteAfterListening(podcastId: Long, enabled: Boolean)
+    
+    @Query("UPDATE podcasts SET keepFavoritesFromDeletion = :enabled WHERE id = :podcastId")
+    suspend fun setKeepFavoritesFromDeletion(podcastId: Long, enabled: Boolean)
+    
+    @Query("UPDATE podcasts SET keepInPlaylistsFromDeletion = :enabled WHERE id = :podcastId")
+    suspend fun setKeepInPlaylistsFromDeletion(podcastId: Long, enabled: Boolean)
+    
+    @Query("UPDATE podcasts SET maxDownloadsToKeep = :maxDownloads WHERE id = :podcastId")
+    suspend fun setMaxDownloadsToKeep(podcastId: Long, maxDownloads: Int?)
+    
+    @Query("SELECT * FROM podcasts WHERE isSubscribed = 1 AND autoDownloadNewEpisodes = 1")
+    suspend fun getSubscribedWithAutoDownload(): List<Podcast>
 }
 

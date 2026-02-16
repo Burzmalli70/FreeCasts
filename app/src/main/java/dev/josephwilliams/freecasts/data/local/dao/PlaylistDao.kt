@@ -88,5 +88,13 @@ interface PlaylistDao {
     
     @Query("SELECT playlistId FROM playlist_episode_cross_ref WHERE episodeId = :episodeId")
     fun observePlaylistsContainingEpisode(episodeId: Long): Flow<List<Long>>
+    
+    // === Auto-Remove Settings ===
+    
+    @Query("UPDATE playlists SET removeAfterListening = :enabled WHERE id = :playlistId")
+    suspend fun setRemoveAfterListening(playlistId: Long, enabled: Boolean)
+    
+    @Query("SELECT * FROM playlists WHERE removeAfterListening = 1")
+    suspend fun getPlaylistsWithAutoRemove(): List<Playlist>
 }
 

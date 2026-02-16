@@ -50,6 +50,36 @@ data class Podcast(
     val categories: String? = null,
 
     /** Indicates whether the podcast is a cached entry from the RSS feed */
-    val cached: Boolean = true
+    val cached: Boolean = true,
+    
+    // === Subscription Settings ===
+    
+    /** Whether to automatically download new episodes */
+    val autoDownloadNewEpisodes: Boolean = false,
+    
+    /** 
+     * Pattern for filtering episodes to download or skip.
+     * Episodes matching this pattern will be skipped and marked as listened.
+     * Stored as a simple string pattern (e.g., "bonus|trailer|preview")
+     */
+    val episodeFilterPattern: String? = null,
+    
+    /**
+     * Comma-separated list of playlist IDs to automatically add new episodes to.
+     * Example: "1,5,12"
+     */
+    val autoAddToPlaylistIds: String? = null,
+    
+    /** Whether to delete downloaded episodes after listening */
+    val deleteAfterListening: Boolean = false,
+    
+    /** Whether to keep favorite episodes from auto-deletion */
+    val keepFavoritesFromDeletion: Boolean = true,
+    
+    /** Whether to keep episodes that are in playlists from auto-deletion */
+    val keepInPlaylistsFromDeletion: Boolean = true,
+    
+    /** Maximum number of downloaded episodes to keep. Oldest will be deleted first. Null means unlimited. */
+    val maxDownloadsToKeep: Int? = null
 )
 

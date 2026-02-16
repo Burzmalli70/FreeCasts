@@ -79,6 +79,13 @@ data class Episode(
     
     /** Timestamp when the episode was last played */
     val lastPlayedAt: Long? = null,
+    
+    /** 
+     * Number of times the user has listened to this episode.
+     * An episode is considered "listened to" if the user listens for more than 
+     * half of the episode or 5 minutes, whichever is less.
+     */
+    val listenCount: Int = 0,
 
     /** Indicates whether the episode is a cached entry from the RSS feed */
     val cached: Boolean = true
