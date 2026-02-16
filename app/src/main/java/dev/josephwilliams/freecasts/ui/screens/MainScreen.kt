@@ -32,6 +32,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import dev.josephwilliams.freecasts.data.remote.model.ItunesPodcast
+import dev.josephwilliams.freecasts.ui.screens.playlists.CreateEditPlaylistScreen
+import dev.josephwilliams.freecasts.ui.screens.playlists.PlaylistDetailScreen
+import dev.josephwilliams.freecasts.ui.screens.playlists.PlaylistsScreen
 import dev.josephwilliams.freecasts.ui.screens.podcasts.PodcastsScreen
 import dev.josephwilliams.freecasts.ui.screens.podcasts.SubscribedPodcastDetailScreen
 import dev.josephwilliams.freecasts.ui.screens.search.SearchPodcastDetailScreen
@@ -129,7 +132,52 @@ fun MainScreen(
             }
 
             composable(NavRoute.PLAYLISTS.name) {
-                // TODO: Implement playlists view
+                PlaylistsScreen(
+                    onPlaylistSelected = { playlist ->
+                        navController.navigate("${NavRoute.PLAYLIST_DETAIL.name}/${playlist.id}")
+                    },
+                    onCreatePlaylist = {
+                        navController.navigate(NavRoute.PLAYLIST_CREATE.name)
+                    }
+                )
+            }
+            
+            composable(NavRoute.PLAYLIST_CREATE.name) {
+                CreateEditPlaylistScreen(
+                    playlistId = null,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(
+                route = "${NavRoute.PLAYLIST_EDIT.name}/{playlistId}",
+                arguments = listOf(
+                    navArgument("playlistId") { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val playlistId = backStackEntry.arguments?.getLong("playlistId") ?: return@composable
+                
+                CreateEditPlaylistScreen(
+                    playlistId = playlistId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable(
+                route = "${NavRoute.PLAYLIST_DETAIL.name}/{playlistId}",
+                arguments = listOf(
+                    navArgument("playlistId") { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val playlistId = backStackEntry.arguments?.getLong("playlistId") ?: return@composable
+                
+                PlaylistDetailScreen(
+                    playlistId = playlistId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onEditPlaylist = { id ->
+                        navController.navigate("${NavRoute.PLAYLIST_EDIT.name}/$id")
+                    }
+                )
             }
 
             composable(NavRoute.SETTINGS.name) {
@@ -179,6 +227,9 @@ enum class NavRoute(val icon: ImageVector?) {
     SEARCH(icon = Icons.Default.Search),
     SEARCH_DETAIL(icon = null), // Detail screen, not shown in bottom bar
     PLAYLISTS(icon = Icons.AutoMirrored.Default.List),
+    PLAYLIST_CREATE(icon = null), // Create screen, not shown in bottom bar
+    PLAYLIST_EDIT(icon = null), // Edit screen, not shown in bottom bar
+    PLAYLIST_DETAIL(icon = null), // Detail screen, not shown in bottom bar
     SETTINGS(icon = Icons.Default.Settings)
 }
 

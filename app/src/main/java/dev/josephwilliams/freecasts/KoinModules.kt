@@ -4,6 +4,9 @@ import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
 import dev.josephwilliams.freecasts.data.local.FreeCastsDatabase
 import dev.josephwilliams.freecasts.data.remote.PodcastSearchApi
 import dev.josephwilliams.freecasts.data.repository.PodcastRepository
+import dev.josephwilliams.freecasts.ui.screens.playlists.CreateEditPlaylistViewModel
+import dev.josephwilliams.freecasts.ui.screens.playlists.PlaylistDetailViewModel
+import dev.josephwilliams.freecasts.ui.screens.playlists.PlaylistsViewModel
 import dev.josephwilliams.freecasts.ui.screens.podcasts.PodcastsViewModel
 import dev.josephwilliams.freecasts.ui.screens.podcasts.SubscribedPodcastDetailViewModel
 import dev.josephwilliams.freecasts.ui.screens.search.SearchPodcastDetailViewModel
@@ -30,6 +33,9 @@ val viewModelModule = module {
     viewModel { SearchPodcastDetailViewModel(get()) }
     viewModel { PodcastsViewModel(get()) }
     viewModel { SubscribedPodcastDetailViewModel(get(), get(), get(), get(), get()) }
+    viewModel { PlaylistsViewModel(get()) }
+    viewModel { CreateEditPlaylistViewModel(get()) }
+    viewModel { PlaylistDetailViewModel(get(), get()) }
 }
 
 val downloadModule = module {
