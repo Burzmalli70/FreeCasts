@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
@@ -23,7 +24,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.util.concurrent.TimeUnit
 
 /**
  * Manages episode downloads using Android's DownloadManager.
@@ -44,6 +48,14 @@ class EpisodeDownloadManager(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
     private val androidDownloadManager: DownloadManager? = context.getSystemService()
+    
+    // OkHttp client configured to follow redirects for URL resolution
+    private val httpClient = OkHttpClient.Builder()
+        .followRedirects(true)
+        .followSslRedirects(true)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
     
     // Maps Android DownloadManager ID to our episode ID
     private val downloadIdToEpisodeId = mutableMapOf<Long, Long>()
@@ -102,7 +114,7 @@ class EpisodeDownloadManager(
                     context,
                     downloadCompleteReceiver,
                     filter,
-                    ContextCompat.RECEIVER_NOT_EXPORTED
+                    ContextCompat.RECEIVER_EXPORTED
                 )
             }
             isReceiverRegistered = true
@@ -186,11 +198,15 @@ class EpisodeDownloadManager(
     private suspend fun startDownload(request: DownloadRequest, downloadDbId: Long) {
         val downloadManager = androidDownloadManager ?: return
         
+        // Resolve redirects to get the final URL
+        // This prevents "too many redirects" errors from DownloadManager
+        val resolvedUrl = resolveRedirects(request.downloadUrl) ?: request.downloadUrl
+        
         // Create download directory if needed
         val podcastDir = sanitizeFileName(request.podcastName)
-        val fileName = sanitizeFileName(request.episodeName) + getExtensionFromUrl(request.downloadUrl)
+        val fileName = sanitizeFileName(request.episodeName) + getExtensionFromUrl(resolvedUrl)
         
-        val downloadRequest = DownloadManager.Request(request.downloadUrl.toUri()).apply {
+        val downloadRequest = DownloadManager.Request(resolvedUrl.toUri()).apply {
             setTitle(request.episodeName)
             setDescription("Downloading from ${request.podcastName}")
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
@@ -538,6 +554,34 @@ class EpisodeDownloadManager(
         }
     }
     
+    /**
+     * Resolve redirects to get the final URL.
+     * This prevents "too many redirects" errors from DownloadManager.
+     * Uses a HEAD request to follow redirects without downloading the full file.
+     */
+    private suspend fun resolveRedirects(url: String): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Use HEAD request to follow redirects without downloading content
+                val request = Request.Builder()
+                    .url(url)
+                    .head()
+                    .build()
+                
+                httpClient.newCall(request).execute().use { response ->
+                    // The final URL after all redirects
+                    val finalUrl = response.request.url.toString()
+                    Log.d("EpisodeDownloadManager", "Resolved URL: $url -> $finalUrl")
+                    finalUrl
+                }
+            } catch (e: Exception) {
+                Log.e("EpisodeDownloadManager", "Failed to resolve redirects for $url", e)
+                // Fall back to original URL if resolution fails
+                null
+            }
+        }
+    }
+    
     private fun getErrorMessage(reason: Int): String {
         return when (reason) {
             DownloadManager.ERROR_CANNOT_RESUME -> "Cannot resume download"
@@ -567,5 +611,9 @@ class EpisodeDownloadManager(
                 // Receiver might not be registered
             }
         }
+        
+        // Shut down OkHttp client
+        httpClient.dispatcher.executorService.shutdown()
+        httpClient.connectionPool.evictAll()
     }
 }
