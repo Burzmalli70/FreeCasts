@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package dev.josephwilliams.freecasts.ui.screens.podcasts
 
 import androidx.compose.foundation.background
@@ -64,6 +66,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
+import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -7,6 +7,7 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
@@ -14,10 +15,21 @@ class PodcastSearchApi {
 
     private val client = HttpClient(OkHttp) {
         install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                isLenient = true
-            })
+            // iTunes API returns text/javascript content type, so we need to accept it as JSON
+            json(
+                json = Json {
+                    ignoreUnknownKeys = true
+                    isLenient = true
+                },
+                contentType = ContentType.Application.Json
+            )
+            json(
+                json = Json {
+                    ignoreUnknownKeys = true
+                    isLenient = true
+                },
+                contentType = ContentType.Text.JavaScript
+            )
         }
     }
 
