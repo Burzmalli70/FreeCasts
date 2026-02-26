@@ -77,7 +77,8 @@ class SubscribedPodcastDetailViewModel(
                         downloadProgress = liveDownloadState?.progressPercent,
                         isPlayed = ewd.episode.isPlayed,
                         playbackPositionMs = ewd.episode.playbackPositionMs,
-                        listenCount = ewd.episode.listenCount
+                        listenCount = ewd.episode.listenCount,
+                        localFilePath = ewd.download?.localFilePath
                     )
                 }
             }.collect { episodes ->
@@ -201,7 +202,8 @@ data class EpisodeDisplayState(
     val downloadProgress: Int? = null,
     val isPlayed: Boolean,
     val playbackPositionMs: Long,
-    val listenCount: Int
+    val listenCount: Int,
+    val localFilePath: String? = null
 ) {
     val hasProgress: Boolean
         get() = playbackPositionMs > 0 && !isPlayed

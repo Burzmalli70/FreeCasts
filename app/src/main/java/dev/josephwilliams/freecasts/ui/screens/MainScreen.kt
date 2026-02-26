@@ -20,6 +20,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,7 +33,9 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import dev.josephwilliams.freecasts.data.playback.PlaybackManager
 import dev.josephwilliams.freecasts.data.remote.model.ItunesPodcast
+import dev.josephwilliams.freecasts.ui.components.MiniPlayer
 import dev.josephwilliams.freecasts.ui.screens.playlists.CreateEditPlaylistScreen
 import dev.josephwilliams.freecasts.ui.screens.playlists.PlaylistDetailScreen
 import dev.josephwilliams.freecasts.ui.screens.playlists.PlaylistsScreen
@@ -40,30 +44,50 @@ import dev.josephwilliams.freecasts.ui.screens.podcasts.SubscribedPodcastDetailS
 import dev.josephwilliams.freecasts.ui.screens.search.SearchPodcastDetailScreen
 import dev.josephwilliams.freecasts.ui.screens.search.SearchScreen
 import kotlinx.serialization.json.Json
+import org.koin.compose.koinInject
 
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
-    navController: NavHostController
+    navController: NavHostController,
+    playbackManager: PlaybackManager = koinInject()
 ) {
+    val playbackState by playbackManager.state.collectAsState()
+    
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            PodcastBottomBar(
-                modifier = Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars),
-                onButtonTapped = { 
-                    navController.navigate(it.name) {
-                        // Pop up to the start destination to avoid building up a back stack
-                        popUpTo(NavRoute.PODCASTS.name) {
-                            saveState = true
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+            ) {
+                // Mini player above the bottom bar
+                MiniPlayer(
+                    playbackState = playbackState,
+                    onPlayPauseClick = { playbackManager.togglePlayPause() },
+                    onSkipForward = { playbackManager.skipForward() },
+                    onSkipBackward = { playbackManager.skipBackward() },
+                    onStopClick = { playbackManager.stop() }
+                )
+                
+                // Bottom navigation bar
+                PodcastBottomBar(
+                    modifier = Modifier.fillMaxWidth(),
+                    onButtonTapped = { 
+                        navController.navigate(it.name) {
+                            // Pop up to the start destination to avoid building up a back stack
+                            popUpTo(NavRoute.PODCASTS.name) {
+                                saveState = true
+                            }
+                            // Avoid multiple copies of the same destination
+                            launchSingleTop = true
+                            // Restore state when navigating back to a previously selected tab
+                            restoreState = true
                         }
-                        // Avoid multiple copies of the same destination
-                        launchSingleTop = true
-                        // Restore state when navigating back to a previously selected tab
-                        restoreState = true
                     }
-                }
-            )
+                )
+            }
         }
     ) { innerPadding ->
         NavHost(

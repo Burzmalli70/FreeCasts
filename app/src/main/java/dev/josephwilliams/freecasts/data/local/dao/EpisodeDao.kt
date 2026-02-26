@@ -71,6 +71,15 @@ interface EpisodeDao {
     @Query("UPDATE episodes SET playbackPositionMs = :positionMs, lastPlayedAt = :timestamp WHERE id = :episodeId")
     suspend fun updatePlaybackPosition(episodeId: Long, positionMs: Long, timestamp: Long = System.currentTimeMillis())
     
+    @Query("UPDATE episodes SET playbackPositionMs = :positionMs WHERE id = :episodeId")
+    suspend fun setPlaybackPosition(episodeId: Long, positionMs: Long)
+    
+    @Query("SELECT playbackPositionMs FROM episodes WHERE id = :episodeId")
+    suspend fun getPlaybackPosition(episodeId: Long): Long
+    
+    @Query("UPDATE episodes SET lastPlayedAt = :timestamp WHERE id = :episodeId")
+    suspend fun setLastPlayedAt(episodeId: Long, timestamp: Long)
+    
     @Query("UPDATE episodes SET isPlayed = 1, playbackPositionMs = 0 WHERE id = :episodeId")
     suspend fun markAsPlayed(episodeId: Long)
     

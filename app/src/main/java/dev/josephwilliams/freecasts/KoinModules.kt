@@ -1,6 +1,7 @@
 package dev.josephwilliams.freecasts
 
 import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
+import dev.josephwilliams.freecasts.data.playback.PlaybackManager
 import dev.josephwilliams.freecasts.data.local.FreeCastsDatabase
 import dev.josephwilliams.freecasts.data.remote.PodcastSearchApi
 import dev.josephwilliams.freecasts.data.repository.PodcastRepository
@@ -42,6 +43,10 @@ val downloadModule = module {
     single { EpisodeDownloadManager(androidContext(), get()) }
 }
 
+val playbackModule = module {
+    single { PlaybackManager(androidContext(), get()) }
+}
+
 val searchApi = module {
     single {
         PodcastSearchApi()
@@ -53,5 +58,6 @@ val appModules = listOf(
     repositoryModule,
     viewModelModule,
     downloadModule,
+    playbackModule,
     searchApi
 )

@@ -2,8 +2,10 @@
 
 package dev.josephwilliams.freecasts.ui.screens.podcasts
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,19 +64,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
+import dev.josephwilliams.freecasts.data.playback.PlaybackManager
+import dev.josephwilliams.freecasts.data.playback.PlayingEpisode
 import kotlinx.datetime.Instant
+import org.koin.compose.koinInject
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
 import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SubscribedPodcastDetailScreen(
     podcastId: Long,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: SubscribedPodcastDetailViewModel = koinViewModel()
+    viewModel: SubscribedPodcastDetailViewModel = koinViewModel(),
+    playbackManager: PlaybackManager = koinInject()
 ) {
     val state by viewModel.state.collectAsState()
     
@@ -164,7 +170,21 @@ fun SubscribedPodcastDetailScreen(
                                 viewModel.markAsPlayed(episode.episode.id)
                             }
                         },
-                        onToggleFavorite = { viewModel.toggleFavorite(it.episode) }
+                        onToggleFavorite = { viewModel.toggleFavorite(it.episode) },
+                        onPlayEpisode = { episodeState ->
+                            val podcast = state.podcast!!
+                            playbackManager.play(
+                                PlayingEpisode(
+                                    episodeId = episodeState.episode.id,
+                                    episodeTitle = episodeState.episode.title,
+                                    podcastId = podcast.id,
+                                    podcastName = podcast.title,
+                                    artworkUrl = episodeState.episode.artworkUrl ?: podcast.artworkUrl,
+                                    audioUrl = episodeState.episode.audioUrl,
+                                    localFilePath = episodeState.localFilePath
+                                )
+                            )
+                        }
                     )
                 }
             }
@@ -182,6 +202,7 @@ private fun SubscribedPodcastContent(
     onDeleteDownload: (EpisodeDisplayState) -> Unit,
     onTogglePlayed: (EpisodeDisplayState) -> Unit,
     onToggleFavorite: (EpisodeDisplayState) -> Unit,
+    onPlayEpisode: (EpisodeDisplayState) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -222,7 +243,8 @@ private fun SubscribedPodcastContent(
                 onCancelDownload = onCancelDownload,
                 onDeleteDownload = onDeleteDownload,
                 onTogglePlayed = onTogglePlayed,
-                onToggleFavorite = onToggleFavorite
+                onToggleFavorite = onToggleFavorite,
+                onPlayEpisode = onPlayEpisode
             )
         }
     }
@@ -393,6 +415,7 @@ private fun DetailRow(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun EpisodesTabContent(
     episodes: List<EpisodeDisplayState>,
@@ -401,6 +424,7 @@ private fun EpisodesTabContent(
     onDeleteDownload: (EpisodeDisplayState) -> Unit,
     onTogglePlayed: (EpisodeDisplayState) -> Unit,
     onToggleFavorite: (EpisodeDisplayState) -> Unit,
+    onPlayEpisode: (EpisodeDisplayState) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (episodes.isEmpty()) {
@@ -430,13 +454,15 @@ private fun EpisodesTabContent(
                     onCancelDownload = { onCancelDownload(episodeState) },
                     onDeleteDownload = { onDeleteDownload(episodeState) },
                     onTogglePlayed = { onTogglePlayed(episodeState) },
-                    onToggleFavorite = { onToggleFavorite(episodeState) }
+                    onToggleFavorite = { onToggleFavorite(episodeState) },
+                    onLongPress = { onPlayEpisode(episodeState) }
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun EpisodeCard(
     episodeState: EpisodeDisplayState,
@@ -445,12 +471,18 @@ private fun EpisodeCard(
     onDeleteDownload: () -> Unit,
     onTogglePlayed: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onLongPress: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val episode = episodeState.episode
     
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = { },
+                onLongClick = onLongPress
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (episodeState.isPlayed) {
