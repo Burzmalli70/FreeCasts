@@ -65,7 +65,7 @@ fun SearchScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
-            placeholder = { Text("Search podcasts...") },
+            placeholder = { Text("Search podcasts or enter RSS URL...") },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
@@ -158,7 +158,7 @@ fun SearchScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Find your favorite shows using the iTunes catalog",
+                            text = "Search iTunes or paste an RSS feed URL",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
@@ -179,7 +179,8 @@ fun SearchScreen(
                     ) { podcast ->
                         PodcastSearchResultItem(
                             podcast = podcast,
-                            onClick = { onPodcastSelected(podcast) }
+                            onClick = { onPodcastSelected(podcast) },
+                            isFromRssFeed = state.isRssFeedResult
                         )
                     }
                 }
@@ -192,7 +193,8 @@ fun SearchScreen(
 fun PodcastSearchResultItem(
     podcast: ItunesPodcast,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isFromRssFeed: Boolean = false
 ) {
     Card(
         modifier = modifier
@@ -225,12 +227,34 @@ fun PodcastSearchResultItem(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = podcast.collectionName,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = podcast.collectionName,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    
+                    if (isFromRssFeed) {
+                        Card(
+                            shape = RoundedCornerShape(4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                            )
+                        ) {
+                            Text(
+                                text = "RSS",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
                 
                 podcast.artistName?.let { artist ->
                     Spacer(modifier = Modifier.height(2.dp))
