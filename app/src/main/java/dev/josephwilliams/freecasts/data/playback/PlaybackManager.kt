@@ -30,6 +30,7 @@ import java.io.File
  * - Position tracking and progress updates
  * - Audio focus handling
  * - Saves playback position to database
+ * - Queue support for playlist playback
  * 
  * Inject via Koin: `val playbackManager: PlaybackManager by inject()`
  */
@@ -84,10 +85,116 @@ class PlaybackManager(
     
     /**
      * Start playing an episode.
+     * Clears the current queue.
      * 
      * @param episode The episode to play
      */
     fun play(episode: PlayingEpisode) {
+        // Clear queue when playing a single episode
+        _state.update { it.copy(queue = emptyList(), currentQueueIndex = -1) }
+        playEpisodeInternal(episode)
+    }
+    
+    /**
+     * Play a list of episodes as a queue (e.g., from a playlist).
+     * Starts playing the first episode and queues the rest.
+     * 
+     * @param episodes The list of episodes to play
+     * @param startIndex The index of the episode to start playing (default 0)
+     */
+    fun playQueue(episodes: List<PlayingEpisode>, startIndex: Int = 0) {
+        if (episodes.isEmpty()) return
+        
+        val validStartIndex = startIndex.coerceIn(0, episodes.size - 1)
+        
+        _state.update { 
+            it.copy(
+                queue = episodes,
+                currentQueueIndex = validStartIndex
+            )
+        }
+        
+        playEpisodeInternal(episodes[validStartIndex])
+    }
+    
+    /**
+     * Skip to the next episode in the queue.
+     */
+    fun playNext() {
+        val currentState = _state.value
+        if (!currentState.hasNextInQueue) return
+        
+        val nextIndex = currentState.currentQueueIndex + 1
+        val nextEpisode = currentState.queue[nextIndex]
+        
+        _state.update { it.copy(currentQueueIndex = nextIndex) }
+        playEpisodeInternal(nextEpisode)
+    }
+    
+    /**
+     * Skip to the previous episode in the queue.
+     * If current position is > 3 seconds, restarts the current episode instead.
+     */
+    fun playPrevious() {
+        val currentState = _state.value
+        
+        // If we're more than 3 seconds into the episode, restart it
+        if (currentState.currentPositionMs > 3000) {
+            seekTo(0)
+            return
+        }
+        
+        if (!currentState.hasPreviousInQueue) return
+        
+        val prevIndex = currentState.currentQueueIndex - 1
+        val prevEpisode = currentState.queue[prevIndex]
+        
+        _state.update { it.copy(currentQueueIndex = prevIndex) }
+        playEpisodeInternal(prevEpisode)
+    }
+    
+    /**
+     * Add an episode to the end of the queue.
+     */
+    fun addToQueue(episode: PlayingEpisode) {
+        _state.update { it.copy(queue = it.queue + episode) }
+    }
+    
+    /**
+     * Remove an episode from the queue by index.
+     */
+    fun removeFromQueue(index: Int) {
+        val currentState = _state.value
+        if (index < 0 || index >= currentState.queue.size) return
+        
+        val newQueue = currentState.queue.toMutableList().apply { removeAt(index) }
+        val newIndex = when {
+            newQueue.isEmpty() -> -1
+            index < currentState.currentQueueIndex -> currentState.currentQueueIndex - 1
+            index == currentState.currentQueueIndex -> currentState.currentQueueIndex.coerceAtMost(newQueue.size - 1)
+            else -> currentState.currentQueueIndex
+        }
+        
+        _state.update { it.copy(queue = newQueue, currentQueueIndex = newIndex) }
+    }
+    
+    /**
+     * Clear the queue but keep playing the current episode.
+     */
+    fun clearQueue() {
+        val currentEpisode = _state.value.currentEpisode
+        _state.update { 
+            it.copy(
+                queue = if (currentEpisode != null) listOf(currentEpisode) else emptyList(),
+                currentQueueIndex = if (currentEpisode != null) 0 else -1
+            )
+        }
+    }
+    
+    /**
+     * Internal method to start playing an episode.
+     */
+    private fun playEpisodeInternal(episode: PlayingEpisode) {
         scope.launch {
             try {
                 // Stop any current playback
@@ -286,14 +393,23 @@ class PlaybackManager(
                 episodeDao.incrementListenCount(episode.episodeId)
             }
             
-            _state.update { 
-                it.copy(
-                    isPlaying = false, 
-                    currentPositionMs = it.durationMs
-                ) 
+            // Check if there's a next episode in the queue
+            val currentState = _state.value
+            if (currentState.hasNextInQueue) {
+                Log.d(TAG, "Playing next episode in queue")
+                playNext()
+            } else {
+                // No more episodes in queue, stop playback
+                _state.update { 
+                    it.copy(
+                        isPlaying = false, 
+                        currentPositionMs = it.durationMs
+                    ) 
+                }
+                stopPositionUpdates()
+                abandonAudioFocus()
+                Log.d(TAG, "Queue complete, playback stopped")
             }
-            stopPositionUpdates()
-            abandonAudioFocus()
         }
     }
     

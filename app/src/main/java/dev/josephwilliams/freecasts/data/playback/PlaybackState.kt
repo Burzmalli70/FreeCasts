@@ -9,13 +9,30 @@ data class PlaybackState(
     val currentPositionMs: Long = 0,
     val durationMs: Long = 0,
     val isBuffering: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val queue: List<PlayingEpisode> = emptyList(),
+    val currentQueueIndex: Int = -1
 ) {
     val progressPercent: Float
         get() = if (durationMs > 0) (currentPositionMs.toFloat() / durationMs) else 0f
     
     val hasMedia: Boolean
         get() = currentEpisode != null
+    
+    val hasQueue: Boolean
+        get() = queue.isNotEmpty()
+    
+    val hasNextInQueue: Boolean
+        get() = currentQueueIndex >= 0 && currentQueueIndex < queue.size - 1
+    
+    val hasPreviousInQueue: Boolean
+        get() = currentQueueIndex > 0
+    
+    val queueSize: Int
+        get() = queue.size
+    
+    val queuePosition: Int
+        get() = if (currentQueueIndex >= 0) currentQueueIndex + 1 else 0
 }
 
 /**

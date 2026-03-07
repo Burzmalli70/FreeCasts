@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,7 +39,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.data.playback.PlaybackState
 
@@ -47,6 +49,8 @@ fun MiniPlayer(
     onPlayPauseClick: () -> Unit,
     onSkipForward: () -> Unit,
     onSkipBackward: () -> Unit,
+    onNextTrack: () -> Unit,
+    onPreviousTrack: () -> Unit,
     onStopClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -102,13 +106,25 @@ fun MiniPlayer(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        Text(
-                            text = playbackState.currentEpisode?.podcastName ?: "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = playbackState.currentEpisode?.podcastName ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            if (playbackState.hasQueue) {
+                                Text(
+                                    text = " · ${playbackState.queuePosition}/${playbackState.queueSize}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                         // Time info
                         Text(
                             text = formatPlaybackTime(playbackState.currentPositionMs, playbackState.durationMs),
@@ -121,16 +137,36 @@ fun MiniPlayer(
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Skip backward 30s
-                        IconButton(
-                            onClick = onSkipBackward,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.ic_replay_30),
-                                contentDescription = "Skip back 30 seconds",
-                                modifier = Modifier.size(24.dp)
-                            )
+                        // Previous track (only when queue exists)
+                        if (playbackState.hasQueue) {
+                            IconButton(
+                                onClick = onPreviousTrack,
+                                enabled = playbackState.hasPreviousInQueue || playbackState.currentPositionMs > 3000,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SkipPrevious,
+                                    contentDescription = "Previous track",
+                                    modifier = Modifier.size(22.dp),
+                                    tint = if (playbackState.hasPreviousInQueue || playbackState.currentPositionMs > 3000) {
+                                        MaterialTheme.colorScheme.onSurface
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                    }
+                                )
+                            }
+                        } else {
+                            // Skip backward 30s (when no queue)
+                            IconButton(
+                                onClick = onSkipBackward,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(R.drawable.ic_replay_30),
+                                    contentDescription = "Skip back 30 seconds",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
                         
                         // Play/Pause button
@@ -162,16 +198,36 @@ fun MiniPlayer(
                             }
                         }
                         
-                        // Skip forward 30s
-                        IconButton(
-                            onClick = onSkipForward,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.ic_forward_30),
-                                contentDescription = "Skip forward 30 seconds",
-                                modifier = Modifier.size(24.dp)
-                            )
+                        // Next track (only when queue exists)
+                        if (playbackState.hasQueue) {
+                            IconButton(
+                                onClick = onNextTrack,
+                                enabled = playbackState.hasNextInQueue,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SkipNext,
+                                    contentDescription = "Next track",
+                                    modifier = Modifier.size(22.dp),
+                                    tint = if (playbackState.hasNextInQueue) {
+                                        MaterialTheme.colorScheme.onSurface
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                    }
+                                )
+                            }
+                        } else {
+                            // Skip forward 30s (when no queue)
+                            IconButton(
+                                onClick = onSkipForward,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(R.drawable.ic_forward_30),
+                                    contentDescription = "Skip forward 30 seconds",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
                         
                         // Stop button

@@ -68,6 +68,8 @@ fun MainScreen(
                     onPlayPauseClick = { playbackManager.togglePlayPause() },
                     onSkipForward = { playbackManager.skipForward() },
                     onSkipBackward = { playbackManager.skipBackward() },
+                    onNextTrack = { playbackManager.playNext() },
+                    onPreviousTrack = { playbackManager.playPrevious() },
                     onStopClick = { playbackManager.stop() }
                 )
                 

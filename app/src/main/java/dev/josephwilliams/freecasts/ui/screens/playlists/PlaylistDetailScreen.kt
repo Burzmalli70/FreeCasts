@@ -1,7 +1,9 @@
-@file:OptIn(ExperimentalTime::class)
+@file:OptIn(ExperimentalTime::class, ExperimentalFoundationApi::class)
 
 package dev.josephwilliams.freecasts.ui.screens.playlists
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -49,12 +51,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import dev.josephwilliams.freecasts.data.local.entity.Playlist
+import dev.josephwilliams.freecasts.data.playback.PlaybackManager
+import dev.josephwilliams.freecasts.data.playback.PlayingEpisode
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,7 +69,8 @@ fun PlaylistDetailScreen(
     onNavigateBack: () -> Unit,
     onEditPlaylist: (Long) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: PlaylistDetailViewModel = koinViewModel()
+    viewModel: PlaylistDetailViewModel = koinViewModel(),
+    playbackManager: PlaybackManager = koinInject()
 ) {
     val state by viewModel.state.collectAsState()
     
@@ -143,6 +149,20 @@ fun PlaylistDetailScreen(
                     playlist = state.playlist,
                     episodes = state.episodes,
                     onRemoveEpisode = viewModel::removeEpisode,
+                    onPlayEpisode = { index ->
+                        val playingEpisodes = state.episodes.map { item ->
+                            PlayingEpisode(
+                                episodeId = item.episode.id,
+                                episodeTitle = item.episode.title,
+                                podcastId = item.episode.podcastId,
+                                podcastName = item.podcastName,
+                                artworkUrl = item.episode.artworkUrl ?: item.podcastArtworkUrl,
+                                audioUrl = item.episode.audioUrl,
+                                localFilePath = null
+                            )
+                        }
+                        playbackManager.playQueue(playingEpisodes, startIndex = index)
+                    },
                     modifier = Modifier.padding(innerPadding)
                 )
             }
@@ -155,12 +175,13 @@ private fun PlaylistDetailContent(
     playlist: Playlist?,
     episodes: List<PlaylistEpisodeItem>,
     onRemoveEpisode: (Long) -> Unit,
+    onPlayEpisode: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         // Playlist header
         playlist?.let {
-            PlaylistHeader(playlist = it)
+            PlaylistHeader(playlist = it, episodeCount = episodes.size)
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
         }
         
@@ -179,13 +200,14 @@ private fun PlaylistDetailContent(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(
+                itemsIndexed(
                     items = episodes,
-                    key = { it.episode.id }
-                ) { episodeItem ->
+                    key = { _, item -> item.episode.id }
+                ) { index, episodeItem ->
                     PlaylistEpisodeCard(
                         episodeItem = episodeItem,
-                        onRemove = { onRemoveEpisode(episodeItem.episode.id) }
+                        onRemove = { onRemoveEpisode(episodeItem.episode.id) },
+                        onPlay = { onPlayEpisode(index) }
                     )
                 }
             }
@@ -196,6 +218,7 @@ private fun PlaylistDetailContent(
 @Composable
 private fun PlaylistHeader(
     playlist: Playlist,
+    episodeCount: Int,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -218,6 +241,14 @@ private fun PlaylistHeader(
             Text(
                 text = playlist.name,
                 style = MaterialTheme.typography.titleLarge
+            )
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            Text(
+                text = "$episodeCount episode${if (episodeCount != 1) "s" else ""} - Tap to play",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
             if (playlist.removeAfterListening) {
@@ -280,12 +311,18 @@ private fun EmptyPlaylistContent(
 private fun PlaylistEpisodeCard(
     episodeItem: PlaylistEpisodeItem,
     onRemove: () -> Unit,
+    onPlay: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val episode = episodeItem.episode
     
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onPlay,
+                onLongClick = { }
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (episode.isPlayed) {
