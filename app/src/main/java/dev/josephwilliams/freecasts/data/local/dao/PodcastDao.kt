@@ -47,6 +47,9 @@ interface PodcastDao {
     @Query("SELECT * FROM podcasts WHERE isSubscribed = 1 ORDER BY subscribedAt DESC")
     fun observeSubscribedByDate(): Flow<List<Podcast>>
     
+    @Query("SELECT * FROM podcasts WHERE isSubscribed = 1")
+    suspend fun getSubscribed(): List<Podcast>
+    
     @Query("UPDATE podcasts SET isSubscribed = 1, subscribedAt = :timestamp WHERE id = :podcastId")
     suspend fun subscribe(podcastId: Long, timestamp: Long = System.currentTimeMillis())
     

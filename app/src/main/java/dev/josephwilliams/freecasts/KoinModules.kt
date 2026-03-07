@@ -12,8 +12,10 @@ import dev.josephwilliams.freecasts.ui.screens.podcasts.PodcastsViewModel
 import dev.josephwilliams.freecasts.ui.screens.podcasts.SubscribedPodcastDetailViewModel
 import dev.josephwilliams.freecasts.ui.screens.search.SearchPodcastDetailViewModel
 import dev.josephwilliams.freecasts.ui.screens.search.SearchViewModel
+import dev.josephwilliams.freecasts.work.PodcastSyncWorker
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.workmanager.dsl.worker
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -53,11 +55,16 @@ val searchApi = module {
     }
 }
 
+val workModule = module {
+    worker { PodcastSyncWorker(get(), get(), get(), get(), get()) }
+}
+
 val appModules = listOf(
     databaseModule,
     repositoryModule,
     viewModelModule,
     downloadModule,
     playbackModule,
-    searchApi
+    searchApi,
+    workModule
 )

@@ -45,6 +45,9 @@ interface EpisodeDao {
     @Query("SELECT * FROM episodes WHERE podcastId = :podcastId ORDER BY publishedAt DESC")
     fun observeByPodcastId(podcastId: Long): Flow<List<Episode>>
     
+    @Query("SELECT COUNT(*) FROM episodes WHERE podcastId = :podcastId")
+    suspend fun getEpisodeCountForPodcast(podcastId: Long): Int
+    
     @Query("SELECT * FROM episodes WHERE podcastId = :podcastId ORDER BY publishedAt DESC LIMIT :limit")
     fun observeByPodcastIdLimited(podcastId: Long, limit: Int): Flow<List<Episode>>
     
