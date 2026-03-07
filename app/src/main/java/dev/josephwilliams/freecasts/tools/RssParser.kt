@@ -1,284 +1,269 @@
 package dev.josephwilliams.freecasts.tools
 
+import android.util.Xml
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format.DateTimeComponents
 import kotlinx.datetime.toInstant
-import java.io.BufferedReader
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserException
+import java.io.IOException
 import java.io.InputStream
-import java.io.StringReader
-import java.io.StringWriter
-import javax.xml.transform.OutputKeys
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.stream.StreamResult
-import javax.xml.transform.stream.StreamSource
 
+/**
+ * RSS Feed Parser using XmlPullParser for robust parsing of podcast feeds.
+ * Handles minified XML, various namespace configurations, and edge cases.
+ */
 object RssParser {
+    
     fun parsePodcastFeed(inputStream: InputStream): ParseResult? {
-        val backup = inputStream.bufferedReader().readText()
-        val prettyXml = prettifyXml(backup.byteInputStream(), 2) ?: backup
-        val xmlStream = prettyXml.byteInputStream()
-        var podcast: Podcast? = null
-        val episodes: MutableList<Episode> = mutableListOf()
-        var categories: MutableList<String> = mutableListOf()
-
-        xmlStream.bufferedReader().use { reader ->
-            var line: String? = ""
-            while (reader.readLine().also { line = it?.trim() } != null) {
-                when (val tag = line?.getTagName()) {
-                    ShowTag.TITLE.tagName -> {
-                        getTagText(tag, line, reader)?.let { title ->
-                            podcast = podcast?.copy(title = title) ?: Podcast(title = title)
+        return try {
+            val parser = Xml.newPullParser()
+            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
+            parser.setInput(inputStream, null)
+            
+            var podcast: Podcast? = null
+            val episodes = mutableListOf<Episode>()
+            val categories = mutableListOf<String>()
+            var insideChannel = false
+            var insideItem = false
+            var currentEpisode: Episode? = null
+            var currentImageUrl: String? = null
+            var insideImage = false
+            
+            var eventType = parser.eventType
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                val tagName = parser.name
+                
+                when (eventType) {
+                    XmlPullParser.START_TAG -> {
+                        when {
+                            tagName.equals("channel", ignoreCase = true) -> {
+                                insideChannel = true
+                            }
+                            tagName.equals("item", ignoreCase = true) -> {
+                                insideItem = true
+                                currentEpisode = Episode()
+                            }
+                            tagName.equals("image", ignoreCase = true) && insideChannel && !insideItem -> {
+                                insideImage = true
+                            }
+                            insideItem -> {
+                                currentEpisode = parseEpisodeTag(parser, tagName, currentEpisode)
+                            }
+                            insideImage -> {
+                                if (tagName.equals("url", ignoreCase = true)) {
+                                    currentImageUrl = parser.nextText()
+                                }
+                            }
+                            insideChannel && !insideItem -> {
+                                podcast = parseChannelTag(parser, tagName, podcast, categories)
+                            }
                         }
                     }
-                    ShowTag.LINK.tagName -> {
-                        val link = getTagText(tag, line, reader) ?: ""
-                        podcast = podcast?.copy(websiteUrl = link) ?: Podcast(websiteUrl = link)
-                    }
-                    ShowTag.DESCRIPTION.tagName -> {
-                        val description = getTagText(tag, line, reader)?.stripCdata()
-                        podcast = podcast?.copy(description = description) ?: Podcast(description = description)
-                    }
-                    ShowTag.IMAGE.tagName -> {
-                        // Standard RSS <image> is a container with nested <url>
-                        parseImageContainer(reader)?.let { imageUrl ->
-                            podcast = podcast?.copy(artworkUrl = imageUrl) ?: Podcast(artworkUrl = imageUrl)
+                    XmlPullParser.END_TAG -> {
+                        when {
+                            tagName.equals("channel", ignoreCase = true) -> {
+                                insideChannel = false
+                            }
+                            tagName.equals("item", ignoreCase = true) -> {
+                                currentEpisode?.let { episode ->
+                                    if (episode.title.isNotBlank() || episode.audioUrl.isNotBlank()) {
+                                        episodes.add(episode)
+                                    }
+                                }
+                                currentEpisode = null
+                                insideItem = false
+                            }
+                            tagName.equals("image", ignoreCase = true) -> {
+                                if (insideImage && currentImageUrl != null) {
+                                    podcast = podcast?.copy(artworkUrl = currentImageUrl) 
+                                        ?: Podcast(artworkUrl = currentImageUrl)
+                                }
+                                insideImage = false
+                                currentImageUrl = null
+                            }
                         }
                     }
-                    ShowTag.ITUNES_IMAGE.tagName -> {
-                        // iTunes image uses href attribute: <itunes:image href="..."/>
-                        line.getTagAttribute("href")?.let { imageUrl ->
-                            podcast = podcast?.copy(artworkUrl = imageUrl) ?: Podcast(artworkUrl = imageUrl)
-                        }
-                    }
-                    ShowTag.AUTHOR.tagName -> {
-                        val author = getTagText(tag, line, reader)
-                        podcast = podcast?.copy(author = author) ?: Podcast(author = author)
-                    }
-                    ShowTag.ITUNES_CATEGORY.tagName -> {
-                        line?.getTagAttribute("text")?.let { category ->
-                            categories.add(category)
-                        }
-                    }
-                    ShowTag.ITEM.tagName -> {
-                        parseEpisodeItem(reader)?.let { episode ->
-                            episodes.add(episode)
-                        }
-                    }
-                    else -> continue
                 }
+                eventType = parser.next()
             }
+            
+            // Set categories
+            if (categories.isNotEmpty()) {
+                val categoriesStr = categories.joinToString(", ")
+                podcast = podcast?.copy(categories = categoriesStr)
+            }
+            
+            // Set episode count
+            if (episodes.isNotEmpty()) {
+                podcast = podcast?.copy(episodeCount = episodes.size)
+            }
+            
+            if (podcast != null) ParseResult(podcast, episodes) else null
+        } catch (e: XmlPullParserException) {
+            e.printStackTrace()
+            null
+        } catch (e: IOException) {
+            e.printStackTrace()
+            null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-
-        // Set categories as comma-separated string
-        if (categories.isNotEmpty()) {
-            val categoriesStr = categories.joinToString(", ")
-            podcast = podcast?.copy(categories = categoriesStr) ?: Podcast(categories = categoriesStr)
-        }
-
-        // Set episode count
-        if (episodes.isNotEmpty()) {
-            podcast = podcast?.copy(episodeCount = episodes.size)
-        }
-
-        return if (podcast != null) ParseResult(podcast, episodes) else null
     }
-
-    private fun parseImageContainer(reader: BufferedReader): String? {
-        var line: String? = ""
-        while (reader.readLine().also { line = it?.trim() } != null) {
-            val tag = line?.getTagName()
-            if (tag == "url") {
-                return getTagText(tag, line, reader)
+    
+    private fun parseChannelTag(
+        parser: XmlPullParser, 
+        tagName: String, 
+        currentPodcast: Podcast?,
+        categories: MutableList<String>
+    ): Podcast? {
+        var podcast = currentPodcast
+        
+        when {
+            tagName.equals("title", ignoreCase = true) -> {
+                val title = parser.safeNextText()
+                podcast = podcast?.copy(title = title) ?: Podcast(title = title)
             }
-            if (line?.checkEndTag("image") == true) {
-                return null
+            tagName.equals("link", ignoreCase = true) && !tagName.contains(":") -> {
+                // Only process plain <link>, not atom:link or other namespaced links
+                val link = parser.safeNextText()
+                if (link.isNotBlank() && !link.startsWith("http://www.w3.org")) {
+                    podcast = podcast?.copy(websiteUrl = link) ?: Podcast(websiteUrl = link)
+                }
             }
+            tagName.equals("description", ignoreCase = true) -> {
+                val description = parser.safeNextText().stripCdata()
+                podcast = podcast?.copy(description = description) ?: Podcast(description = description)
+            }
+            tagName.equals("itunes:image", ignoreCase = true) -> {
+                val imageUrl = parser.getAttributeValue(null, "href")
+                if (!imageUrl.isNullOrBlank()) {
+                    podcast = podcast?.copy(artworkUrl = imageUrl) ?: Podcast(artworkUrl = imageUrl)
+                }
+            }
+            tagName.equals("itunes:author", ignoreCase = true) -> {
+                val author = parser.safeNextText()
+                podcast = podcast?.copy(author = author) ?: Podcast(author = author)
+            }
+            tagName.equals("itunes:category", ignoreCase = true) -> {
+                val category = parser.getAttributeValue(null, "text")
+                if (!category.isNullOrBlank()) {
+                    categories.add(category)
+                }
+            }
+//            tagName.equals("language", ignoreCase = true) -> {
+//                val language = parser.safeNextText()
+//                podcast = podcast?.copy(language = language) ?: Podcast(language = language)
+//            }
         }
-        return null
+        
+        return podcast
     }
-
-    private fun parseEpisodeItem(reader: BufferedReader): Episode? {
-        var line: String? = ""
-        var episode: Episode? = null
-        while (reader.readLine().also { line = it?.trim() } != null) {
-            when (val tag = line?.getTagName()) {
-                EpisodeTag.TITLE.tagName -> {
-                    val title = getTagText(tag, line, reader) ?: ""
-                    episode = episode?.copy(title = title) ?: Episode(title = title)
+    
+    private fun parseEpisodeTag(
+        parser: XmlPullParser,
+        tagName: String,
+        currentEpisode: Episode?
+    ): Episode? {
+        var episode = currentEpisode
+        
+        when {
+            tagName.equals("title", ignoreCase = true) -> {
+                val title = parser.safeNextText()
+                episode = episode?.copy(title = title) ?: Episode(title = title)
+            }
+            tagName.equals("guid", ignoreCase = true) -> {
+                val guid = parser.safeNextText().stripCdata()
+                episode = episode?.copy(guid = guid) ?: Episode(guid = guid)
+            }
+            tagName.equals("pubDate", ignoreCase = true) -> {
+                val pubDate = parser.safeNextText()
+                val timeMillis = pubDate.toTimeMillis()
+                episode = episode?.copy(publishedAt = timeMillis) ?: Episode(publishedAt = timeMillis)
+            }
+            tagName.equals("description", ignoreCase = true) -> {
+                val description = parser.safeNextText().stripCdata()
+                episode = episode?.copy(description = description) ?: Episode(description = description)
+            }
+            tagName.equals("itunes:duration", ignoreCase = true) -> {
+                val duration = parser.safeNextText()
+                val time = duration.parseDuration()
+                episode = episode?.copy(durationSeconds = time) ?: Episode(durationSeconds = time)
+            }
+            tagName.equals("enclosure", ignoreCase = true) -> {
+                val audioUrl = parser.getAttributeValue(null, "url") ?: ""
+                val fileSize = parser.getAttributeValue(null, "length")?.toLongOrNull()
+                val mimeType = parser.getAttributeValue(null, "type")
+                episode = episode?.copy(
+                    audioUrl = audioUrl,
+                    fileSizeBytes = fileSize,
+                    mimeType = mimeType
+                ) ?: Episode(
+                    audioUrl = audioUrl,
+                    fileSizeBytes = fileSize,
+                    mimeType = mimeType
+                )
+            }
+            tagName.equals("itunes:image", ignoreCase = true) -> {
+                val imageUrl = parser.getAttributeValue(null, "href")
+                if (!imageUrl.isNullOrBlank()) {
+                    episode = episode?.copy(artworkUrl = imageUrl) ?: Episode(artworkUrl = imageUrl)
                 }
-                EpisodeTag.GUID.tagName -> {
-                    val guid = getTagText(tag, line, reader)?.stripCdata() ?: ""
-                    episode = episode?.copy(guid = guid) ?: Episode(guid = guid)
+            }
+            tagName.equals("itunes:episode", ignoreCase = true) -> {
+                val episodeNum = parser.safeNextText().toIntOrNull()
+                episode = episode?.copy(episodeNumber = episodeNum) ?: Episode(episodeNumber = episodeNum)
+            }
+            tagName.equals("itunes:season", ignoreCase = true) -> {
+                val seasonNum = parser.safeNextText().toIntOrNull()
+                episode = episode?.copy(seasonNumber = seasonNum) ?: Episode(seasonNumber = seasonNum)
+            }
+//            tagName.equals("link", ignoreCase = true) -> {
+//                val link = parser.safeNextText()
+//                if (link.isNotBlank()) {
+//                    episode = episode?.copy(websiteUrl = link) ?: Episode(websiteUrl = link)
+//                }
+//            }
+            tagName.equals("content:encoded", ignoreCase = true) -> {
+                // Use content:encoded as description if description is empty
+                val content = parser.safeNextText().stripCdata()
+                if (episode?.description.isNullOrBlank() && content.isNotBlank()) {
+                    episode = episode?.copy(description = content) ?: Episode(description = content)
                 }
-                EpisodeTag.PUB_DATE.tagName -> {
-                    val pubDate = getTagText(tag, line, reader)
-                    episode = episode?.copy(publishedAt = pubDate?.toTimeMillis()) ?: Episode(publishedAt = pubDate?.toTimeMillis())
-                }
-                EpisodeTag.DESCRIPTION.tagName -> {
-                    val description = getTagText(tag, line, reader)?.stripCdata()
-                    episode = episode?.copy(description = description) ?: Episode(description = description)
-                }
-                EpisodeTag.DURATION.tagName -> {
-                    val duration = getTagText(tag, line, reader)
-                    val time = duration?.parseDuration() ?: 0
-                    episode = episode?.copy(durationSeconds = time) ?: Episode(durationSeconds = time)
-                }
-                EpisodeTag.ENCLOSURE.tagName -> {
-                    val audioUrl = line?.getTagAttribute("url") ?: ""
-                    val fileSize = line?.getTagAttribute("length")?.toLongOrNull()
-                    val mimeType = line?.getTagAttribute("type")
-                    episode = episode?.copy(
-                        audioUrl = audioUrl,
-                        fileSizeBytes = fileSize,
-                        mimeType = mimeType
-                    ) ?: Episode(
-                        audioUrl = audioUrl,
-                        fileSizeBytes = fileSize,
-                        mimeType = mimeType
-                    )
-                }
-                EpisodeTag.ITUNES_IMAGE.tagName -> {
-                    line?.getTagAttribute("href")?.let { imageUrl ->
-                        episode = episode?.copy(artworkUrl = imageUrl) ?: Episode(artworkUrl = imageUrl)
-                    }
-                }
-                EpisodeTag.ITUNES_EPISODE.tagName -> {
-                    val episodeNum = getTagText(tag, line, reader)?.toIntOrNull()
-                    episode = episode?.copy(episodeNumber = episodeNum) ?: Episode(episodeNumber = episodeNum)
-                }
-                EpisodeTag.ITUNES_SEASON.tagName -> {
-                    val seasonNum = getTagText(tag, line, reader)?.toIntOrNull()
-                    episode = episode?.copy(seasonNumber = seasonNum) ?: Episode(seasonNumber = seasonNum)
-                }
-                else -> if (line?.checkEndTag("item") == true) return episode
             }
         }
-
+        
         return episode
-    }
-
-    fun getTagText(tag: String, start: String?, reader: BufferedReader): String? {
-        start ?: return null
-        val tagStartIndex = start.indexOf("<$tag")
-        if (tagStartIndex < 0) return null
-        
-        val closingBracketIndex = start.indexOf('>', tagStartIndex)
-        if (closingBracketIndex < 0) return null
-        
-        // Check for self-closing tag like <tag attr="value"/>
-        if (start.getOrNull(closingBracketIndex - 1) == '/') return null
-        
-        val tagStartLen = closingBracketIndex + 1
-        val endTagIndex = start.indexOf("</$tag>")
-        
-        if (endTagIndex > 0) {
-            return start.substring(tagStartLen, endTagIndex)
-        }
-        
-        var runningDesc = start.substring(tagStartLen)
-        var next: String
-        do {
-            next = reader.readLine()?.trim() ?: break
-            runningDesc += "\n$next"
-        } while (next.indexOf("</$tag>") < 0)
-        
-        val finalEndIndex = runningDesc.indexOf("</$tag>")
-        return if (finalEndIndex >= 0) {
-            runningDesc.substring(0, finalEndIndex)
-        } else {
-            runningDesc
-        }
     }
 
     data class ParseResult(
         val podcast: Podcast?,
         val episodes: List<Episode>
     )
+}
 
-    fun prettifyXml(input: String, indent: Int): String? {
-        return try {
-            val xmlInput = StreamSource(StringReader(input))
-            val stringWriter = StringWriter()
-            val xmlOutput = StreamResult(stringWriter)
-            val transformerFactory = TransformerFactory.newInstance()
-            transformerFactory.setAttribute("indent-number", indent)
-            val transformer = transformerFactory.newTransformer()
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes")
-            transformer.transform(xmlInput, xmlOutput)
-            xmlOutput.writer.toString()
-        } catch (e: Exception) {
-            null
+/**
+ * Safely get next text content, handling edge cases where nextText() might fail.
+ */
+private fun XmlPullParser.safeNextText(): String {
+    return try {
+        if (next() == XmlPullParser.TEXT) {
+            val result = text ?: ""
+            // Move to end tag
+            if (eventType == XmlPullParser.TEXT) {
+                next()
+            }
+            result
+        } else {
+            ""
         }
+    } catch (e: Exception) {
+        ""
     }
-
-    fun prettifyXml(inputStream: InputStream, indent: Int): String? {
-        return try {
-            val xmlInput = StreamSource(inputStream)
-            val stringWriter = StringWriter()
-            val xmlOutput = StreamResult(stringWriter)
-            val transformerFactory = TransformerFactory.newInstance()
-            transformerFactory.setAttribute("indent-number", indent)
-            val transformer = transformerFactory.newTransformer()
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes")
-            transformer.transform(xmlInput, xmlOutput)
-            xmlOutput.writer.toString()
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    enum class ShowTag(val tagName: String) {
-        TITLE("title"),
-        LINK("link"),
-        DESCRIPTION("description"),
-        IMAGE("image"),
-        ITUNES_IMAGE("itunes:image"),
-        AUTHOR("itunes:author"),
-        ITUNES_CATEGORY("itunes:category"),
-        ITEM("item")
-    }
-
-    enum class EpisodeTag(val tagName: String) {
-        TITLE("title"),
-        GUID("guid"),
-        PUB_DATE("pubDate"),
-        DESCRIPTION("description"),
-        DURATION("itunes:duration"),
-        ENCLOSURE("enclosure"),
-        ITUNES_IMAGE("itunes:image"),
-        ITUNES_EPISODE("itunes:episode"),
-        ITUNES_SEASON("itunes:season")
-    }
-}
-
-fun String.getTagName(): String? {
-    if (this.firstOrNull() != '<' || !this.contains('>')) return null
-    
-    val tagStart = 1
-    val spaceIndex = this.indexOf(' ', tagStart)
-    val closingIndex = this.indexOf('>', tagStart)
-    
-    if (closingIndex < 0) return null
-    
-    val endIndex = when {
-        spaceIndex < 0 -> closingIndex
-        else -> minOf(spaceIndex, closingIndex)
-    }
-    
-    return this.substring(tagStart, endIndex)
-}
-
-fun String.getTagAttribute(attributeName: String): String? {
-    // Match attribute="value" or attribute='value'
-    val pattern = """$attributeName\s*=\s*["']([^"']+)["']""".toRegex()
-    return pattern.find(this)?.groupValues?.getOrNull(1)
-}
-
-fun String.checkEndTag(tagName: String): Boolean {
-    return this.contains("</$tagName>")
 }
 
 fun String.stripCdata(): String {
