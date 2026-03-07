@@ -24,7 +24,7 @@ import dev.josephwilliams.freecasts.data.local.entity.Podcast
         PlaylistEpisodeCrossRef::class,
         Download::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

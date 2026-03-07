@@ -37,7 +37,7 @@ val viewModelModule = module {
     viewModel { PodcastsViewModel(get()) }
     viewModel { SubscribedPodcastDetailViewModel(get(), get(), get(), get(), get()) }
     viewModel { PlaylistsViewModel(get()) }
-    viewModel { CreateEditPlaylistViewModel(get()) }
+    viewModel { CreateEditPlaylistViewModel(get(), get()) }
     viewModel { PlaylistDetailViewModel(get(), get()) }
 }
 
@@ -56,7 +56,7 @@ val searchApi = module {
 }
 
 val workModule = module {
-    worker { PodcastSyncWorker(get(), get(), get(), get(), get()) }
+    worker { PodcastSyncWorker(get(), get(), get(), get(), get(), get()) }
 }
 
 val appModules = listOf(

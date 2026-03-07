@@ -96,5 +96,13 @@ interface PlaylistDao {
     
     @Query("SELECT * FROM playlists WHERE removeAfterListening = 1")
     suspend fun getPlaylistsWithAutoRemove(): List<Playlist>
+    
+    // === Auto-Add Settings ===
+    
+    @Query("SELECT * FROM playlists WHERE autoAddPodcastIds IS NOT NULL AND autoAddPodcastIds != ''")
+    suspend fun getPlaylistsWithAutoAdd(): List<Playlist>
+    
+    @Query("UPDATE playlists SET autoAddPodcastIds = :podcastIds WHERE id = :playlistId")
+    suspend fun setAutoAddPodcastIds(playlistId: Long, podcastIds: String?)
 }
 

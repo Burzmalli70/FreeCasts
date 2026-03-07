@@ -3,7 +3,9 @@ package dev.josephwilliams.freecasts.ui.screens.playlists
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
+import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Playlist
+import dev.josephwilliams.freecasts.data.local.entity.Podcast
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,13 +16,26 @@ import kotlinx.coroutines.launch
  * ViewModel for creating or editing a playlist.
  */
 class CreateEditPlaylistViewModel(
-    private val playlistDao: PlaylistDao
+    private val playlistDao: PlaylistDao,
+    private val podcastDao: PodcastDao
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(CreateEditPlaylistState())
     val state: StateFlow<CreateEditPlaylistState> = _state.asStateFlow()
     
     private var existingPlaylistId: Long? = null
+    
+    init {
+        loadSubscribedPodcasts()
+    }
+    
+    private fun loadSubscribedPodcasts() {
+        viewModelScope.launch {
+            podcastDao.observeSubscribed().collect { podcasts ->
+                _state.update { it.copy(subscribedPodcasts = podcasts) }
+            }
+        }
+    }
     
     /**
      * Load an existing playlist for editing.
@@ -35,6 +50,7 @@ class CreateEditPlaylistViewModel(
                 _state.update { it.copy(
                     name = playlist.name,
                     removeAfterListening = playlist.removeAfterListening,
+                    selectedPodcastIds = playlist.getAutoAddPodcastIdList().toSet(),
                     isLoading = false
                 )}
             } else {
@@ -51,7 +67,9 @@ class CreateEditPlaylistViewModel(
      */
     fun resetForCreate() {
         existingPlaylistId = null
-        _state.value = CreateEditPlaylistState()
+        _state.update { 
+            CreateEditPlaylistState(subscribedPodcasts = it.subscribedPodcasts)
+        }
     }
     
     /**
@@ -72,6 +90,20 @@ class CreateEditPlaylistViewModel(
     }
     
     /**
+     * Toggle podcast selection for auto-add.
+     */
+    fun togglePodcastSelection(podcastId: Long) {
+        _state.update { state ->
+            val newSelection = if (state.selectedPodcastIds.contains(podcastId)) {
+                state.selectedPodcastIds - podcastId
+            } else {
+                state.selectedPodcastIds + podcastId
+            }
+            state.copy(selectedPodcastIds = newSelection)
+        }
+    }
+    
+    /**
      * Save the playlist (create or update).
      * Returns true if successful.
      */
@@ -88,6 +120,12 @@ class CreateEditPlaylistViewModel(
         
         viewModelScope.launch {
             try {
+                val autoAddPodcastIds = if (currentState.selectedPodcastIds.isEmpty()) {
+                    null
+                } else {
+                    currentState.selectedPodcastIds.joinToString(",")
+                }
+                
                 if (existingPlaylistId != null) {
                     // Update existing playlist
                     val existing = playlistDao.getById(existingPlaylistId!!)
@@ -95,6 +133,7 @@ class CreateEditPlaylistViewModel(
                         playlistDao.update(existing.copy(
                             name = currentState.name.trim(),
                             removeAfterListening = currentState.removeAfterListening,
+                            autoAddPodcastIds = autoAddPodcastIds,
                             updatedAt = System.currentTimeMillis()
                         ))
                     }
@@ -102,7 +141,8 @@ class CreateEditPlaylistViewModel(
                     // Create new playlist
                     playlistDao.insert(Playlist(
                         name = currentState.name.trim(),
-                        removeAfterListening = currentState.removeAfterListening
+                        removeAfterListening = currentState.removeAfterListening,
+                        autoAddPodcastIds = autoAddPodcastIds
                     ))
                 }
                 
@@ -124,6 +164,8 @@ class CreateEditPlaylistViewModel(
 data class CreateEditPlaylistState(
     val name: String = "",
     val removeAfterListening: Boolean = false,
+    val subscribedPodcasts: List<Podcast> = emptyList(),
+    val selectedPodcastIds: Set<Long> = emptySet(),
     val isEditMode: Boolean = false,
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
@@ -135,4 +177,7 @@ data class CreateEditPlaylistState(
     
     val title: String
         get() = if (isEditMode) "Edit Playlist" else "Create Playlist"
+    
+    val hasSubscribedPodcasts: Boolean
+        get() = subscribedPodcasts.isNotEmpty()
 }

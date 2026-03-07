@@ -95,6 +95,9 @@ interface EpisodeDao {
     @Query("SELECT * FROM episodes WHERE isPlayed = 0 ORDER BY publishedAt DESC")
     fun observeUnplayed(): Flow<List<Episode>>
     
+    @Query("SELECT * FROM episodes WHERE podcastId = :podcastId AND isPlayed = 0 ORDER BY publishedAt DESC")
+    suspend fun getUnplayedByPodcastId(podcastId: Long): List<Episode>
+    
     // Search
     @Query("SELECT * FROM episodes WHERE title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%' ORDER BY publishedAt DESC")
     fun search(query: String): Flow<List<Episode>>

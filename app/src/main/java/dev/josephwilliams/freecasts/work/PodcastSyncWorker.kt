@@ -17,18 +17,22 @@ import androidx.work.WorkerParameters
 import dev.josephwilliams.freecasts.MainActivity
 import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
+import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
+import dev.josephwilliams.freecasts.data.local.entity.PlaylistEpisodeCrossRef
 import dev.josephwilliams.freecasts.data.repository.PodcastRepository
 
 /**
  * Worker that periodically checks all subscribed podcasts for new episodes.
  * Runs approximately every hour in the background, even when the app is closed.
+ * Also handles auto-adding new episodes to playlists that have auto-add enabled.
  */
 class PodcastSyncWorker(
     private val context: Context,
     workerParams: WorkerParameters,
     private val podcastDao: PodcastDao,
     private val episodeDao: EpisodeDao,
+    private val playlistDao: PlaylistDao,
     private val podcastRepository: PodcastRepository
 ) : CoroutineWorker(context, workerParams) {
 
@@ -80,6 +84,9 @@ class PodcastSyncWorker(
                     Log.e(TAG, "Error refreshing ${podcast.title}", e)
                 }
             }
+            
+            // Auto-add new episodes to playlists
+            autoAddEpisodesToPlaylists()
             
             // Show notification if new episodes were found
             if (totalNewEpisodes > 0) {
@@ -157,5 +164,68 @@ class PodcastSyncWorker(
         
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
+    }
+    
+    /**
+     * Auto-add new, unplayed episodes to playlists that have auto-add enabled
+     * for specific podcasts.
+     */
+    private suspend fun autoAddEpisodesToPlaylists() {
+        try {
+            val playlistsWithAutoAdd = playlistDao.getPlaylistsWithAutoAdd()
+            
+            if (playlistsWithAutoAdd.isEmpty()) {
+                Log.d(TAG, "No playlists with auto-add enabled")
+                return
+            }
+            
+            Log.d(TAG, "Processing ${playlistsWithAutoAdd.size} playlists with auto-add")
+            
+            for (playlist in playlistsWithAutoAdd) {
+                val podcastIds = playlist.getAutoAddPodcastIdList()
+                
+                for (podcastId in podcastIds) {
+                    try {
+                        // Get unplayed episodes for this podcast
+                        val unplayedEpisodes = episodeDao.getUnplayedByPodcastId(podcastId)
+                        
+                        for (episode in unplayedEpisodes) {
+                            // Check if episode is already in the playlist
+                            val alreadyInPlaylist = playlistDao.isEpisodeInPlaylist(
+                                playlistId = playlist.id,
+                                episodeId = episode.id
+                            )
+                            
+                            if (!alreadyInPlaylist) {
+                                // Get the next position in the playlist
+                                val maxPosition = playlistDao.getMaxPosition(playlist.id) ?: -1
+                                val newPosition = maxPosition + 1
+                                
+                                // Add episode to playlist
+                                playlistDao.insertPlaylistEpisode(
+                                    PlaylistEpisodeCrossRef(
+                                        playlistId = playlist.id,
+                                        episodeId = episode.id,
+                                        position = newPosition,
+                                        addedAt = System.currentTimeMillis()
+                                    )
+                                )
+                                
+                                Log.d(TAG, "Auto-added episode '${episode.title}' to playlist '${playlist.name}'")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error auto-adding episodes from podcast $podcastId to playlist ${playlist.name}", e)
+                    }
+                }
+                
+                // Update playlist timestamp
+                playlistDao.updateTimestamp(playlist.id)
+            }
+            
+            Log.d(TAG, "Auto-add to playlists completed")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in auto-add to playlists", e)
+        }
     }
 }

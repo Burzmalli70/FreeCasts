@@ -27,6 +27,25 @@ data class Playlist(
     val artworkUrl: String? = null,
     
     /** Whether to automatically remove episodes from this playlist after they are played */
-    val removeAfterListening: Boolean = false
-)
+    val removeAfterListening: Boolean = false,
+    
+    /** 
+     * Comma-separated list of podcast IDs whose new episodes should be 
+     * automatically added to this playlist when synced.
+     */
+    val autoAddPodcastIds: String? = null
+) {
+    /** Get the list of podcast IDs that auto-add to this playlist */
+    fun getAutoAddPodcastIdList(): List<Long> {
+        return autoAddPodcastIds
+            ?.split(",")
+            ?.mapNotNull { it.trim().toLongOrNull() }
+            ?: emptyList()
+    }
+    
+    /** Create a copy with updated auto-add podcast IDs */
+    fun withAutoAddPodcastIds(podcastIds: List<Long>): Playlist {
+        return copy(autoAddPodcastIds = if (podcastIds.isEmpty()) null else podcastIds.joinToString(","))
+    }
+}
 
