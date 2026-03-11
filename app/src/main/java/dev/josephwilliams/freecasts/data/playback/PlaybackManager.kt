@@ -1,13 +1,16 @@
 package dev.josephwilliams.freecasts.data.playback
 
+import android.content.ComponentName
 import android.content.Context
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
-import android.media.AudioManager
-import android.media.MediaPlayer
-import android.os.Build
+import android.os.Bundle
 import android.util.Log
-import androidx.core.content.getSystemService
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionToken
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.MoreExecutors
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,18 +22,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
 
 /**
- * Manages audio playback using Android's MediaPlayer API.
+ * Manages audio playback via Media3 MediaController.
+ * Connects to PlaybackService for background-capable playback.
  * 
  * Features:
+ * - Background playback with notification
  * - Play/pause control
  * - Skip forward/backward by 30 seconds
  * - Position tracking and progress updates
- * - Audio focus handling
- * - Saves playback position to database
  * - Queue support for playlist playback
+ * - Lock screen and Bluetooth controls
  * 
  * Inject via Koin: `val playbackManager: PlaybackManager by inject()`
  */
@@ -42,14 +45,12 @@ class PlaybackManager(
         private const val TAG = "PlaybackManager"
         private const val SKIP_DURATION_MS = 30_000L
         private const val POSITION_UPDATE_INTERVAL_MS = 500L
-        private const val POSITION_SAVE_INTERVAL_MS = 5_000L
     }
     
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
-    private var mediaPlayer: MediaPlayer? = null
-    private var audioFocusRequest: AudioFocusRequest? = null
-    private val audioManager: AudioManager? = context.getSystemService()
+    private var controllerFuture: ListenableFuture<MediaController>? = null
+    private var mediaController: MediaController? = null
     
     private val _state = MutableStateFlow(PlaybackState())
     
@@ -60,26 +61,86 @@ class PlaybackManager(
     val state: StateFlow<PlaybackState> = _state.asStateFlow()
     
     private var positionUpdateJob: Job? = null
-    private var positionSaveJob: Job? = null
-    private var lastSavedPositionMs: Long = 0
+    private var isConnected = false
     
-    private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
-        when (focusChange) {
-            AudioManager.AUDIOFOCUS_LOSS -> {
-                pause()
+    init {
+        connect()
+    }
+    
+    /**
+     * Connect to the PlaybackService.
+     */
+    private fun connect() {
+        if (isConnected) return
+        
+        val sessionToken = SessionToken(
+            context,
+            ComponentName(context, PlaybackService::class.java)
+        )
+        
+        controllerFuture = MediaController.Builder(context, sessionToken).buildAsync()
+        controllerFuture?.addListener({
+            try {
+                mediaController = controllerFuture?.get()
+                isConnected = true
+                Log.d(TAG, "Connected to PlaybackService")
+                
+                setupPlayerListener()
+                syncStateFromPlayer()
+                startPositionUpdates()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to connect to PlaybackService", e)
+                isConnected = false
             }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                pause()
+        }, MoreExecutors.directExecutor())
+    }
+    
+    private fun setupPlayerListener() {
+        mediaController?.addListener(object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                _state.update { it.copy(isPlaying = isPlaying) }
             }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                mediaPlayer?.setVolume(0.3f, 0.3f)
-            }
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                mediaPlayer?.setVolume(1.0f, 1.0f)
-                if (_state.value.currentEpisode != null && !_state.value.isPlaying) {
-                    resume()
+            
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                val isBuffering = playbackState == Player.STATE_BUFFERING
+                _state.update { it.copy(isBuffering = isBuffering) }
+                
+                if (playbackState == Player.STATE_ENDED) {
+                    handlePlaybackComplete()
                 }
             }
+            
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                syncStateFromPlayer()
+            }
+            
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                _state.update { it.copy(error = error.message ?: "Playback error") }
+            }
+        })
+    }
+    
+    private fun syncStateFromPlayer() {
+        val controller = mediaController ?: return
+        
+        val currentMediaItem = controller.currentMediaItem
+        val currentEpisode = currentMediaItem?.toPlayingEpisode()
+        
+        val queue = mutableListOf<PlayingEpisode>()
+        for (i in 0 until controller.mediaItemCount) {
+            controller.getMediaItemAt(i).toPlayingEpisode()?.let { queue.add(it) }
+        }
+        
+        _state.update {
+            it.copy(
+                currentEpisode = currentEpisode,
+                isPlaying = controller.isPlaying,
+                currentPositionMs = controller.currentPosition,
+                durationMs = controller.duration.coerceAtLeast(0),
+                isBuffering = controller.playbackState == Player.STATE_BUFFERING,
+                queue = queue,
+                currentQueueIndex = controller.currentMediaItemIndex
+            )
         }
     }
     
@@ -90,14 +151,34 @@ class PlaybackManager(
      * @param episode The episode to play
      */
     fun play(episode: PlayingEpisode) {
-        // Clear queue when playing a single episode
-        _state.update { it.copy(queue = emptyList(), currentQueueIndex = -1) }
-        playEpisodeInternal(episode)
+        scope.launch {
+            val controller = mediaController
+            if (controller == null) {
+                Log.e(TAG, "MediaController not connected")
+                return@launch
+            }
+            
+            val mediaItem = episode.toMediaItem()
+            
+            // Restore saved position
+            val savedPosition = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                episodeDao.getPlaybackPosition(episode.episodeId)
+            }
+            
+            controller.setMediaItem(mediaItem)
+            controller.prepare()
+            
+            if (savedPosition > 0 && savedPosition < (controller.duration - 5000).coerceAtLeast(0)) {
+                controller.seekTo(savedPosition)
+            }
+            
+            controller.play()
+        }
     }
     
     /**
      * Play a list of episodes as a queue (e.g., from a playlist).
-     * Starts playing the first episode and queues the rest.
+     * Starts playing the episode at startIndex.
      * 
      * @param episodes The list of episodes to play
      * @param startIndex The index of the episode to start playing (default 0)
@@ -105,30 +186,37 @@ class PlaybackManager(
     fun playQueue(episodes: List<PlayingEpisode>, startIndex: Int = 0) {
         if (episodes.isEmpty()) return
         
-        val validStartIndex = startIndex.coerceIn(0, episodes.size - 1)
-        
-        _state.update { 
-            it.copy(
-                queue = episodes,
-                currentQueueIndex = validStartIndex
-            )
+        scope.launch {
+            val controller = mediaController
+            if (controller == null) {
+                Log.e(TAG, "MediaController not connected")
+                return@launch
+            }
+            
+            val validStartIndex = startIndex.coerceIn(0, episodes.size - 1)
+            val mediaItems = episodes.map { it.toMediaItem() }
+            
+            // Restore saved position for the starting episode
+            val startingEpisode = episodes[validStartIndex]
+            val savedPosition = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                episodeDao.getPlaybackPosition(startingEpisode.episodeId)
+            }
+            
+            controller.setMediaItems(mediaItems, validStartIndex, savedPosition.coerceAtLeast(0))
+            controller.prepare()
+            controller.play()
         }
-        
-        playEpisodeInternal(episodes[validStartIndex])
     }
     
     /**
      * Skip to the next episode in the queue.
      */
     fun playNext() {
-        val currentState = _state.value
-        if (!currentState.hasNextInQueue) return
-        
-        val nextIndex = currentState.currentQueueIndex + 1
-        val nextEpisode = currentState.queue[nextIndex]
-        
-        _state.update { it.copy(currentQueueIndex = nextIndex) }
-        playEpisodeInternal(nextEpisode)
+        mediaController?.let { controller ->
+            if (controller.hasNextMediaItem()) {
+                controller.seekToNext()
+            }
+        }
     }
     
     /**
@@ -136,149 +224,50 @@ class PlaybackManager(
      * If current position is > 3 seconds, restarts the current episode instead.
      */
     fun playPrevious() {
-        val currentState = _state.value
-        
-        // If we're more than 3 seconds into the episode, restart it
-        if (currentState.currentPositionMs > 3000) {
-            seekTo(0)
-            return
+        mediaController?.let { controller ->
+            if (controller.currentPosition > 3000) {
+                controller.seekTo(0)
+            } else if (controller.hasPreviousMediaItem()) {
+                controller.seekToPrevious()
+            }
         }
-        
-        if (!currentState.hasPreviousInQueue) return
-        
-        val prevIndex = currentState.currentQueueIndex - 1
-        val prevEpisode = currentState.queue[prevIndex]
-        
-        _state.update { it.copy(currentQueueIndex = prevIndex) }
-        playEpisodeInternal(prevEpisode)
     }
     
     /**
      * Add an episode to the end of the queue.
      */
     fun addToQueue(episode: PlayingEpisode) {
-        _state.update { it.copy(queue = it.queue + episode) }
+        mediaController?.addMediaItem(episode.toMediaItem())
+        syncStateFromPlayer()
     }
     
     /**
      * Remove an episode from the queue by index.
      */
     fun removeFromQueue(index: Int) {
-        val currentState = _state.value
-        if (index < 0 || index >= currentState.queue.size) return
-        
-        val newQueue = currentState.queue.toMutableList().apply { removeAt(index) }
-        val newIndex = when {
-            newQueue.isEmpty() -> -1
-            index < currentState.currentQueueIndex -> currentState.currentQueueIndex - 1
-            index == currentState.currentQueueIndex -> currentState.currentQueueIndex.coerceAtMost(newQueue.size - 1)
-            else -> currentState.currentQueueIndex
+        mediaController?.let { controller ->
+            if (index >= 0 && index < controller.mediaItemCount) {
+                controller.removeMediaItem(index)
+                syncStateFromPlayer()
+            }
         }
-        
-        _state.update { it.copy(queue = newQueue, currentQueueIndex = newIndex) }
     }
     
     /**
      * Clear the queue but keep playing the current episode.
      */
     fun clearQueue() {
-        val currentEpisode = _state.value.currentEpisode
-        _state.update { 
-            it.copy(
-                queue = if (currentEpisode != null) listOf(currentEpisode) else emptyList(),
-                currentQueueIndex = if (currentEpisode != null) 0 else -1
-            )
-        }
-    }
-    
-    /**
-     * Internal method to start playing an episode.
-     */
-    private fun playEpisodeInternal(episode: PlayingEpisode) {
-        scope.launch {
-            try {
-                // Stop any current playback
-                stopInternal()
-                
-                _state.update { it.copy(isBuffering = true, error = null, currentEpisode = episode) }
-                
-                // Request audio focus
-                if (!requestAudioFocus()) {
-                    _state.update { it.copy(error = "Could not obtain audio focus", isBuffering = false) }
-                    return@launch
-                }
-                
-                // Determine the audio source (local file or URL)
-                val audioSource = episode.localFilePath?.let { path ->
-                    val file = File(path)
-                    if (file.exists()) path else null
-                } ?: episode.audioUrl
-                
-                // Create and configure MediaPlayer
-                mediaPlayer = MediaPlayer().apply {
-                    setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .build()
-                    )
-                    
-                    setOnPreparedListener { mp ->
-                        val duration = mp.duration.toLong()
-                        _state.update { 
-                            it.copy(
-                                isBuffering = false, 
-                                durationMs = duration,
-                                isPlaying = true
-                            ) 
-                        }
-                        
-                        // Seek to saved position if available
-                        scope.launch(Dispatchers.IO) {
-                            val savedPosition = episodeDao.getPlaybackPosition(episode.episodeId)
-                            if (savedPosition > 0 && savedPosition < duration - 5000) {
-                                mp.seekTo(savedPosition.toInt())
-                                _state.update { it.copy(currentPositionMs = savedPosition) }
-                            }
-                        }
-                        
-                        mp.start()
-                        startPositionUpdates()
-                    }
-                    
-                    setOnCompletionListener {
-                        onPlaybackComplete()
-                    }
-                    
-                    setOnErrorListener { _, what, extra ->
-                        Log.e(TAG, "MediaPlayer error: what=$what, extra=$extra")
-                        _state.update { 
-                            it.copy(
-                                error = "Playback error (code: $what)", 
-                                isPlaying = false,
-                                isBuffering = false
-                            ) 
-                        }
-                        true
-                    }
-                    
-                    setOnBufferingUpdateListener { _, percent ->
-                        // Could track buffering progress if needed
-                    }
-                    
-                    setDataSource(audioSource)
-                    prepareAsync()
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error starting playback", e)
-                _state.update { 
-                    it.copy(
-                        error = "Failed to play: ${e.message}", 
-                        isPlaying = false,
-                        isBuffering = false
-                    ) 
-                }
+        mediaController?.let { controller ->
+            val currentIndex = controller.currentMediaItemIndex
+            val currentItem = controller.currentMediaItem
+            
+            if (currentItem != null) {
+                controller.clearMediaItems()
+                controller.setMediaItem(currentItem)
+            } else {
+                controller.clearMediaItems()
             }
+            syncStateFromPlayer()
         }
     }
     
@@ -286,10 +275,12 @@ class PlaybackManager(
      * Toggle play/pause state.
      */
     fun togglePlayPause() {
-        if (_state.value.isPlaying) {
-            pause()
-        } else {
-            resume()
+        mediaController?.let { controller ->
+            if (controller.isPlaying) {
+                controller.pause()
+            } else {
+                controller.play()
+            }
         }
     }
     
@@ -297,39 +288,28 @@ class PlaybackManager(
      * Pause playback.
      */
     fun pause() {
-        mediaPlayer?.let { mp ->
-            if (mp.isPlaying) {
-                mp.pause()
-                _state.update { it.copy(isPlaying = false) }
-                stopPositionUpdates()
-                saveCurrentPosition()
-            }
-        }
+        mediaController?.pause()
     }
     
     /**
      * Resume playback.
      */
     fun resume() {
-        mediaPlayer?.let { mp ->
-            if (!mp.isPlaying && _state.value.currentEpisode != null) {
-                if (requestAudioFocus()) {
-                    mp.start()
-                    _state.update { it.copy(isPlaying = true) }
-                    startPositionUpdates()
-                }
-            }
-        }
+        mediaController?.play()
     }
     
     /**
      * Skip forward by 30 seconds.
      */
     fun skipForward() {
-        mediaPlayer?.let { mp ->
-            val newPosition = (mp.currentPosition + SKIP_DURATION_MS).coerceAtMost(_state.value.durationMs)
-            mp.seekTo(newPosition.toInt())
-            _state.update { it.copy(currentPositionMs = newPosition) }
+        mediaController?.sendCustomCommand(
+            SessionCommand(PlaybackService.CUSTOM_COMMAND_SKIP_FORWARD, Bundle.EMPTY),
+            Bundle.EMPTY
+        )
+        // Update UI immediately for responsiveness
+        scope.launch {
+            delay(100)
+            syncStateFromPlayer()
         }
     }
     
@@ -337,10 +317,14 @@ class PlaybackManager(
      * Skip backward by 30 seconds.
      */
     fun skipBackward() {
-        mediaPlayer?.let { mp ->
-            val newPosition = (mp.currentPosition - SKIP_DURATION_MS).coerceAtLeast(0)
-            mp.seekTo(newPosition.toInt())
-            _state.update { it.copy(currentPositionMs = newPosition) }
+        mediaController?.sendCustomCommand(
+            SessionCommand(PlaybackService.CUSTOM_COMMAND_SKIP_BACK, Bundle.EMPTY),
+            Bundle.EMPTY
+        )
+        // Update UI immediately for responsiveness
+        scope.launch {
+            delay(100)
+            syncStateFromPlayer()
         }
     }
     
@@ -350,65 +334,27 @@ class PlaybackManager(
      * @param positionMs Position in milliseconds
      */
     fun seekTo(positionMs: Long) {
-        mediaPlayer?.let { mp ->
-            val validPosition = positionMs.coerceIn(0, _state.value.durationMs)
-            mp.seekTo(validPosition.toInt())
-            _state.update { it.copy(currentPositionMs = validPosition) }
-        }
+        mediaController?.seekTo(positionMs)
+        _state.update { it.copy(currentPositionMs = positionMs) }
     }
     
     /**
      * Stop playback and release resources.
      */
     fun stop() {
-        scope.launch {
-            saveCurrentPosition()
-            stopInternal()
-            _state.update { PlaybackState() }
-        }
+        mediaController?.stop()
+        _state.update { PlaybackState() }
     }
     
-    private fun stopInternal() {
-        stopPositionUpdates()
-        abandonAudioFocus()
+    private fun handlePlaybackComplete() {
+        val controller = mediaController ?: return
         
-        mediaPlayer?.apply {
-            try {
-                if (isPlaying) stop()
-                reset()
-                release()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error stopping MediaPlayer", e)
-            }
-        }
-        mediaPlayer = null
-    }
-    
-    private fun onPlaybackComplete() {
-        scope.launch {
-            _state.value.currentEpisode?.let { episode ->
-                // Mark as played
-                episodeDao.markAsPlayed(episode.episodeId)
-                episodeDao.setPlaybackPosition(episode.episodeId, 0)
-                episodeDao.incrementListenCount(episode.episodeId)
-            }
-            
-            // Check if there's a next episode in the queue
-            val currentState = _state.value
-            if (currentState.hasNextInQueue) {
-                Log.d(TAG, "Playing next episode in queue")
-                playNext()
-            } else {
-                // No more episodes in queue, stop playback
-                _state.update { 
-                    it.copy(
-                        isPlaying = false, 
-                        currentPositionMs = it.durationMs
-                    ) 
-                }
-                stopPositionUpdates()
-                abandonAudioFocus()
-                Log.d(TAG, "Queue complete, playback stopped")
+        if (!controller.hasNextMediaItem()) {
+            _state.update { 
+                it.copy(
+                    isPlaying = false, 
+                    currentPositionMs = it.durationMs
+                ) 
             }
         }
     }
@@ -418,19 +364,17 @@ class PlaybackManager(
         
         positionUpdateJob = scope.launch {
             while (true) {
-                mediaPlayer?.let { mp ->
-                    if (mp.isPlaying) {
-                        _state.update { it.copy(currentPositionMs = mp.currentPosition.toLong()) }
+                mediaController?.let { controller ->
+                    if (controller.isPlaying) {
+                        _state.update { 
+                            it.copy(
+                                currentPositionMs = controller.currentPosition,
+                                durationMs = controller.duration.coerceAtLeast(0)
+                            ) 
+                        }
                     }
                 }
                 delay(POSITION_UPDATE_INTERVAL_MS)
-            }
-        }
-        
-        positionSaveJob = scope.launch {
-            while (true) {
-                delay(POSITION_SAVE_INTERVAL_MS)
-                saveCurrentPosition()
             }
         }
     }
@@ -438,64 +382,17 @@ class PlaybackManager(
     private fun stopPositionUpdates() {
         positionUpdateJob?.cancel()
         positionUpdateJob = null
-        positionSaveJob?.cancel()
-        positionSaveJob = null
-    }
-    
-    private fun saveCurrentPosition() {
-        val currentState = _state.value
-        val episode = currentState.currentEpisode ?: return
-        val position = currentState.currentPositionMs
-        
-        if (position != lastSavedPositionMs && position > 0) {
-            lastSavedPositionMs = position
-            scope.launch(Dispatchers.IO) {
-                episodeDao.setPlaybackPosition(episode.episodeId, position)
-                episodeDao.setLastPlayedAt(episode.episodeId, System.currentTimeMillis())
-            }
-        }
-    }
-    
-    private fun requestAudioFocus(): Boolean {
-        val am = audioManager ?: return false
-        
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                .setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .build()
-                )
-                .setOnAudioFocusChangeListener(audioFocusChangeListener)
-                .build()
-            
-            am.requestAudioFocus(audioFocusRequest!!) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
-        } else {
-            @Suppress("DEPRECATION")
-            am.requestAudioFocus(
-                audioFocusChangeListener,
-                AudioManager.STREAM_MUSIC,
-                AudioManager.AUDIOFOCUS_GAIN
-            ) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
-        }
-    }
-    
-    private fun abandonAudioFocus() {
-        val am = audioManager ?: return
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            audioFocusRequest?.let { am.abandonAudioFocusRequest(it) }
-        } else {
-            @Suppress("DEPRECATION")
-            am.abandonAudioFocus(audioFocusChangeListener)
-        }
     }
     
     /**
      * Clean up resources when the manager is no longer needed.
      */
     fun cleanup() {
-        stop()
+        stopPositionUpdates()
+        controllerFuture?.let { future ->
+            MediaController.releaseFuture(future)
+        }
+        mediaController = null
+        isConnected = false
     }
 }

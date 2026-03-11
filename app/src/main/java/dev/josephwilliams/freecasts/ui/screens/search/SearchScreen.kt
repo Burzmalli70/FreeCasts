@@ -288,6 +288,8 @@ fun PodcastSearchResultItem(
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     }
+
+
                 }
             }
         }
