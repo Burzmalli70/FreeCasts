@@ -12,6 +12,8 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
+import androidx.media3.session.LibraryResult
+import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
@@ -30,7 +32,7 @@ import org.koin.android.ext.android.inject
  * Supports background playback, media controls notification, and lock screen controls.
  */
 @OptIn(UnstableApi::class)
-class PlaybackService : MediaSessionService() {
+class PlaybackService : MediaLibraryService() {
     
     companion object {
         const val CUSTOM_COMMAND_SKIP_BACK = "SKIP_BACK_30"
@@ -41,8 +43,8 @@ class PlaybackService : MediaSessionService() {
         const val EXTRA_PODCAST_ID = "podcast_id"
         const val EXTRA_LOCAL_FILE_PATH = "local_file_path"
     }
-    
-    private var mediaSession: MediaSession? = null
+
+    private var mediaLibrarySession: MediaLibrarySession? = null
     private var player: ExoPlayer? = null
     
     private val episodeDao: EpisodeDao by inject()
@@ -72,99 +74,33 @@ class PlaybackService : MediaSessionService() {
             sessionActivityIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        
-        mediaSession = MediaSession.Builder(this, player!!)
+
+        mediaLibrarySession = MediaLibrarySession.Builder(this, player!!, LibraryCallback())
             .setSessionActivity(pendingIntent)
-            .setCallback(MediaSessionCallback())
-            .setCustomLayout(buildCustomLayout())
             .build()
     }
-    
-    private fun buildCustomLayout(): ImmutableList<CommandButton> {
-        return ImmutableList.of(
-            CommandButton.Builder()
-                .setDisplayName("Skip back 30s")
-                .setIconResId(R.drawable.ic_replay_30)
-                .setSessionCommand(SessionCommand(CUSTOM_COMMAND_SKIP_BACK, Bundle.EMPTY))
-                .build(),
-            CommandButton.Builder()
-                .setDisplayName("Skip forward 30s")
-                .setIconResId(R.drawable.ic_forward_30)
-                .setSessionCommand(SessionCommand(CUSTOM_COMMAND_SKIP_FORWARD, Bundle.EMPTY))
-                .build()
-        )
-    }
-    
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
-        return mediaSession
+
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
+        return mediaLibrarySession
     }
     
     override fun onTaskRemoved(rootIntent: Intent?) {
-        val player = mediaSession?.player
-        if (player != null && !player.playWhenReady) {
-            stopSelf()
+        val player = mediaLibrarySession?.player
+        player?.let {
+            if (!player.playWhenReady) {
+                stopSelf()
+            }
         }
     }
     
     override fun onDestroy() {
-        mediaSession?.run {
+        mediaLibrarySession?.run {
             player.release()
             release()
-            mediaSession = null
+            mediaLibrarySession = null
         }
         player = null
         super.onDestroy()
-    }
-    
-    private inner class MediaSessionCallback : MediaSession.Callback {
-        
-        override fun onConnect(
-            session: MediaSession,
-            controller: MediaSession.ControllerInfo
-        ): MediaSession.ConnectionResult {
-            val connectionResult = super.onConnect(session, controller)
-            val availableCommands = connectionResult.availableSessionCommands.buildUpon()
-                .add(SessionCommand(CUSTOM_COMMAND_SKIP_BACK, Bundle.EMPTY))
-                .add(SessionCommand(CUSTOM_COMMAND_SKIP_FORWARD, Bundle.EMPTY))
-                .build()
-            return MediaSession.ConnectionResult.accept(
-                availableCommands,
-                connectionResult.availablePlayerCommands
-            )
-        }
-        
-        override fun onCustomCommand(
-            session: MediaSession,
-            controller: MediaSession.ControllerInfo,
-            customCommand: SessionCommand,
-            args: Bundle
-        ): ListenableFuture<SessionResult> {
-            when (customCommand.customAction) {
-                CUSTOM_COMMAND_SKIP_BACK -> {
-                    val newPosition = (player?.currentPosition ?: 0) - SKIP_DURATION_MS
-                    player?.seekTo(maxOf(0, newPosition))
-                }
-                CUSTOM_COMMAND_SKIP_FORWARD -> {
-                    val duration = player?.duration ?: 0
-                    val newPosition = (player?.currentPosition ?: 0) + SKIP_DURATION_MS
-                    player?.seekTo(minOf(duration, newPosition))
-                }
-            }
-            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
-        }
-        
-        override fun onAddMediaItems(
-            mediaSession: MediaSession,
-            controller: MediaSession.ControllerInfo,
-            mediaItems: List<MediaItem>
-        ): ListenableFuture<List<MediaItem>> {
-            val updatedMediaItems = mediaItems.map { mediaItem ->
-                mediaItem.buildUpon()
-                    .setUri(mediaItem.requestMetadata.mediaUri)
-                    .build()
-            }
-            return Futures.immediateFuture(updatedMediaItems)
-        }
     }
     
     private inner class PlayerListener : Player.Listener {
@@ -211,6 +147,57 @@ class PlaybackService : MediaSessionService() {
                 episodeDao.markAsPlayed(episodeId)
                 episodeDao.incrementListenCount(episodeId)
             }
+        }
+    }
+
+    private fun createBrowsableItem(id: String, title: String, iconRes: Int): MediaItem {
+        return MediaItem.Builder()
+            .setMediaId(id)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(title)
+                    .setIsBrowsable(true)
+                    .setIsPlayable(false)
+                    .build()
+            )
+            .build()
+    }
+
+    private inner class LibraryCallback : MediaLibrarySession.Callback {
+
+        // Root of the menu (e.g., "Subscriptions", "Downloads")
+        override fun onGetLibraryRoot(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            val rootItem = MediaItem.Builder()
+                .setMediaId("node_root")
+                .setMediaMetadata(MediaMetadata.Builder().setIsBrowsable(true).build())
+                .build()
+            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, params))
+        }
+
+        // When a user clicks "Subscriptions", fetch them from Room
+        override fun onGetChildren(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            parentId: String,
+            page: Int,
+            pageSize: Int,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+
+            // Note: You should launch a coroutine to fetch from your EpisodeDao/PodcastDao
+            // For Android Auto, you'd map your Room Entities to MediaItems here
+            val items = mutableListOf<MediaItem>()
+
+            if (parentId == "node_root") {
+                items.add(createBrowsableItem("node_subscriptions", "Subscriptions", R.drawable.ic_subscriptions))
+                items.add(createBrowsableItem("node_downloads", "Downloads", R.drawable.ic_download))
+            }
+
+            return Futures.immediateFuture(LibraryResult.ofItemList(ImmutableList.copyOf(items), params))
         }
     }
 }
