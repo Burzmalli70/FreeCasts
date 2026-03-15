@@ -28,7 +28,7 @@ val databaseModule = module {
 }
 
 val repositoryModule = module {
-    single { PodcastRepository(get(), get(), get()) }
+    single { PodcastRepository(get(), get(), get(), get()) }
 }
 
 val viewModelModule = module {

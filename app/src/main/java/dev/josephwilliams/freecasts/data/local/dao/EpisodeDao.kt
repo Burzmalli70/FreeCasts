@@ -97,6 +97,9 @@ interface EpisodeDao {
     
     @Query("SELECT * FROM episodes WHERE podcastId = :podcastId AND isPlayed = 0 ORDER BY publishedAt DESC")
     suspend fun getUnplayedByPodcastId(podcastId: Long): List<Episode>
+
+    @Query("SELECT * FROM episodes WHERE podcastId = :podcastId ORDER BY publishedAt DESC")
+    suspend fun getAllByPodcastId(podcastId: Long): List<Episode>
     
     // Search
     @Query("SELECT * FROM episodes WHERE title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%' ORDER BY publishedAt DESC")
