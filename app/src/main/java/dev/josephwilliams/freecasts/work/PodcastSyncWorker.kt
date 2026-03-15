@@ -85,9 +85,6 @@ class PodcastSyncWorker(
                 }
             }
             
-            // Auto-add new episodes to playlists
-            autoAddEpisodesToPlaylists()
-            
             // Show notification if new episodes were found
             if (totalNewEpisodes > 0) {
                 showNewEpisodesNotification(totalNewEpisodes, podcastsWithNewEpisodes)

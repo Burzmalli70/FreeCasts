@@ -216,7 +216,7 @@ class PodcastRepository(
 
                 val currentEpisodeGuids = episodeDao.getAllByPodcastId(podcastId).map { it.guid }
                 
-                // Update episodes
+                // Update new episodes
                 val newEpisodes = parseResult.episodes.filter { !currentEpisodeGuids.contains(it.guid) }.map { episode ->
                     episode.copy(podcastId = podcastId)
                 }

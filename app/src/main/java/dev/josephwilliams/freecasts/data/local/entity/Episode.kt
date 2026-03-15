@@ -79,6 +79,8 @@ data class Episode(
     
     /** Timestamp when the episode was last played */
     val lastPlayedAt: Long? = null,
+
+    val playedCount: Int = 0,
     
     /** 
      * Number of times the user has listened to this episode.

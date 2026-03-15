@@ -32,6 +32,9 @@ interface EpisodeDao {
     
     @Query("DELETE FROM episodes WHERE podcastId = :podcastId")
     suspend fun deleteByPodcastId(podcastId: Long)
+
+    @Query("SELECT * FROM episodes WHERE isFavorite = 1 ORDER BY playedCount ASC")
+    suspend fun getFavoriteEpisodes(): List<Episode>
     
     @Query("SELECT * FROM episodes WHERE id = :id")
     suspend fun getById(id: Long): Episode?
@@ -83,7 +86,7 @@ interface EpisodeDao {
     @Query("UPDATE episodes SET lastPlayedAt = :timestamp WHERE id = :episodeId")
     suspend fun setLastPlayedAt(episodeId: Long, timestamp: Long)
     
-    @Query("UPDATE episodes SET isPlayed = 1, playbackPositionMs = 0 WHERE id = :episodeId")
+    @Query("UPDATE episodes SET isPlayed = 1, playbackPositionMs = 0, playedCount = playedCount + 1 WHERE id = :episodeId")
     suspend fun markAsPlayed(episodeId: Long)
     
     @Query("UPDATE episodes SET isPlayed = 0 WHERE id = :episodeId")

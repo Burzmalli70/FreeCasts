@@ -11,20 +11,23 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.session.CommandButton
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaSessionService
-import androidx.media3.session.SessionCommand
-import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import dev.josephwilliams.freecasts.MainActivity
 import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
+import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
+import dev.josephwilliams.freecasts.data.local.entity.Episode
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 
 /**
@@ -48,7 +51,11 @@ class PlaybackService : MediaLibraryService() {
     private var player: ExoPlayer? = null
     
     private val episodeDao: EpisodeDao by inject()
-    
+
+    private val podcastDao: PodcastDao by inject()
+
+    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
     override fun onCreate() {
         super.onCreate()
         
@@ -99,6 +106,7 @@ class PlaybackService : MediaLibraryService() {
             release()
             mediaLibrarySession = null
         }
+        serviceScope.cancel()
         player = null
         super.onDestroy()
     }
@@ -110,6 +118,10 @@ class PlaybackService : MediaLibraryService() {
                 Player.STATE_ENDED -> {
                     savePlaybackPosition(0)
                     markEpisodeAsPlayed()
+
+                    if (player?.hasNextMediaItem() != true) {
+                        playRandomFavorite()
+                    }
                 }
             }
         }
@@ -127,12 +139,41 @@ class PlaybackService : MediaLibraryService() {
             }
         }
     }
+
+    private fun playRandomFavorite() {
+        // Use a coroutine to fetch from Room
+        serviceScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+            // 1. Fetch all favorite episodes            // Note: Ensure your EpisodeDao has a getFavoriteEpisodes() method
+            val favorites = withContext(Dispatchers.IO) {
+                episodeDao.getFavoriteEpisodes()
+            }
+
+            if (favorites.isNotEmpty()) {
+                val minCount = favorites.minOf { it.listenCount }
+                val filteredFavorites = favorites.filter { it.listenCount <= minCount }
+
+                // 2. Pick a random one
+                val randomEpisode = filteredFavorites.random()
+
+                val podcastTitle = podcastDao.getById(randomEpisode.podcastId)
+
+                // 3. Convert your Room Entity to a MediaItem
+                // You might need a mapping function similar to PlayingEpisode.toMediaItem()
+                val mediaItem = randomEpisode.toMediaItem(podcastTitle?.title ?: "")
+
+                // 4. Update the player
+                player?.setMediaItem(mediaItem)
+                player?.prepare()
+                player?.play()
+            }
+        }
+    }
     
     private fun savePlaybackPosition(position: Long) {
         val currentMediaItem = player?.currentMediaItem ?: return
         val episodeId = currentMediaItem.mediaMetadata.extras?.getLong(EXTRA_EPISODE_ID, -1L) ?: -1L
         if (episodeId > 0) {
-            kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            serviceScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 episodeDao.setPlaybackPosition(episodeId, position)
                 episodeDao.setLastPlayedAt(episodeId, System.currentTimeMillis())
             }
@@ -143,7 +184,7 @@ class PlaybackService : MediaLibraryService() {
         val currentMediaItem = player?.currentMediaItem ?: return
         val episodeId = currentMediaItem.mediaMetadata.extras?.getLong(EXTRA_EPISODE_ID, -1L) ?: -1L
         if (episodeId > 0) {
-            kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            serviceScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 episodeDao.markAsPlayed(episodeId)
                 episodeDao.incrementListenCount(episodeId)
             }
@@ -253,4 +294,24 @@ fun MediaItem.toPlayingEpisode(): PlayingEpisode? {
         audioUrl = requestMetadata.mediaUri?.toString() ?: "",
         localFilePath = extras.getString(PlaybackService.EXTRA_LOCAL_FILE_PATH)
     )
+}
+
+fun Episode.toMediaItem(podcastTitle: String): MediaItem {
+    val extras = Bundle().apply {
+        putLong(PlaybackService.EXTRA_EPISODE_ID, id)
+        putLong(PlaybackService.EXTRA_PODCAST_ID, podcastId)
+    }
+
+    return MediaItem.Builder()
+        .setMediaId(id.toString())
+        .setUri(audioUrl)
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle(title)
+                .setArtist(podcastTitle)
+                .setArtworkUri(artworkUrl?.let { android.net.Uri.parse(it) })
+                .setExtras(extras)
+                .build()
+        )
+        .build()
 }
