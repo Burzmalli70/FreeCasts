@@ -20,6 +20,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import dev.josephwilliams.freecasts.MainActivity
 import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
+import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import kotlinx.coroutines.CoroutineScope
@@ -53,6 +54,8 @@ class PlaybackService : MediaLibraryService() {
     private val episodeDao: EpisodeDao by inject()
 
     private val podcastDao: PodcastDao by inject()
+
+    private val playlistDao: PlaylistDao by inject()
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -184,9 +187,10 @@ class PlaybackService : MediaLibraryService() {
         val currentMediaItem = player?.currentMediaItem ?: return
         val episodeId = currentMediaItem.mediaMetadata.extras?.getLong(EXTRA_EPISODE_ID, -1L) ?: -1L
         if (episodeId > 0) {
-            serviceScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            serviceScope.launch(Dispatchers.IO) {
                 episodeDao.markAsPlayed(episodeId)
                 episodeDao.incrementListenCount(episodeId)
+                playlistDao.getPlaylistsWithAutoRemove().forEach { playlistDao.removeEpisodeFromPlaylist(it.id, episodeId) }
             }
         }
     }
