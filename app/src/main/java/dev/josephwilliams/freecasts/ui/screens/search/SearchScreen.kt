@@ -19,8 +19,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,10 +32,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,12 +60,22 @@ fun SearchScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
+    val snackbarHostState = remember { SnackbarHostState() }
     
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-    ) {
+    // Show subscription error in snackbar
+    LaunchedEffect(state.subscriptionError) {
+        state.subscriptionError?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearSubscriptionError()
+        }
+    }
+    
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+        ) {
         // Search input
         OutlinedTextField(
             value = state.searchQuery,
@@ -180,12 +198,23 @@ fun SearchScreen(
                         PodcastSearchResultItem(
                             podcast = podcast,
                             onClick = { onPodcastSelected(podcast) },
-                            isFromRssFeed = state.isRssFeedResult
+                            onSubscribe = { viewModel.subscribeToPodcast(podcast) },
+                            onUnsubscribe = { viewModel.unsubscribeFromPodcast(podcast) },
+                            isFromRssFeed = state.isRssFeedResult,
+                            isSubscribed = state.isSubscribed(podcast),
+                            isSubscribing = state.isSubscribing(podcast)
                         )
                     }
                 }
             }
         }
+        }
+        
+        // Snackbar for errors
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
@@ -193,8 +222,12 @@ fun SearchScreen(
 fun PodcastSearchResultItem(
     podcast: ItunesPodcast,
     onClick: () -> Unit,
+    onSubscribe: () -> Unit,
+    onUnsubscribe: () -> Unit,
     modifier: Modifier = Modifier,
-    isFromRssFeed: Boolean = false
+    isFromRssFeed: Boolean = false,
+    isSubscribed: Boolean = false,
+    isSubscribing: Boolean = false
 ) {
     Card(
         modifier = modifier
@@ -288,9 +321,96 @@ fun PodcastSearchResultItem(
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     }
-
-
                 }
+            }
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            // Subscribe button
+            if (podcast.feedUrl != null) {
+                SubscribeButton(
+                    isSubscribed = isSubscribed,
+                    isSubscribing = isSubscribing,
+                    onClick = {
+                        if (isSubscribed) {
+                            onUnsubscribe.invoke()
+                        } else {
+                            onSubscribe.invoke()
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SubscribeButton(
+    isSubscribed: Boolean,
+    isSubscribing: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(36.dp),
+        enabled = !isSubscribing,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSubscribed) {
+                MaterialTheme.colorScheme.secondaryContainer
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
+            contentColor = if (isSubscribed) {
+                MaterialTheme.colorScheme.onSecondaryContainer
+            } else {
+                MaterialTheme.colorScheme.onPrimary
+            },
+            disabledContainerColor = if (isSubscribed) {
+                MaterialTheme.colorScheme.secondaryContainer
+            } else {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+            },
+            disabledContentColor = if (isSubscribed) {
+                MaterialTheme.colorScheme.onSecondaryContainer
+            } else {
+                MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+            }
+        ),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        when {
+            isSubscribing -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
+            }
+            isSubscribed -> {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Subscribed",
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+            else -> {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Subscribe",
+                    style = MaterialTheme.typography.labelMedium
+                )
             }
         }
     }

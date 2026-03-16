@@ -3,6 +3,7 @@ package dev.josephwilliams.freecasts
 import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
 import dev.josephwilliams.freecasts.data.local.FreeCastsDatabase
+import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 import dev.josephwilliams.freecasts.data.remote.PodcastSearchApi
 import dev.josephwilliams.freecasts.data.repository.PodcastRepository
 import dev.josephwilliams.freecasts.ui.screens.playlists.CreateEditPlaylistViewModel
@@ -12,6 +13,7 @@ import dev.josephwilliams.freecasts.ui.screens.podcasts.PodcastsViewModel
 import dev.josephwilliams.freecasts.ui.screens.podcasts.SubscribedPodcastDetailViewModel
 import dev.josephwilliams.freecasts.ui.screens.search.SearchPodcastDetailViewModel
 import dev.josephwilliams.freecasts.ui.screens.search.SearchViewModel
+import dev.josephwilliams.freecasts.ui.screens.settings.SettingsViewModel
 import dev.josephwilliams.freecasts.work.PodcastSyncWorker
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
@@ -29,16 +31,18 @@ val databaseModule = module {
 
 val repositoryModule = module {
     single { PodcastRepository(get(), get(), get(), get()) }
+    single { UserPreferencesRepository(androidContext()) }
 }
 
 val viewModelModule = module {
-    viewModel { SearchViewModel(get()) }
+    viewModel { SearchViewModel(get(), get(), get(), get()) }
     viewModel { SearchPodcastDetailViewModel(get()) }
     viewModel { PodcastsViewModel(get()) }
     viewModel { SubscribedPodcastDetailViewModel(get(), get(), get(), get(), get()) }
     viewModel { PlaylistsViewModel(get()) }
     viewModel { CreateEditPlaylistViewModel(get(), get(), get()) }
     viewModel { PlaylistDetailViewModel(get(), get()) }
+    viewModel { SettingsViewModel(get()) }
 }
 
 val downloadModule = module {

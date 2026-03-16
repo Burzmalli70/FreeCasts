@@ -3,6 +3,10 @@ package dev.josephwilliams.freecasts.ui.screens.search
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.josephwilliams.freecasts.data.download.DownloadRequest
+import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
+import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
+import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 import dev.josephwilliams.freecasts.data.remote.model.ItunesPodcast
 import dev.josephwilliams.freecasts.data.repository.PodcastRepository
 import kotlinx.coroutines.Job
@@ -10,6 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -18,13 +23,114 @@ import kotlin.math.abs
  * ViewModel for the podcast search screen.
  */
 class SearchViewModel(
-    private val podcastRepository: PodcastRepository
+    private val podcastRepository: PodcastRepository,
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val episodeDownloadManager: EpisodeDownloadManager,
+    private val episodeDao: EpisodeDao
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(SearchState())
     val state: StateFlow<SearchState> = _state.asStateFlow()
     
     private var searchJob: Job? = null
+    
+    init {
+        observeSubscribedPodcasts()
+    }
+    
+    private fun observeSubscribedPodcasts() {
+        viewModelScope.launch {
+            podcastRepository.observeSubscribedPodcasts().collect { podcasts ->
+                val subscribedFeedUrls = podcasts.mapNotNull { it.feedUrl }.toSet()
+                _state.update { it.copy(subscribedFeedUrls = subscribedFeedUrls) }
+            }
+        }
+    }
+    
+    /**
+     * Subscribe to a podcast directly from search results.
+     * If auto-download setting is enabled, downloads the most recent episode.
+     */
+    fun subscribeToPodcast(podcast: ItunesPodcast) {
+        val feedUrl = podcast.feedUrl ?: return
+        
+        // Mark as subscribing
+        _state.update { it.copy(
+            subscribingPodcastIds = it.subscribingPodcastIds + podcast.collectionId
+        )}
+        
+        viewModelScope.launch {
+            val result = podcastRepository.subscribeToPodcast(feedUrl, podcast)
+            
+            // Remove from subscribing set (success or failure)
+            _state.update { it.copy(
+                subscribingPodcastIds = it.subscribingPodcastIds - podcast.collectionId
+            )}
+            
+            result.onSuccess { podcastId ->
+                // Check if auto-download is enabled
+                val autoDownload = userPreferencesRepository.autoDownloadOnSubscribe.first()
+                if (autoDownload) {
+                    downloadLatestEpisode(podcastId, podcast.collectionName)
+                }
+            }
+            
+            result.onFailure { exception ->
+                _state.update { it.copy(
+                    subscriptionError = "Failed to subscribe: ${exception.message}"
+                )}
+            }
+        }
+    }
+    
+    /**
+     * Download the latest episode for a podcast.
+     */
+    private suspend fun downloadLatestEpisode(podcastId: Long, podcastName: String) {
+        // Get the most recent episode for this podcast
+        val episodes = episodeDao.observeByPodcastIdLimited(podcastId, 1).first()
+        val latestEpisode = episodes.firstOrNull() ?: return
+        
+        // Skip if no audio URL
+        if (latestEpisode.audioUrl.isBlank()) return
+        
+        // Create download request
+        val downloadRequest = DownloadRequest(
+            episodeId = latestEpisode.id,
+            episodeName = latestEpisode.title,
+            podcastName = podcastName,
+            downloadUrl = latestEpisode.audioUrl,
+            mimeType = latestEpisode.mimeType
+        )
+        
+        // Enqueue the download
+        episodeDownloadManager.enqueueDownload(downloadRequest)
+    }
+
+    fun unsubscribeFromPodcast(podcast: ItunesPodcast) {
+        val feedUrl = podcast.feedUrl ?: return
+
+        // Mark as subscribing
+        _state.update { it.copy(
+            subscribingPodcastIds = it.subscribingPodcastIds + podcast.collectionId
+        )}
+
+        viewModelScope.launch {
+            podcastRepository.unsubscribeFromPodcast(feedUrl)
+
+            // Remove from subscribing set (success or failure)
+            _state.update { it.copy(
+                subscribingPodcastIds = it.subscribingPodcastIds - podcast.collectionId
+            )}
+        }
+    }
+    
+    /**
+     * Clear the subscription error.
+     */
+    fun clearSubscriptionError() {
+        _state.update { it.copy(subscriptionError = null) }
+    }
     
     /**
      * Update the search query and trigger a debounced search.
@@ -168,11 +274,22 @@ data class SearchState(
     val searchResults: List<ItunesPodcast> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isRssFeedResult: Boolean = false
+    val isRssFeedResult: Boolean = false,
+    val subscribedFeedUrls: Set<String> = emptySet(),
+    val subscribingPodcastIds: Set<Long> = emptySet(),
+    val subscriptionError: String? = null
 ) {
     val hasResults: Boolean
         get() = searchResults.isNotEmpty()
     
     val showEmptyState: Boolean
         get() = searchQuery.isNotBlank() && !isLoading && searchResults.isEmpty() && error == null
+    
+    fun isSubscribed(podcast: ItunesPodcast): Boolean {
+        return podcast.feedUrl != null && podcast.feedUrl in subscribedFeedUrls
+    }
+    
+    fun isSubscribing(podcast: ItunesPodcast): Boolean {
+        return podcast.collectionId in subscribingPodcastIds
+    }
 }

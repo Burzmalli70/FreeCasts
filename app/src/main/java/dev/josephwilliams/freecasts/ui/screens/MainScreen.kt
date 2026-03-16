@@ -43,6 +43,7 @@ import dev.josephwilliams.freecasts.ui.screens.podcasts.PodcastsScreen
 import dev.josephwilliams.freecasts.ui.screens.podcasts.SubscribedPodcastDetailScreen
 import dev.josephwilliams.freecasts.ui.screens.search.SearchPodcastDetailScreen
 import dev.josephwilliams.freecasts.ui.screens.search.SearchScreen
+import dev.josephwilliams.freecasts.ui.screens.settings.SettingsScreen
 import kotlinx.serialization.json.Json
 import org.koin.compose.koinInject
 
@@ -207,7 +208,7 @@ fun MainScreen(
             }
 
             composable(NavRoute.SETTINGS.name) {
-                // TODO: Implement settings view
+                SettingsScreen()
             }
         }
     }

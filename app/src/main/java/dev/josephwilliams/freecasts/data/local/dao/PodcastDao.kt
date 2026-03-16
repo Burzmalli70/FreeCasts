@@ -55,6 +55,9 @@ interface PodcastDao {
     
     @Query("UPDATE podcasts SET isSubscribed = 0, subscribedAt = NULL WHERE id = :podcastId")
     suspend fun unsubscribe(podcastId: Long)
+
+    @Query("UPDATE podcasts SET isSubscribed = 0, subscribedAt = NULL WHERE feedUrl = :feedUrl")
+    suspend fun unsubscribe(feedUrl: String)
     
     @Query("SELECT * FROM podcasts WHERE title LIKE '%' || :query || '%' OR author LIKE '%' || :query || '%'")
     fun search(query: String): Flow<List<Podcast>>

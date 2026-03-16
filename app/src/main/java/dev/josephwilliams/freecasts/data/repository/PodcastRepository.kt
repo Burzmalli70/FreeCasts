@@ -158,6 +158,15 @@ class PodcastRepository(
             podcastDao.unsubscribe(podcastId)
         }
     }
+
+    /**
+     * Unsubscribe from a podcast.
+     */
+    suspend fun unsubscribeFromPodcast(feedUrl: String) {
+        withContext(Dispatchers.IO) {
+            podcastDao.unsubscribe(feedUrl)
+        }
+    }
     
     /**
      * Check if a podcast is subscribed by feed URL.
