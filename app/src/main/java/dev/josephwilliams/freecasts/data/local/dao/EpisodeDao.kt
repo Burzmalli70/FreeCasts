@@ -35,6 +35,9 @@ interface EpisodeDao {
 
     @Query("SELECT * FROM episodes WHERE isFavorite = 1 ORDER BY listenCount ASC")
     suspend fun getFavoriteEpisodes(): List<Episode>
+
+    @Query("SELECT * FROM episodes WHERE isFavorite = 1 AND podcastId = :podcastId ORDER BY listenCount ASC")
+    suspend fun getFavoriteEpisodesForPodcast(podcastId: Long): List<Episode>
     
     @Query("SELECT * FROM episodes WHERE id = :id")
     suspend fun getById(id: Long): Episode?

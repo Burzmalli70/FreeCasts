@@ -152,10 +152,15 @@ class PlaybackService : MediaLibraryService() {
 
     private fun playRandomFavorite() {
         // Use a coroutine to fetch from Room
-        serviceScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+        serviceScope.launch(Dispatchers.Main) {
             // 1. Fetch all favorite episodes            // Note: Ensure your EpisodeDao has a getFavoriteEpisodes() method
             val favorites = withContext(Dispatchers.IO) {
-                episodeDao.getFavoriteEpisodes()
+                val favoriteId = userPreferencesRepository.randomPodcastId.first()
+                if (favoriteId >= 0L) {
+                    episodeDao.getFavoriteEpisodesForPodcast(favoriteId)
+                } else {
+                    episodeDao.getFavoriteEpisodes()
+                }
             }
 
             if (favorites.isNotEmpty()) {
@@ -183,7 +188,7 @@ class PlaybackService : MediaLibraryService() {
         val currentMediaItem = player?.currentMediaItem ?: return
         val episodeId = currentMediaItem.mediaMetadata.extras?.getLong(EXTRA_EPISODE_ID, -1L) ?: -1L
         if (episodeId > 0) {
-            serviceScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            serviceScope.launch(Dispatchers.IO) {
                 episodeDao.setPlaybackPosition(episodeId, position)
                 episodeDao.setLastPlayedAt(episodeId, System.currentTimeMillis())
             }
