@@ -28,6 +28,8 @@ class SettingsViewModel(
             userPreferencesRepository.userPreferences.collect { preferences ->
                 _state.update { it.copy(
                     autoDownloadOnSubscribe = preferences.autoDownloadOnSubscribe,
+                    keepFavoriteDownloads = preferences.keepFavoriteDownloads,
+                    deletePlayedDownloads = preferences.deletePlayedDownloads,
                     isLoading = false
                 )}
             }
@@ -42,6 +44,18 @@ class SettingsViewModel(
             userPreferencesRepository.setAutoDownloadOnSubscribe(enabled)
         }
     }
+
+    fun setKeepFavoriteDownloads(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setKeepFavoriteDownloads(enabled)
+        }
+    }
+
+    fun setDeletePlayedDownloads(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setDeletePlayedDownloads(enabled)
+        }
+    }
 }
 
 /**
@@ -49,5 +63,7 @@ class SettingsViewModel(
  */
 data class SettingsState(
     val autoDownloadOnSubscribe: Boolean = false,
+    val keepFavoriteDownloads: Boolean = false,
+    val deletePlayedDownloads: Boolean = false,
     val isLoading: Boolean = true
 )

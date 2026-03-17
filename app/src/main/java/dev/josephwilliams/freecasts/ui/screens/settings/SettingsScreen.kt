@@ -60,6 +60,25 @@ fun SettingsScreen(
             checked = state.autoDownloadOnSubscribe,
             onCheckedChange = { viewModel.setAutoDownloadOnSubscribe(it) }
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        SettingsSwitch(
+            title = "Delete played episode downloads",
+            description = "Delete downloaded episodes once they've been played",
+            checked = state.deletePlayedDownloads,
+            onCheckedChange = { viewModel.setDeletePlayedDownloads(it) }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        SettingsSwitch(
+            title = "Keep downloaded favorite episodes",
+            description = "Favorite episodes remain downloaded after they are played",
+            checked = state.keepFavoriteDownloads,
+            onCheckedChange = { viewModel.setKeepFavoriteDownloads(it) },
+            enabled = state.deletePlayedDownloads
+        )
     }
 }
 
@@ -69,6 +88,7 @@ private fun SettingsSwitch(
     description: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -96,7 +116,8 @@ private fun SettingsSwitch(
         
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange
+            onCheckedChange = onCheckedChange,
+            enabled = enabled
         )
     }
 }

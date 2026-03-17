@@ -19,14 +19,17 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import dev.josephwilliams.freecasts.MainActivity
 import dev.josephwilliams.freecasts.R
+import dev.josephwilliams.freecasts.data.local.dao.DownloadDao
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
+import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
@@ -56,6 +59,10 @@ class PlaybackService : MediaLibraryService() {
     private val podcastDao: PodcastDao by inject()
 
     private val playlistDao: PlaylistDao by inject()
+
+    private val downloadDao: DownloadDao by inject()
+
+    private val userPreferencesRepository: UserPreferencesRepository by inject ()
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -191,6 +198,9 @@ class PlaybackService : MediaLibraryService() {
                 episodeDao.markAsPlayed(episodeId)
                 episodeDao.incrementListenCount(episodeId)
                 playlistDao.getPlaylistsWithAutoRemove().forEach { playlistDao.removeEpisodeFromPlaylist(it.id, episodeId) }
+                if (userPreferencesRepository.deletePlayedDownloads.first() && (!userPreferencesRepository.keepFavoriteDownloads.first() || episodeDao.getById(episodeId)?.isFavorite == false)) {
+                    downloadDao.deleteByEpisodeId(episodeId)
+                }
             }
         }
     }
