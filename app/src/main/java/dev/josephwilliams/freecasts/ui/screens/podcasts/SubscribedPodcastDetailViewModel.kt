@@ -181,7 +181,7 @@ class SubscribedPodcastDetailViewModel(
             if (willBeFavorite) {
                 // Set replayPriority to max+1 so new favorites start at the end
                 val maxPriority = episodeDao.getMaxReplayPriorityAmongFavorites() ?: 0
-                episodeDao.setReplayPriority(episode.id, maxPriority + 1)
+                episodeDao.setReplayPriority(episode.id, maxPriority)
             }
             
             episodeDao.toggleFavorite(episode.id, willBeFavorite)

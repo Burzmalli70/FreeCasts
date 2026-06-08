@@ -44,11 +44,14 @@ class PlaybackService : MediaLibraryService() {
     companion object {
         const val CUSTOM_COMMAND_SKIP_BACK = "SKIP_BACK_30"
         const val CUSTOM_COMMAND_SKIP_FORWARD = "SKIP_FORWARD_30"
+        const val CUSTOM_COMMAND_PLAY_RANDOM_FAVORITE = "PLAY_RANDOM_FAVORITE"
         private const val SKIP_DURATION_MS = 30_000L
         
         const val EXTRA_EPISODE_ID = "episode_id"
         const val EXTRA_PODCAST_ID = "podcast_id"
         const val EXTRA_LOCAL_FILE_PATH = "local_file_path"
+        const val EXTRA_RANDOM_FAVORITE_MODE = "random_favorite_mode"
+        const val ARG_EXCLUDE_CURRENT_EPISODE = "exclude_current_episode"
     }
 
     private var mediaLibrarySession: MediaLibrarySession? = null
@@ -150,12 +153,24 @@ class PlaybackService : MediaLibraryService() {
         }
     }
 
-    fun playRandomFavorite() {
+    fun playRandomFavorite(excludeCurrentEpisode: Boolean = false) {
         serviceScope.launch(Dispatchers.Main) {
+            val currentEpisodeId = if (excludeCurrentEpisode) {
+                player?.currentMediaItem?.mediaMetadata?.extras?.getLong(EXTRA_EPISODE_ID, -1L)?.takeIf { it > 0 }
+            } else {
+                null
+            }
+
+            if (excludeCurrentEpisode && currentEpisodeId != null) {
+                savePlaybackPosition(player?.currentPosition ?: 0)
+                withContext(Dispatchers.IO) {
+                    episodeDao.incrementReplayPriority(currentEpisodeId)
+                }
+            }
+
             val favorites = withContext(Dispatchers.IO) {
                 val favoriteId = userPreferencesRepository.randomPodcastId.first()
                 if (favoriteId >= 0L) {
-                    // Get favorites for specific podcast, ordered by replayPriority
                     val podcastFavorites = episodeDao.getFavoriteEpisodesForPodcast(favoriteId)
                     if (podcastFavorites.isNotEmpty()) {
                         val minPriority = podcastFavorites.minOf { it.replayPriority }
@@ -164,23 +179,29 @@ class PlaybackService : MediaLibraryService() {
                         emptyList()
                     }
                 } else {
-                    // Get all favorites with lowest replayPriority
                     episodeDao.getFavoritesWithLowestReplayPriority()
                 }
             }
 
-            if (favorites.isNotEmpty()) {
-                // Pick a random one from those with lowest replayPriority
-                val randomEpisode = favorites.random()
+            if (favorites.isEmpty()) return@launch
 
-                val podcastTitle = podcastDao.getById(randomEpisode.podcastId)
-
-                val mediaItem = randomEpisode.toMediaItem(podcastTitle?.title ?: "")
-
-                player?.setMediaItem(mediaItem)
-                player?.prepare()
-                player?.play()
+            val candidates = if (currentEpisodeId != null) {
+                favorites.filter { it.id != currentEpisodeId }
+            } else {
+                favorites
             }
+            val pool = candidates.ifEmpty { favorites }
+
+            val randomEpisode = pool.random()
+            val podcastTitle = podcastDao.getById(randomEpisode.podcastId)
+            val mediaItem = randomEpisode.toMediaItem(
+                podcastTitle = podcastTitle?.title ?: "",
+                randomFavoriteMode = true
+            )
+
+            player?.setMediaItem(mediaItem)
+            player?.prepare()
+            player?.play()
         }
     }
     
@@ -225,6 +246,48 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private inner class LibraryCallback : MediaLibrarySession.Callback {
+
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): MediaSession.ConnectionResult {
+            val connectionResult = super.onConnect(session, controller)
+            val availableCommands = connectionResult.availableSessionCommands.buildUpon()
+                .add(androidx.media3.session.SessionCommand(CUSTOM_COMMAND_SKIP_BACK, Bundle.EMPTY))
+                .add(androidx.media3.session.SessionCommand(CUSTOM_COMMAND_SKIP_FORWARD, Bundle.EMPTY))
+                .add(androidx.media3.session.SessionCommand(CUSTOM_COMMAND_PLAY_RANDOM_FAVORITE, Bundle.EMPTY))
+                .build()
+            return MediaSession.ConnectionResult.accept(
+                availableCommands,
+                connectionResult.availablePlayerCommands
+            )
+        }
+
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: androidx.media3.session.SessionCommand,
+            args: Bundle
+        ): ListenableFuture<androidx.media3.session.SessionResult> {
+            when (customCommand.customAction) {
+                CUSTOM_COMMAND_SKIP_BACK -> {
+                    val newPosition = (player?.currentPosition ?: 0) - SKIP_DURATION_MS
+                    player?.seekTo(maxOf(0, newPosition))
+                }
+                CUSTOM_COMMAND_SKIP_FORWARD -> {
+                    val duration = player?.duration ?: 0
+                    val newPosition = (player?.currentPosition ?: 0) + SKIP_DURATION_MS
+                    player?.seekTo(minOf(duration, newPosition))
+                }
+                CUSTOM_COMMAND_PLAY_RANDOM_FAVORITE -> {
+                    val excludeCurrent = args.getBoolean(ARG_EXCLUDE_CURRENT_EPISODE, true)
+                    playRandomFavorite(excludeCurrentEpisode = excludeCurrent)
+                }
+            }
+            return Futures.immediateFuture(
+                androidx.media3.session.SessionResult(androidx.media3.session.SessionResult.RESULT_SUCCESS)
+            )
+        }
 
         // Root of the menu (e.g., "Subscriptions", "Downloads")
         override fun onGetLibraryRoot(
@@ -316,10 +379,16 @@ fun MediaItem.toPlayingEpisode(): PlayingEpisode? {
     )
 }
 
-fun Episode.toMediaItem(podcastTitle: String): MediaItem {
+fun Episode.toMediaItem(
+    podcastTitle: String,
+    randomFavoriteMode: Boolean = false
+): MediaItem {
     val extras = Bundle().apply {
         putLong(PlaybackService.EXTRA_EPISODE_ID, id)
         putLong(PlaybackService.EXTRA_PODCAST_ID, podcastId)
+        if (randomFavoriteMode) {
+            putBoolean(PlaybackService.EXTRA_RANDOM_FAVORITE_MODE, true)
+        }
     }
 
     return MediaItem.Builder()

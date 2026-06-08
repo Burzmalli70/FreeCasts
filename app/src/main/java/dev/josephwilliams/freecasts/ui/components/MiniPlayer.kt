@@ -198,18 +198,18 @@ fun MiniPlayer(
                             }
                         }
                         
-                        // Next track (only when queue exists)
-                        if (playbackState.hasQueue) {
+                        // Next track (when queue exists or random favorite mode)
+                        if (playbackState.hasQueue || playbackState.isRandomFavoriteMode) {
                             IconButton(
                                 onClick = onNextTrack,
-                                enabled = playbackState.hasNextInQueue,
+                                enabled = playbackState.hasNextInQueue || playbackState.canPlayRandomFavoriteNext,
                                 modifier = Modifier.size(36.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.SkipNext,
                                     contentDescription = "Next track",
                                     modifier = Modifier.size(22.dp),
-                                    tint = if (playbackState.hasNextInQueue) {
+                                    tint = if (playbackState.hasNextInQueue || playbackState.canPlayRandomFavoriteNext) {
                                         MaterialTheme.colorScheme.onSurface
                                     } else {
                                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)

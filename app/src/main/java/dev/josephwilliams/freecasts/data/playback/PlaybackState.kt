@@ -11,7 +11,8 @@ data class PlaybackState(
     val isBuffering: Boolean = false,
     val error: String? = null,
     val queue: List<PlayingEpisode> = emptyList(),
-    val currentQueueIndex: Int = -1
+    val currentQueueIndex: Int = -1,
+    val isRandomFavoriteMode: Boolean = false
 ) {
     val progressPercent: Float
         get() = if (durationMs > 0) (currentPositionMs.toFloat() / durationMs) else 0f
@@ -24,6 +25,9 @@ data class PlaybackState(
     
     val hasNextInQueue: Boolean
         get() = currentQueueIndex >= 0 && currentQueueIndex < queue.size - 1
+    
+    val canPlayRandomFavoriteNext: Boolean
+        get() = isRandomFavoriteMode && hasMedia && !hasNextInQueue
     
     val hasPreviousInQueue: Boolean
         get() = currentQueueIndex > 0

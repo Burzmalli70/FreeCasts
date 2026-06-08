@@ -125,6 +125,10 @@ class PlaybackManager(
         
         val currentMediaItem = controller.currentMediaItem
         val currentEpisode = currentMediaItem?.toPlayingEpisode()
+        val isRandomFavoriteMode = currentMediaItem?.mediaMetadata?.extras?.getBoolean(
+            PlaybackService.EXTRA_RANDOM_FAVORITE_MODE,
+            false
+        ) ?: false
         
         val queue = mutableListOf<PlayingEpisode>()
         for (i in 0 until controller.mediaItemCount) {
@@ -139,7 +143,8 @@ class PlaybackManager(
                 durationMs = controller.duration.coerceAtLeast(0),
                 isBuffering = controller.playbackState == Player.STATE_BUFFERING,
                 queue = queue,
-                currentQueueIndex = controller.currentMediaItemIndex
+                currentQueueIndex = controller.currentMediaItemIndex,
+                isRandomFavoriteMode = isRandomFavoriteMode
             )
         }
     }
@@ -209,14 +214,33 @@ class PlaybackManager(
     }
     
     /**
-     * Skip to the next episode in the queue.
+     * Skip to the next episode in the queue, or another random favorite when in that mode.
      */
     fun playNext() {
         mediaController?.let { controller ->
             if (controller.hasNextMediaItem()) {
                 controller.seekToNext()
+            } else if (_state.value.canPlayRandomFavoriteNext) {
+                controller.sendCustomCommand(
+                    SessionCommand(PlaybackService.CUSTOM_COMMAND_PLAY_RANDOM_FAVORITE, Bundle.EMPTY),
+                    Bundle().apply {
+                        putBoolean(PlaybackService.ARG_EXCLUDE_CURRENT_EPISODE, true)
+                    }
+                )
             }
         }
+    }
+    
+    /**
+     * Start playing a random favorite episode.
+     */
+    fun playRandomFavorite() {
+        mediaController?.sendCustomCommand(
+            SessionCommand(PlaybackService.CUSTOM_COMMAND_PLAY_RANDOM_FAVORITE, Bundle.EMPTY),
+            Bundle().apply {
+                putBoolean(PlaybackService.ARG_EXCLUDE_CURRENT_EPISODE, false)
+            }
+        )
     }
     
     /**
