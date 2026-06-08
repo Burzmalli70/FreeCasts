@@ -4,8 +4,9 @@ import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
-import dev.josephwilliams.freecasts.data.local.entity.PlaylistEpisodeCrossRef
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
+import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoAddHandler
+import dev.josephwilliams.freecasts.data.playlist.PodcastEpisodeSyncHandler
 import dev.josephwilliams.freecasts.data.remote.PodcastSearchApi
 import dev.josephwilliams.freecasts.data.remote.model.ItunesPodcast
 import dev.josephwilliams.freecasts.tools.RssParser
@@ -26,7 +27,13 @@ class PodcastRepository(
     private val podcastDao: PodcastDao,
     private val episodeDao: EpisodeDao,
     private val playlistDao: PlaylistDao,
-    private val searchApi: PodcastSearchApi
+    private val searchApi: PodcastSearchApi,
+    private val playlistAutoAddHandler: PlaylistAutoAddHandler = PlaylistAutoAddHandler(playlistDao),
+    private val podcastEpisodeSyncHandler: PodcastEpisodeSyncHandler = PodcastEpisodeSyncHandler(
+        episodeDao = episodeDao,
+        podcastDao = podcastDao,
+        playlistAutoAddHandler = playlistAutoAddHandler
+    )
 ) {
     private val httpClient = HttpClient(OkHttp)
     
@@ -223,38 +230,10 @@ class PodcastRepository(
                 
                 val parseResult = feedResult.getOrThrow()
 
-                val currentEpisodeGuids = episodeDao.getAllByPodcastId(podcastId).map { it.guid }
-                
-                // Update new episodes
-                val newEpisodes = parseResult.episodes.filter { !currentEpisodeGuids.contains(it.guid) }.map { episode ->
-                    episode.copy(podcastId = podcastId)
-                }
-                episodeDao.insertAll(newEpisodes)
-                
-                // Update last fetched timestamp
-                podcastDao.updateLastFetchedAt(podcastId)
-                podcastDao.updateEpisodeCount(podcastId, parseResult.episodes.size)
-
-                // Add episodes to related playlists
-                val playlists = playlistDao.getPlaylistsWithAutoAddForPodcast(podcast.id.toString())
-                playlists.forEach { playlist ->
-                    newEpisodes.forEach { episode ->
-                        if (!playlistDao.isEpisodeInPlaylist(playlist.id, episode.id)) {
-                            val maxPosition = playlistDao.getMaxPosition(playlist.id) ?: -1
-                            val newPosition = maxPosition + 1
-
-                            // Add episode to playlist
-                            playlistDao.insertPlaylistEpisode(
-                                PlaylistEpisodeCrossRef(
-                                    playlistId = playlist.id,
-                                    episodeId = episode.id,
-                                    position = newPosition,
-                                    addedAt = System.currentTimeMillis()
-                                )
-                            )
-                        }
-                    }
-                }
+                podcastEpisodeSyncHandler.syncEpisodesFromFeed(
+                    podcastId = podcastId,
+                    feedEpisodes = parseResult.episodes
+                )
                 
                 Result.success(Unit)
             } catch (e: Exception) {

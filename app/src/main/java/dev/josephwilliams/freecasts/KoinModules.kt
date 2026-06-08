@@ -62,7 +62,7 @@ val searchApi = module {
 }
 
 val workModule = module {
-    worker { PodcastSyncWorker(get(), get(), get(), get(), get(), get()) }
+    worker { PodcastSyncWorker(get(), get(), get(), get(), get()) }
 }
 
 val appModules = listOf(
