@@ -151,32 +151,32 @@ class PlaybackService : MediaLibraryService() {
     }
 
     fun playRandomFavorite() {
-        // Use a coroutine to fetch from Room
         serviceScope.launch(Dispatchers.Main) {
-            // 1. Fetch all favorite episodes            // Note: Ensure your EpisodeDao has a getFavoriteEpisodes() method
             val favorites = withContext(Dispatchers.IO) {
                 val favoriteId = userPreferencesRepository.randomPodcastId.first()
                 if (favoriteId >= 0L) {
-                    episodeDao.getFavoriteEpisodesForPodcast(favoriteId)
+                    // Get favorites for specific podcast, ordered by replayPriority
+                    val podcastFavorites = episodeDao.getFavoriteEpisodesForPodcast(favoriteId)
+                    if (podcastFavorites.isNotEmpty()) {
+                        val minPriority = podcastFavorites.minOf { it.replayPriority }
+                        podcastFavorites.filter { it.replayPriority == minPriority }
+                    } else {
+                        emptyList()
+                    }
                 } else {
-                    episodeDao.getFavoriteEpisodes()
+                    // Get all favorites with lowest replayPriority
+                    episodeDao.getFavoritesWithLowestReplayPriority()
                 }
             }
 
             if (favorites.isNotEmpty()) {
-                val minCount = favorites.minOf { it.listenCount }
-                val filteredFavorites = favorites.filter { it.listenCount <= minCount }
-
-                // 2. Pick a random one
-                val randomEpisode = filteredFavorites.random()
+                // Pick a random one from those with lowest replayPriority
+                val randomEpisode = favorites.random()
 
                 val podcastTitle = podcastDao.getById(randomEpisode.podcastId)
 
-                // 3. Convert your Room Entity to a MediaItem
-                // You might need a mapping function similar to PlayingEpisode.toMediaItem()
                 val mediaItem = randomEpisode.toMediaItem(podcastTitle?.title ?: "")
 
-                // 4. Update the player
                 player?.setMediaItem(mediaItem)
                 player?.prepare()
                 player?.play()
@@ -202,6 +202,7 @@ class PlaybackService : MediaLibraryService() {
             serviceScope.launch(Dispatchers.IO) {
                 episodeDao.markAsPlayed(episodeId)
                 episodeDao.incrementListenCount(episodeId)
+                episodeDao.incrementReplayPriority(episodeId)
                 playlistDao.getPlaylistsWithAutoRemove().forEach { playlistDao.removeEpisodeFromPlaylist(it.id, episodeId) }
                 if (userPreferencesRepository.deletePlayedDownloads.first() && (!userPreferencesRepository.keepFavoriteDownloads.first() || episodeDao.getById(episodeId)?.isFavorite == false)) {
                     downloadDao.deleteByEpisodeId(episodeId)

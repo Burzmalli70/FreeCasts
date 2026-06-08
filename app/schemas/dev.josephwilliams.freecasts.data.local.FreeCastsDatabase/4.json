@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 4,
-    "identityHash": "f0b7bf5a21ab67fd194ad814ca24701f",
+    "identityHash": "43090ec623ad9d2234846248a94e84c7",
     "entities": [
       {
         "tableName": "podcasts",
@@ -139,7 +139,7 @@
       },
       {
         "tableName": "episodes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `podcastId` INTEGER NOT NULL, `guid` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `audioUrl` TEXT NOT NULL, `artworkUrl` TEXT, `durationSeconds` INTEGER, `fileSizeBytes` INTEGER, `mimeType` TEXT, `publishedAt` INTEGER, `episodeNumber` INTEGER, `seasonNumber` INTEGER, `isFavorite` INTEGER NOT NULL, `favoritedAt` INTEGER, `playbackPositionMs` INTEGER NOT NULL, `isPlayed` INTEGER NOT NULL, `lastPlayedAt` INTEGER, `listenCount` INTEGER NOT NULL, `cached` INTEGER NOT NULL, FOREIGN KEY(`podcastId`) REFERENCES `podcasts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `podcastId` INTEGER NOT NULL, `guid` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `audioUrl` TEXT NOT NULL, `artworkUrl` TEXT, `durationSeconds` INTEGER, `fileSizeBytes` INTEGER, `mimeType` TEXT, `publishedAt` INTEGER, `episodeNumber` INTEGER, `seasonNumber` INTEGER, `isFavorite` INTEGER NOT NULL, `favoritedAt` INTEGER, `playbackPositionMs` INTEGER NOT NULL, `isPlayed` INTEGER NOT NULL, `lastPlayedAt` INTEGER, `listenCount` INTEGER NOT NULL, `replayPriority` INTEGER NOT NULL, `cached` INTEGER NOT NULL, FOREIGN KEY(`podcastId`) REFERENCES `podcasts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -242,6 +242,12 @@
           {
             "fieldPath": "listenCount",
             "columnName": "listenCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "replayPriority",
+            "columnName": "replayPriority",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -564,7 +570,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f0b7bf5a21ab67fd194ad814ca24701f')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '43090ec623ad9d2234846248a94e84c7')"
     ]
   }
 }

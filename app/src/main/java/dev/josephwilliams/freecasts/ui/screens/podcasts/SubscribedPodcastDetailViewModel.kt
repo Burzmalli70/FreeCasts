@@ -172,10 +172,19 @@ class SubscribedPodcastDetailViewModel(
     
     /**
      * Toggle favorite status for an episode.
+     * When marking as favorite, sets replayPriority to max+1 among favorites.
      */
     fun toggleFavorite(episode: Episode) {
         viewModelScope.launch {
-            episodeDao.toggleFavorite(episode.id, !episode.isFavorite)
+            val willBeFavorite = !episode.isFavorite
+            
+            if (willBeFavorite) {
+                // Set replayPriority to max+1 so new favorites start at the end
+                val maxPriority = episodeDao.getMaxReplayPriorityAmongFavorites() ?: 0
+                episodeDao.setReplayPriority(episode.id, maxPriority + 1)
+            }
+            
+            episodeDao.toggleFavorite(episode.id, willBeFavorite)
         }
     }
 }

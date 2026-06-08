@@ -33,11 +33,17 @@ interface EpisodeDao {
     @Query("DELETE FROM episodes WHERE podcastId = :podcastId")
     suspend fun deleteByPodcastId(podcastId: Long)
 
-    @Query("SELECT * FROM episodes WHERE isFavorite = 1 ORDER BY listenCount ASC")
+    @Query("SELECT * FROM episodes WHERE isFavorite = 1 ORDER BY replayPriority ASC")
     suspend fun getFavoriteEpisodes(): List<Episode>
 
-    @Query("SELECT * FROM episodes WHERE isFavorite = 1 AND podcastId = :podcastId ORDER BY listenCount ASC")
+    @Query("SELECT * FROM episodes WHERE isFavorite = 1 AND podcastId = :podcastId ORDER BY replayPriority ASC")
     suspend fun getFavoriteEpisodesForPodcast(podcastId: Long): List<Episode>
+    
+    @Query("SELECT MIN(replayPriority) FROM episodes WHERE isFavorite = 1")
+    suspend fun getMinReplayPriorityAmongFavorites(): Int?
+    
+    @Query("SELECT * FROM episodes WHERE isFavorite = 1 AND replayPriority = (SELECT MIN(replayPriority) FROM episodes WHERE isFavorite = 1)")
+    suspend fun getFavoritesWithLowestReplayPriority(): List<Episode>
     
     @Query("SELECT * FROM episodes WHERE id = :id")
     suspend fun getById(id: Long): Episode?
@@ -149,5 +155,19 @@ interface EpisodeDao {
     
     @Query("SELECT * FROM episodes WHERE listenCount > 0 ORDER BY listenCount DESC")
     fun observeMostListened(): Flow<List<Episode>>
+    
+    // === Replay Priority ===
+    
+    @Query("UPDATE episodes SET replayPriority = replayPriority + 1 WHERE id = :episodeId")
+    suspend fun incrementReplayPriority(episodeId: Long)
+    
+    @Query("UPDATE episodes SET replayPriority = :priority WHERE id = :episodeId")
+    suspend fun setReplayPriority(episodeId: Long, priority: Int)
+    
+    @Query("SELECT MAX(replayPriority) FROM episodes WHERE isFavorite = 1")
+    suspend fun getMaxReplayPriorityAmongFavorites(): Int?
+    
+    @Query("SELECT replayPriority FROM episodes WHERE id = :episodeId")
+    suspend fun getReplayPriority(episodeId: Long): Int?
 }
 

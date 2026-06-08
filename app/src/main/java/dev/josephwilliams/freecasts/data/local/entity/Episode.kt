@@ -86,6 +86,14 @@ data class Episode(
      * half of the episode or 5 minutes, whichever is less.
      */
     val listenCount: Int = 0,
+    
+    /**
+     * Priority value for weighted random selection of favorite episodes.
+     * Lower values have higher priority (more likely to be played).
+     * Incremented each time the episode is played.
+     * Set to max value among favorites when marked as favorite.
+     */
+    val replayPriority: Int = 0,
 
     /** Indicates whether the episode is a cached entry from the RSS feed */
     val cached: Boolean = true
