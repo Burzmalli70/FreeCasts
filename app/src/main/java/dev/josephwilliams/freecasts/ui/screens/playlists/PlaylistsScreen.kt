@@ -26,6 +26,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.josephwilliams.freecasts.data.local.entity.Playlist
+import dev.josephwilliams.freecasts.ui.theme.Link
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -64,35 +66,45 @@ fun PlaylistsScreen(
             }
         }
     ) { innerPadding ->
-        when {
-            state.isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+        Column {
+            Text(
+                modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp).clickable { viewModel.playRandomFavorite() },
+                text = "Play Random Favorite",
+                color = Link,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            when {
+                state.isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            
-            state.isEmpty -> {
-                EmptyPlaylistsView(
-                    onCreatePlaylist = onCreatePlaylist,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                )
-            }
-            
-            else -> {
-                PlaylistsList(
-                    playlists = state.playlists,
-                    onPlaylistSelected = onPlaylistSelected,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                )
+
+                state.isEmpty -> {
+                    EmptyPlaylistsView(
+                        onCreatePlaylist = onCreatePlaylist,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    )
+                }
+
+                else -> {
+                    PlaylistsList(
+                        playlists = state.playlists,
+                        onPlaylistSelected = onPlaylistSelected,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    )
+                }
             }
         }
     }

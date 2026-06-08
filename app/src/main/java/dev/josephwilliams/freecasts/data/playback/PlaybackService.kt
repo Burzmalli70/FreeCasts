@@ -150,7 +150,7 @@ class PlaybackService : MediaLibraryService() {
         }
     }
 
-    private fun playRandomFavorite() {
+    fun playRandomFavorite() {
         // Use a coroutine to fetch from Room
         serviceScope.launch(Dispatchers.Main) {
             // 1. Fetch all favorite episodes            // Note: Ensure your EpisodeDao has a getFavoriteEpisodes() method
