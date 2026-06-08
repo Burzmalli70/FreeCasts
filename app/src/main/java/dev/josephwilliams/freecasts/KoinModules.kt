@@ -1,6 +1,7 @@
 package dev.josephwilliams.freecasts
 
 import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
+import dev.josephwilliams.freecasts.data.export.PodcastSubscriptionsFileManager
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
 import dev.josephwilliams.freecasts.data.local.FreeCastsDatabase
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
@@ -32,6 +33,7 @@ val databaseModule = module {
 val repositoryModule = module {
     single { PodcastRepository(get(), get(), get(), get()) }
     single { UserPreferencesRepository(androidContext()) }
+    single { PodcastSubscriptionsFileManager(androidContext()) }
 }
 
 val viewModelModule = module {
@@ -42,7 +44,7 @@ val viewModelModule = module {
     viewModel { PlaylistsViewModel(get()) }
     viewModel { CreateEditPlaylistViewModel(get(), get(), get()) }
     viewModel { PlaylistDetailViewModel(get(), get()) }
-    viewModel { SettingsViewModel(get()) }
+    viewModel { SettingsViewModel(get(), get(), get(), get()) }
 }
 
 val downloadModule = module {
