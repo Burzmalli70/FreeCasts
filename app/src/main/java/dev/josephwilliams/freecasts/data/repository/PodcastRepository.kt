@@ -28,7 +28,7 @@ class PodcastRepository(
     private val episodeDao: EpisodeDao,
     private val playlistDao: PlaylistDao,
     private val searchApi: PodcastSearchApi,
-    private val playlistAutoAddHandler: PlaylistAutoAddHandler = PlaylistAutoAddHandler(playlistDao),
+    private val playlistAutoAddHandler: PlaylistAutoAddHandler = PlaylistAutoAddHandler(playlistDao, episodeDao),
     private val podcastEpisodeSyncHandler: PodcastEpisodeSyncHandler = PodcastEpisodeSyncHandler(
         episodeDao = episodeDao,
         podcastDao = podcastDao,

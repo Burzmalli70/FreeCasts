@@ -2,12 +2,11 @@ package dev.josephwilliams.freecasts.ui.screens.playlists
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Playlist
-import dev.josephwilliams.freecasts.data.local.entity.PlaylistEpisodeCrossRef
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
+import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoAddHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +19,7 @@ import kotlinx.coroutines.launch
 class CreateEditPlaylistViewModel(
     private val playlistDao: PlaylistDao,
     private val podcastDao: PodcastDao,
-    private val episodeDao: EpisodeDao
+    private val playlistAutoAddHandler: PlaylistAutoAddHandler
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(CreateEditPlaylistState())
@@ -152,9 +151,9 @@ class CreateEditPlaylistViewModel(
                     ))
                 }
                 
-                // Auto-add latest unlistened episodes from selected podcasts
-                if (currentState.selectedPodcastIds.isNotEmpty()) {
-                    addLatestEpisodesFromPodcasts(playlistId, currentState.selectedPodcastIds)
+                // Auto-add the most recent unplayed episode from each selected podcast
+                for (podcastId in currentState.selectedPodcastIds) {
+                    playlistAutoAddHandler.addMostRecentUnplayedEpisodeToPlaylist(playlistId, podcastId)
                 }
                 
                 _state.update { it.copy(isSaving = false, saveSuccess = true) }
@@ -166,40 +165,6 @@ class CreateEditPlaylistViewModel(
                 )}
             }
         }
-    }
-    
-    /**
-     * Add the latest unlistened episode from each podcast to the playlist.
-     * Skips episodes that are already in the playlist or have been listened to.
-     */
-    private suspend fun addLatestEpisodesFromPodcasts(playlistId: Long, podcastIds: Set<Long>) {
-        var currentPosition = playlistDao.getMaxPosition(playlistId) ?: -1
-        
-        for (podcastId in podcastIds) {
-            // Get unplayed episodes for this podcast, ordered by publishedAt DESC
-            val unplayedEpisodes = episodeDao.getUnplayedByPodcastId(podcastId)
-            
-            // Get the latest unplayed episode (first in the list)
-            val latestEpisode = unplayedEpisodes.firstOrNull() ?: continue
-            
-            // Check if episode is already in playlist
-            val alreadyInPlaylist = playlistDao.isEpisodeInPlaylist(playlistId, latestEpisode.id)
-            if (alreadyInPlaylist) continue
-            
-            // Add episode to playlist
-            currentPosition++
-            playlistDao.insertPlaylistEpisode(
-                PlaylistEpisodeCrossRef(
-                    playlistId = playlistId,
-                    episodeId = latestEpisode.id,
-                    position = currentPosition,
-                    addedAt = System.currentTimeMillis()
-                )
-            )
-        }
-        
-        // Update playlist timestamp
-        playlistDao.updateTimestamp(playlistId)
     }
 }
 

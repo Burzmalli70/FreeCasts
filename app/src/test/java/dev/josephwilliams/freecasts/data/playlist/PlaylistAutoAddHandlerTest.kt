@@ -18,6 +18,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
+/**
+ * Verifies auto-add playlist behavior from [docs/design.md]:
+ * - Only unplayed episodes are added
+ * - Only the most recent episode per podcast is eligible
+ * - If the most recent episode is played, nothing is added for that podcast
+ */
 @RunWith(RobolectricTestRunner::class)
 class PlaylistAutoAddHandlerTest {
 
@@ -33,7 +39,10 @@ class PlaylistAutoAddHandlerTest {
             .allowMainThreadQueries()
             .build()
 
-        handler = PlaylistAutoAddHandler(database.playlistDao())
+        handler = PlaylistAutoAddHandler(
+            playlistDao = database.playlistDao(),
+            episodeDao = database.episodeDao()
+        )
 
         podcastId1 = database.podcastDao().insert(
             Podcast(feedUrl = "https://example.com/feed1.xml", title = "Podcast One")
@@ -52,6 +61,7 @@ class PlaylistAutoAddHandlerTest {
         podcastId: Long,
         guid: String,
         title: String,
+        publishedAt: Long,
         isPlayed: Boolean = false
     ): Episode {
         val id = database.episodeDao().insert(
@@ -60,6 +70,7 @@ class PlaylistAutoAddHandlerTest {
                 guid = guid,
                 title = title,
                 audioUrl = "https://example.com/$guid.mp3",
+                publishedAt = publishedAt,
                 isPlayed = isPlayed
             )
         )
@@ -86,22 +97,144 @@ class PlaylistAutoAddHandlerTest {
             ?: emptyList()
     }
 
+    // === Sync auto-add: only unplayed, most recent, newly synced ===
+
     @Test
-    fun addsNewEpisodeToPlaylistWithAutoAddEnabledForPodcast() = runTest {
+    fun addsMostRecentUnplayedNewEpisodeToAutoAddPlaylist() = runTest {
         val playlistId = createAutoAddPlaylist("Daily", podcastId1.toString())
-        val newEpisode = insertEpisode(podcastId1, "new-ep-1", "New Episode")
+        val newEpisode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "new-ep-1",
+            title = "New Episode",
+            publishedAt = 3_000L
+        )
 
         handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(newEpisode))
 
-        val episodeIds = playlistEpisodeIds(playlistId)
-        assertEquals(listOf(newEpisode.id), episodeIds)
+        assertEquals(listOf(newEpisode.id), playlistEpisodeIds(playlistId))
     }
 
     @Test
-    fun addsNewEpisodeToMultiplePlaylistsForSamePodcast() = runTest {
+    fun doesNotAddPlayedEpisodesDuringSync() = runTest {
+        val playlistId = createAutoAddPlaylist("Daily", podcastId1.toString())
+        val playedEpisode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "played-ep",
+            title = "Already Played",
+            publishedAt = 3_000L,
+            isPlayed = true
+        )
+
+        handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(playedEpisode))
+
+        assertEquals(0, database.playlistDao().getEpisodeCount(playlistId))
+    }
+
+    @Test
+    fun doesNotAddWhenMostRecentEpisodeIsPlayedEvenIfOlderUnplayedEpisodesExist() = runTest {
+        val playlistId = createAutoAddPlaylist("Daily", podcastId1.toString())
+        val olderUnplayed = insertEpisode(
+            podcastId = podcastId1,
+            guid = "older-unplayed",
+            title = "Older Unplayed",
+            publishedAt = 1_000L,
+            isPlayed = false
+        )
+        val mostRecentPlayed = insertEpisode(
+            podcastId = podcastId1,
+            guid = "latest-played",
+            title = "Latest Played",
+            publishedAt = 3_000L,
+            isPlayed = true
+        )
+
+        handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(mostRecentPlayed))
+
+        assertEquals(0, database.playlistDao().getEpisodeCount(playlistId))
+        assertFalse(database.playlistDao().isEpisodeInPlaylist(playlistId, olderUnplayed.id))
+        assertFalse(database.playlistDao().isEpisodeInPlaylist(playlistId, mostRecentPlayed.id))
+    }
+
+    @Test
+    fun addsOnlyMostRecentUnplayedWhenMultipleNewUnplayedEpisodesAreSynced() = runTest {
+        val playlistId = createAutoAddPlaylist("Daily", podcastId1.toString())
+        val olderNewEpisode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "older-new",
+            title = "Older New",
+            publishedAt = 1_000L
+        )
+        val mostRecentNewEpisode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "latest-new",
+            title = "Latest New",
+            publishedAt = 3_000L
+        )
+
+        handler.addNewEpisodesToAutoAddPlaylists(
+            podcastId1,
+            listOf(olderNewEpisode, mostRecentNewEpisode)
+        )
+
+        assertEquals(listOf(mostRecentNewEpisode.id), playlistEpisodeIds(playlistId))
+        assertFalse(database.playlistDao().isEpisodeInPlaylist(playlistId, olderNewEpisode.id))
+    }
+
+    @Test
+    fun doesNotAddOlderUnplayedBacklogWhenSyncingLessRecentEpisode() = runTest {
+        val playlistId = createAutoAddPlaylist("Daily", podcastId1.toString())
+        val existingMostRecentUnplayed = insertEpisode(
+            podcastId = podcastId1,
+            guid = "existing-latest",
+            title = "Existing Latest",
+            publishedAt = 3_000L
+        )
+        val newlySyncedOlderEpisode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "new-older",
+            title = "Newly Synced Older",
+            publishedAt = 2_000L
+        )
+
+        handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(newlySyncedOlderEpisode))
+
+        assertEquals(0, database.playlistDao().getEpisodeCount(playlistId))
+        assertFalse(database.playlistDao().isEpisodeInPlaylist(playlistId, existingMostRecentUnplayed.id))
+        assertFalse(database.playlistDao().isEpisodeInPlaylist(playlistId, newlySyncedOlderEpisode.id))
+    }
+
+    @Test
+    fun doesNotAddWhenNewlySyncedEpisodeIsUnplayedButNotMostRecentBecauseLatestIsPlayed() = runTest {
+        val playlistId = createAutoAddPlaylist("Daily", podcastId1.toString())
+        insertEpisode(
+            podcastId = podcastId1,
+            guid = "latest-played",
+            title = "Latest Played",
+            publishedAt = 3_000L,
+            isPlayed = true
+        )
+        val newlySyncedOlderUnplayed = insertEpisode(
+            podcastId = podcastId1,
+            guid = "new-older-unplayed",
+            title = "New Older Unplayed",
+            publishedAt = 2_000L
+        )
+
+        handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(newlySyncedOlderUnplayed))
+
+        assertEquals(0, database.playlistDao().getEpisodeCount(playlistId))
+    }
+
+    @Test
+    fun addsNewEpisodeToMultipleAutoAddPlaylistsForSamePodcast() = runTest {
         val playlistOneId = createAutoAddPlaylist("Morning", podcastId1.toString())
         val playlistTwoId = createAutoAddPlaylist("Commute", podcastId1.toString())
-        val newEpisode = insertEpisode(podcastId1, "new-ep-1", "New Episode")
+        val newEpisode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "new-ep-1",
+            title = "New Episode",
+            publishedAt = 3_000L
+        )
 
         handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(newEpisode))
 
@@ -110,13 +243,23 @@ class PlaylistAutoAddHandlerTest {
     }
 
     @Test
-    fun addsNewEpisodesFromMultiplePodcastsToSamePlaylist() = runTest {
+    fun addsMostRecentUnplayedFromEachPodcastToSharedAutoAddPlaylist() = runTest {
         val playlistId = createAutoAddPlaylist(
             name = "Mixed",
             autoAddPodcastIds = "$podcastId1,$podcastId2"
         )
-        val episodeFromPodcastOne = insertEpisode(podcastId1, "pod1-new", "Podcast One Episode")
-        val episodeFromPodcastTwo = insertEpisode(podcastId2, "pod2-new", "Podcast Two Episode")
+        val episodeFromPodcastOne = insertEpisode(
+            podcastId = podcastId1,
+            guid = "pod1-new",
+            title = "Podcast One Episode",
+            publishedAt = 3_000L
+        )
+        val episodeFromPodcastTwo = insertEpisode(
+            podcastId = podcastId2,
+            guid = "pod2-new",
+            title = "Podcast Two Episode",
+            publishedAt = 4_000L
+        )
 
         handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(episodeFromPodcastOne))
         handler.addNewEpisodesToAutoAddPlaylists(podcastId2, listOf(episodeFromPodcastTwo))
@@ -130,7 +273,12 @@ class PlaylistAutoAddHandlerTest {
     @Test
     fun doesNotAddDuplicateWhenEpisodeAlreadyInPlaylist() = runTest {
         val playlistId = createAutoAddPlaylist("Daily", podcastId1.toString())
-        val newEpisode = insertEpisode(podcastId1, "new-ep-1", "New Episode")
+        val newEpisode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "new-ep-1",
+            title = "New Episode",
+            publishedAt = 3_000L
+        )
 
         database.playlistDao().insertPlaylistEpisode(
             PlaylistEpisodeCrossRef(
@@ -149,27 +297,17 @@ class PlaylistAutoAddHandlerTest {
     @Test
     fun doesNotAddToPlaylistWithoutAutoAddForPodcast() = runTest {
         val playlistId = createAutoAddPlaylist("Other Podcast", podcastId2.toString())
-        val newEpisode = insertEpisode(podcastId1, "new-ep-1", "New Episode")
+        val newEpisode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "new-ep-1",
+            title = "New Episode",
+            publishedAt = 3_000L
+        )
 
         handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(newEpisode))
 
         assertEquals(0, database.playlistDao().getEpisodeCount(playlistId))
         assertFalse(database.playlistDao().isEpisodeInPlaylist(playlistId, newEpisode.id))
-    }
-
-    @Test
-    fun doesNotAddPlayedEpisodes() = runTest {
-        val playlistId = createAutoAddPlaylist("Daily", podcastId1.toString())
-        val playedEpisode = insertEpisode(
-            podcastId = podcastId1,
-            guid = "played-ep",
-            title = "Already Played",
-            isPlayed = true
-        )
-
-        handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(playedEpisode))
-
-        assertEquals(0, database.playlistDao().getEpisodeCount(playlistId))
     }
 
     @Test
@@ -181,41 +319,49 @@ class PlaylistAutoAddHandlerTest {
         assertEquals(0, database.playlistDao().getEpisodeCount(playlistId))
     }
 
+    // === Initial auto-add when enabling auto-add on a playlist ===
+
     @Test
-    fun onlyAddsProvidedNewEpisodesNotExistingUnplayedBacklog() = runTest {
+    fun addsMostRecentUnplayedEpisodeWhenEnablingAutoAddOnPlaylist() = runTest {
         val playlistId = createAutoAddPlaylist("Daily", podcastId1.toString())
-        val oldUnplayedEpisode = insertEpisode(podcastId1, "old-ep", "Old Unplayed Episode")
-        val newlySyncedEpisode = insertEpisode(podcastId1, "new-ep", "Newly Synced Episode")
+        insertEpisode(
+            podcastId = podcastId1,
+            guid = "older-unplayed",
+            title = "Older Unplayed",
+            publishedAt = 1_000L
+        )
+        val mostRecentUnplayed = insertEpisode(
+            podcastId = podcastId1,
+            guid = "latest-unplayed",
+            title = "Latest Unplayed",
+            publishedAt = 3_000L
+        )
 
-        handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(newlySyncedEpisode))
+        handler.addMostRecentUnplayedEpisodeToPlaylist(playlistId, podcastId1)
 
-        val episodeIds = playlistEpisodeIds(playlistId)
-        assertEquals(listOf(newlySyncedEpisode.id), episodeIds)
-        assertFalse(episodeIds.contains(oldUnplayedEpisode.id))
+        assertEquals(listOf(mostRecentUnplayed.id), playlistEpisodeIds(playlistId))
     }
 
     @Test
-    fun appendsMultipleNewEpisodesInOrder() = runTest {
+    fun doesNotAddWhenEnablingAutoAddIfMostRecentEpisodeIsPlayed() = runTest {
         val playlistId = createAutoAddPlaylist("Daily", podcastId1.toString())
-        database.playlistDao().insertPlaylistEpisode(
-            PlaylistEpisodeCrossRef(
-                playlistId = playlistId,
-                episodeId = insertEpisode(podcastId1, "existing", "Existing Episode").id,
-                position = 2
-            )
+        val olderUnplayed = insertEpisode(
+            podcastId = podcastId1,
+            guid = "older-unplayed",
+            title = "Older Unplayed",
+            publishedAt = 1_000L
+        )
+        insertEpisode(
+            podcastId = podcastId1,
+            guid = "latest-played",
+            title = "Latest Played",
+            publishedAt = 3_000L,
+            isPlayed = true
         )
 
-        val firstNewEpisode = insertEpisode(podcastId1, "new-1", "First New")
-        val secondNewEpisode = insertEpisode(podcastId1, "new-2", "Second New")
+        handler.addMostRecentUnplayedEpisodeToPlaylist(playlistId, podcastId1)
 
-        handler.addNewEpisodesToAutoAddPlaylists(
-            podcastId1,
-            listOf(firstNewEpisode, secondNewEpisode)
-        )
-
-        assertEquals(3, database.playlistDao().getEpisodeCount(playlistId))
-        assertEquals(4, database.playlistDao().getMaxPosition(playlistId))
-        assertTrue(database.playlistDao().isEpisodeInPlaylist(playlistId, firstNewEpisode.id))
-        assertTrue(database.playlistDao().isEpisodeInPlaylist(playlistId, secondNewEpisode.id))
+        assertEquals(0, database.playlistDao().getEpisodeCount(playlistId))
+        assertFalse(database.playlistDao().isEpisodeInPlaylist(playlistId, olderUnplayed.id))
     }
 }

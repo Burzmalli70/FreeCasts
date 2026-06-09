@@ -36,7 +36,7 @@ class PodcastEpisodeSyncPlaylistPreservationTest {
         syncHandler = PodcastEpisodeSyncHandler(
             episodeDao = database.episodeDao(),
             podcastDao = database.podcastDao(),
-            playlistAutoAddHandler = PlaylistAutoAddHandler(playlistDao)
+            playlistAutoAddHandler = PlaylistAutoAddHandler(playlistDao, database.episodeDao())
         )
 
         podcastId = database.podcastDao().insert(
@@ -56,6 +56,7 @@ class PodcastEpisodeSyncPlaylistPreservationTest {
         podcastId: Long,
         guid: String,
         title: String,
+        publishedAt: Long,
         isPlayed: Boolean = false
     ): Episode {
         val id = database.episodeDao().insert(
@@ -64,6 +65,7 @@ class PodcastEpisodeSyncPlaylistPreservationTest {
                 guid = guid,
                 title = title,
                 audioUrl = "https://example.com/$guid.mp3",
+                publishedAt = publishedAt,
                 isPlayed = isPlayed
             )
         )
@@ -97,25 +99,26 @@ class PodcastEpisodeSyncPlaylistPreservationTest {
             ?: emptyList()
     }
 
-    private fun feedEpisode(guid: String, title: String) = Episode(
+    private fun feedEpisode(guid: String, title: String, publishedAt: Long) = Episode(
         guid = guid,
         title = title,
-        audioUrl = "https://example.com/$guid.mp3"
+        audioUrl = "https://example.com/$guid.mp3",
+        publishedAt = publishedAt
     )
 
     @Test
     fun preservesExistingPlaylistEpisodesWhenNoNewEpisodesFoundDuringSync() = runTest {
         val playlistId = createPlaylist("Manual Mix")
-        val firstEpisode = insertEpisode(podcastId, "ep-1", "Episode One")
-        val secondEpisode = insertEpisode(podcastId, "ep-2", "Episode Two")
+        val firstEpisode = insertEpisode(podcastId, "ep-1", "Episode One", publishedAt = 1_000L)
+        val secondEpisode = insertEpisode(podcastId, "ep-2", "Episode Two", publishedAt = 2_000L)
         addEpisodeToPlaylist(playlistId, firstEpisode.id, position = 0)
         addEpisodeToPlaylist(playlistId, secondEpisode.id, position = 1)
 
         syncHandler.syncEpisodesFromFeed(
             podcastId = podcastId,
             feedEpisodes = listOf(
-                feedEpisode("ep-1", "Episode One"),
-                feedEpisode("ep-2", "Episode Two")
+                feedEpisode("ep-1", "Episode One", publishedAt = 1_000L),
+                feedEpisode("ep-2", "Episode Two", publishedAt = 2_000L)
             )
         )
 
@@ -132,14 +135,14 @@ class PodcastEpisodeSyncPlaylistPreservationTest {
             name = "Auto Add",
             autoAddPodcastIds = podcastId.toString()
         )
-        val existingEpisode = insertEpisode(podcastId, "ep-1", "Episode One")
+        val existingEpisode = insertEpisode(podcastId, "ep-1", "Episode One", publishedAt = 1_000L)
         addEpisodeToPlaylist(playlistId, existingEpisode.id, position = 0)
 
         syncHandler.syncEpisodesFromFeed(
             podcastId = podcastId,
             feedEpisodes = listOf(
-                feedEpisode("ep-1", "Episode One"),
-                feedEpisode("ep-2", "Episode Two")
+                feedEpisode("ep-1", "Episode One", publishedAt = 1_000L),
+                feedEpisode("ep-2", "Episode Two", publishedAt = 2_000L)
             )
         )
 
@@ -152,12 +155,12 @@ class PodcastEpisodeSyncPlaylistPreservationTest {
     @Test
     fun preservesManuallyAddedEpisodesWhenSyncFindsNoNewEpisodesAndAutoAddIsDisabled() = runTest {
         val playlistId = createPlaylist(name = "Manual Only", autoAddPodcastIds = null)
-        val existingEpisode = insertEpisode(podcastId, "ep-1", "Episode One")
+        val existingEpisode = insertEpisode(podcastId, "ep-1", "Episode One", publishedAt = 1_000L)
         addEpisodeToPlaylist(playlistId, existingEpisode.id, position = 0)
 
         syncHandler.syncEpisodesFromFeed(
             podcastId = podcastId,
-            feedEpisodes = listOf(feedEpisode("ep-1", "Episode One"))
+            feedEpisodes = listOf(feedEpisode("ep-1", "Episode One", publishedAt = 1_000L))
         )
 
         assertEquals(listOf(existingEpisode.id), playlistEpisodeIds(playlistId))
@@ -169,16 +172,20 @@ class PodcastEpisodeSyncPlaylistPreservationTest {
             name = "Mixed",
             autoAddPodcastIds = podcastId.toString()
         )
-        val syncedPodcastEpisode = insertEpisode(podcastId, "ep-1", "Synced Episode")
-        val otherPodcastEpisode = insertEpisode(otherPodcastId, "other-1", "Other Episode")
+        val syncedPodcastEpisode = insertEpisode(
+            podcastId, "ep-1", "Synced Episode", publishedAt = 1_000L
+        )
+        val otherPodcastEpisode = insertEpisode(
+            otherPodcastId, "other-1", "Other Episode", publishedAt = 1_000L
+        )
         addEpisodeToPlaylist(playlistId, syncedPodcastEpisode.id, position = 0)
         addEpisodeToPlaylist(playlistId, otherPodcastEpisode.id, position = 1)
 
         syncHandler.syncEpisodesFromFeed(
             podcastId = podcastId,
             feedEpisodes = listOf(
-                feedEpisode("ep-1", "Synced Episode"),
-                feedEpisode("ep-2", "New Synced Episode")
+                feedEpisode("ep-1", "Synced Episode", publishedAt = 1_000L),
+                feedEpisode("ep-2", "New Synced Episode", publishedAt = 2_000L)
             )
         )
 
@@ -199,6 +206,7 @@ class PodcastEpisodeSyncPlaylistPreservationTest {
             podcastId = podcastId,
             guid = "played-ep",
             title = "Played Episode",
+            publishedAt = 1_000L,
             isPlayed = true
         )
         addEpisodeToPlaylist(playlistId, playedEpisode.id, position = 0)
@@ -206,8 +214,8 @@ class PodcastEpisodeSyncPlaylistPreservationTest {
         syncHandler.syncEpisodesFromFeed(
             podcastId = podcastId,
             feedEpisodes = listOf(
-                feedEpisode("played-ep", "Played Episode"),
-                feedEpisode("new-ep", "New Episode")
+                feedEpisode("played-ep", "Played Episode", publishedAt = 1_000L),
+                feedEpisode("new-ep", "New Episode", publishedAt = 2_000L)
             )
         )
 
