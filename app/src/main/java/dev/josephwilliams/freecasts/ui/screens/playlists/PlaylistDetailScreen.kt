@@ -3,6 +3,8 @@
 package dev.josephwilliams.freecasts.ui.screens.playlists
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,7 +30,6 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,8 +39,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -149,6 +153,7 @@ fun PlaylistDetailScreen(
                     playlist = state.playlist,
                     episodes = state.episodes,
                     onRemoveEpisode = viewModel::removeEpisode,
+                    onMarkAsPlayed = viewModel::markAsPlayed,
                     onPlayEpisode = { index ->
                         val playingEpisodes = state.episodes.map { item ->
                             PlayingEpisode(
@@ -175,6 +180,7 @@ private fun PlaylistDetailContent(
     playlist: Playlist?,
     episodes: List<PlaylistEpisodeItem>,
     onRemoveEpisode: (Long) -> Unit,
+    onMarkAsPlayed: (Long) -> Unit,
     onPlayEpisode: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -204,9 +210,10 @@ private fun PlaylistDetailContent(
                     items = episodes,
                     key = { _, item -> item.episode.id }
                 ) { index, episodeItem ->
-                    PlaylistEpisodeCard(
+                    SwipeablePlaylistEpisodeCard(
                         episodeItem = episodeItem,
                         onRemove = { onRemoveEpisode(episodeItem.episode.id) },
+                        onMarkAsPlayed = { onMarkAsPlayed(episodeItem.episode.id) },
                         onPlay = { onPlayEpisode(index) }
                     )
                 }
@@ -308,9 +315,66 @@ private fun EmptyPlaylistContent(
 }
 
 @Composable
-private fun PlaylistEpisodeCard(
+private fun SwipeablePlaylistEpisodeCard(
     episodeItem: PlaylistEpisodeItem,
     onRemove: () -> Unit,
+    onMarkAsPlayed: () -> Unit,
+    onPlay: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = {
+            if (it == SwipeToDismissBoxValue.EndToStart) {
+                onRemove()
+                true
+            } else {
+                false
+            }
+        }
+    )
+    
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = modifier,
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
+            when (dismissState.dismissDirection) {
+                SwipeToDismissBoxValue.EndToStart -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                MaterialTheme.colorScheme.error,
+                                RoundedCornerShape(12.dp)
+                            )
+                            .padding(horizontal = 20.dp),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Remove from playlist",
+                            tint = MaterialTheme.colorScheme.onError
+                        )
+                    }
+                }
+                else -> {}
+            }
+        },
+        content = {
+            PlaylistEpisodeCard(
+                episodeItem = episodeItem,
+                onMarkAsPlayed = onMarkAsPlayed,
+                onPlay = onPlay
+            )
+        }
+    )
+}
+
+@Composable
+private fun PlaylistEpisodeCard(
+    episodeItem: PlaylistEpisodeItem,
+    onMarkAsPlayed: () -> Unit,
     onPlay: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -430,12 +494,14 @@ private fun PlaylistEpisodeCard(
                 }
             }
             
-            // Remove button
-            IconButton(onClick = onRemove) {
-                Icon(
-                    imageVector = Icons.Default.RemoveCircleOutline,
-                    contentDescription = "Remove from playlist",
-                    tint = MaterialTheme.colorScheme.error
+            if (!episode.isPlayed) {
+                Text(
+                    text = "Mark played",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable(onClick = onMarkAsPlayed)
+                        .padding(4.dp)
                 )
             }
         }

@@ -2,6 +2,7 @@ package dev.josephwilliams.freecasts.ui.screens.playlists
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
@@ -18,7 +19,8 @@ import kotlinx.coroutines.launch
  */
 class PlaylistDetailViewModel(
     private val playlistDao: PlaylistDao,
-    private val podcastDao: PodcastDao
+    private val podcastDao: PodcastDao,
+    private val episodeDao: EpisodeDao
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(PlaylistDetailState())
@@ -69,6 +71,15 @@ class PlaylistDetailViewModel(
     private suspend fun getPodcast(podcastId: Long): Podcast? {
         return podcastCache.getOrPut(podcastId) {
             podcastDao.getById(podcastId)
+        }
+    }
+    
+    /**
+     * Mark an episode as played.
+     */
+    fun markAsPlayed(episodeId: Long) {
+        viewModelScope.launch {
+            episodeDao.markAsPlayed(episodeId)
         }
     }
     

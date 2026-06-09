@@ -43,7 +43,7 @@ val viewModelModule = module {
     viewModel { SubscribedPodcastDetailViewModel(get(), get(), get(), get(), get()) }
     viewModel { PlaylistsViewModel(get()) }
     viewModel { CreateEditPlaylistViewModel(get(), get(), get()) }
-    viewModel { PlaylistDetailViewModel(get(), get()) }
+    viewModel { PlaylistDetailViewModel(get(), get(), get()) }
     viewModel { SettingsViewModel(get(), get(), get(), get()) }
 }
 
