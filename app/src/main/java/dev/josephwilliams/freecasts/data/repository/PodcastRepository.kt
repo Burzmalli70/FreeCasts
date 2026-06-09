@@ -10,6 +10,7 @@ import dev.josephwilliams.freecasts.data.playlist.PodcastEpisodeSyncHandler
 import dev.josephwilliams.freecasts.data.remote.PodcastSearchApi
 import dev.josephwilliams.freecasts.data.remote.model.ItunesPodcast
 import dev.josephwilliams.freecasts.tools.RssParser
+import dev.josephwilliams.freecasts.tools.normalizeFeedUrl
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.request.get
@@ -62,12 +63,13 @@ class PodcastRepository(
     suspend fun fetchPodcastFeed(feedUrl: String): Result<RssParser.ParseResult> {
         return withContext(Dispatchers.IO) {
             try {
-                val response = httpClient.get(feedUrl)
+                val normalizedFeedUrl = feedUrl.normalizeFeedUrl()
+                val response = httpClient.get(normalizedFeedUrl)
                 val inputStream = response.bodyAsChannel().toInputStream()
                 val result = RssParser.parsePodcastFeed(inputStream)
                 if (result != null) {
                     // Set the feed URL on the parsed podcast
-                    val podcastWithFeedUrl = result.podcast?.copy(feedUrl = feedUrl)
+                    val podcastWithFeedUrl = result.podcast?.copy(feedUrl = normalizedFeedUrl)
                     Result.success(RssParser.ParseResult(podcastWithFeedUrl, result.episodes))
                 } else {
                     Result.failure(Exception("Failed to parse RSS feed"))
@@ -100,14 +102,15 @@ class PodcastRepository(
     ): Result<Long> {
         return withContext(Dispatchers.IO) {
             try {
+                val normalizedFeedUrl = feedUrl.normalizeFeedUrl()
                 // Check if already subscribed
-                val existing = podcastDao.getByFeedUrl(feedUrl)
+                val existing = podcastDao.getByFeedUrl(normalizedFeedUrl)
                 if (existing?.isSubscribed == true) {
                     return@withContext Result.success(existing.id)
                 }
                 
                 // Fetch the RSS feed to get full podcast info and episodes
-                val feedResult = fetchPodcastFeed(feedUrl)
+                val feedResult = fetchPodcastFeed(normalizedFeedUrl)
                 if (feedResult.isFailure) {
                     return@withContext Result.failure(feedResult.exceptionOrNull()!!)
                 }
@@ -118,7 +121,7 @@ class PodcastRepository(
                 )
                 
                 // Merge iTunes data with RSS data if available
-                val podcast = if (itunesPodcast != null) {
+                val podcast = (if (itunesPodcast != null) {
                     parsedPodcast.copy(
                         artworkUrl = itunesPodcast.artworkUrl600 
                             ?: itunesPodcast.artworkUrl100 
@@ -134,7 +137,7 @@ class PodcastRepository(
                         subscribedAt = System.currentTimeMillis(),
                         cached = false
                     )
-                }
+                }).copy(feedUrl = normalizedFeedUrl)
                 
                 // Save podcast
                 val podcastId = if (existing != null) {
@@ -171,7 +174,7 @@ class PodcastRepository(
      */
     suspend fun unsubscribeFromPodcast(feedUrl: String) {
         withContext(Dispatchers.IO) {
-            podcastDao.unsubscribe(feedUrl)
+            podcastDao.unsubscribe(feedUrl.normalizeFeedUrl())
         }
     }
     
@@ -180,7 +183,7 @@ class PodcastRepository(
      */
     suspend fun isSubscribed(feedUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
-            podcastDao.getByFeedUrl(feedUrl)?.isSubscribed == true
+            podcastDao.getByFeedUrl(feedUrl.normalizeFeedUrl())?.isSubscribed == true
         }
     }
     
@@ -204,7 +207,7 @@ class PodcastRepository(
      * Get a podcast by feed URL.
      */
     suspend fun getPodcastByFeedUrl(feedUrl: String): Podcast? {
-        return podcastDao.getByFeedUrl(feedUrl)
+        return podcastDao.getByFeedUrl(feedUrl.normalizeFeedUrl())
     }
     
     /**
