@@ -36,7 +36,8 @@ Subscribing to a podcast means:
 
 ## Playlist creation and organization
 - The user will be able to create playlists that podcasts can be set to automatically add downloaded episodes to
-- Playlists will include a setting indicating whether played podcasts should automatically be removed from the playlist after listening
+- When automatically adding episodes to a playlist, only unplayed episodes will be added, and only the most recent unplayed episode for each podcast.
+- Playlists will include a setting indicating whether played podcast episodes should automatically be removed from the playlist after listening
 - The user will be able to tap a "Random" button when viewing a playlist that begins playing a random episode from the list. When that episode ends, the app will then play another random episode from the same playlist.
 
 ## Episode playback
@@ -44,3 +45,5 @@ Subscribing to a podcast means:
 - The app will be able to play downloaded episodes, but also play an episode from a URL.
 - The app will keep track of how many times the user has listened to an episode. For this count, an episode will be considered "listened to" if the user listens for more than half of the episode or 5 minutes, whichever is less.
 - If the user interrupts playback of an episode, the app will keep track of the timestamp where playback ended and the user will be able to resume from that position in the future, even if they listen to a different episode and then come back to it.
+- An episode will be considered "played" if it has been listened to at least once.
+- Episodes considered to be "played" will appear with dimmer text when in episode lists on podcast detail screens.
