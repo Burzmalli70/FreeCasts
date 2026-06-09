@@ -9,6 +9,7 @@ import kotlinx.datetime.format.DateTimeComponents
 import kotlinx.datetime.toInstant
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
+import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
 
@@ -22,7 +23,7 @@ object RssParser {
         return try {
             val parser = Xml.newPullParser()
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
-            parser.setInput(inputStream, null)
+            parser.setInput(inputStream.sanitizeMalformedXml(), null)
             
             var podcast: Podcast? = null
             val episodes = mutableListOf<Episode>()
@@ -247,23 +248,70 @@ object RssParser {
 }
 
 /**
+ * Read all text and CDATA content until the matching end tag.
+ */
+private fun XmlPullParser.readElementText(): String {
+    if (isEmptyElementTag) return ""
+
+    val builder = StringBuilder()
+    val startDepth = depth
+    while (true) {
+        when (next()) {
+            XmlPullParser.TEXT, XmlPullParser.CDSECT, XmlPullParser.ENTITY_REF -> {
+                text?.let(builder::append)
+            }
+            XmlPullParser.END_TAG -> {
+                if (depth == startDepth) break
+            }
+            XmlPullParser.END_DOCUMENT -> break
+        }
+    }
+    return builder.toString()
+}
+
+/**
  * Safely get next text content, handling edge cases where nextText() might fail.
  */
 private fun XmlPullParser.safeNextText(): String {
     return try {
-        if (next() == XmlPullParser.TEXT) {
-            val result = text ?: ""
-            // Move to end tag
-            if (eventType == XmlPullParser.TEXT) {
-                next()
-            }
-            result
-        } else {
-            ""
-        }
+        readElementText()
     } catch (e: Exception) {
         ""
     }
+}
+
+private fun InputStream.sanitizeMalformedXml(): InputStream {
+    val content = bufferedReader().use { it.readText() }
+    return ByteArrayInputStream(content.fixUnescapedAmpersands().toByteArray(Charsets.UTF_8))
+}
+
+private val UNESCAPED_AMPERSAND = Regex("""&(?!amp;|lt;|gt;|quot;|apos;|#[0-9]+;|#x[0-9a-fA-F]+;)""")
+
+/**
+ * Fix common RSS/XML authoring mistakes without altering CDATA sections.
+ */
+private fun String.fixUnescapedAmpersands(): String {
+    val result = StringBuilder()
+    var index = 0
+    while (index < length) {
+        val cdataStart = indexOf("<![CDATA[", index)
+        if (cdataStart == -1) {
+            result.append(UNESCAPED_AMPERSAND.replace(substring(index), "&amp;"))
+            break
+        }
+
+        result.append(UNESCAPED_AMPERSAND.replace(substring(index, cdataStart), "&amp;"))
+
+        val cdataEnd = indexOf("]]>", cdataStart)
+        if (cdataEnd == -1) {
+            result.append(substring(cdataStart))
+            break
+        }
+
+        result.append(substring(cdataStart, cdataEnd + 3))
+        index = cdataEnd + 3
+    }
+    return result.toString()
 }
 
 fun String.stripCdata(): String {
