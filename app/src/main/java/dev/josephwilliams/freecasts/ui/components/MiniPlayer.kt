@@ -52,6 +52,7 @@ fun MiniPlayer(
     onNextTrack: () -> Unit,
     onPreviousTrack: () -> Unit,
     onStopClick: () -> Unit,
+    onExpandClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
@@ -83,56 +84,60 @@ fun MiniPlayer(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Artwork
-                    AsyncImage(
-                        model = playbackState.currentEpisode?.artworkUrl,
-                        contentDescription = "Episode artwork",
+                    // Tappable artwork and episode info (opens full screen player)
+                    Row(
                         modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(6.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                    
-                    Spacer(modifier = Modifier.width(12.dp))
-                    
-                    // Episode and podcast info
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.Center
+                            .weight(1f)
+                            .clickable(onClick = onExpandClick),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = playbackState.currentEpisode?.episodeTitle ?: "",
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                        AsyncImage(
+                            model = playbackState.currentEpisode?.artworkUrl,
+                            contentDescription = "Episode artwork",
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(6.dp)),
+                            contentScale = ContentScale.Crop
                         )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(
+                            verticalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = playbackState.currentEpisode?.podcastName ?: "",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = playbackState.currentEpisode?.episodeTitle ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
+                                overflow = TextOverflow.Ellipsis
                             )
-                            if (playbackState.hasQueue) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
-                                    text = " · ${playbackState.queuePosition}/${playbackState.queueSize}",
+                                    text = playbackState.currentEpisode?.podcastName ?: "",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
                                 )
+                                if (playbackState.hasQueue) {
+                                    Text(
+                                        text = " · ${playbackState.queuePosition}/${playbackState.queueSize}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
+                            Text(
+                                text = formatPlaybackTime(playbackState.currentPositionMs, playbackState.durationMs),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                        // Time info
-                        Text(
-                            text = formatPlaybackTime(playbackState.currentPositionMs, playbackState.durationMs),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
-                    
+
                     // Playback controls
                     Row(
                         verticalAlignment = Alignment.CenterVertically
@@ -246,27 +251,5 @@ fun MiniPlayer(
                 }
             }
         }
-    }
-}
-
-private fun formatPlaybackTime(currentMs: Long, totalMs: Long): String {
-    val currentSecs = (currentMs / 1000).toInt()
-    val totalSecs = (totalMs / 1000).toInt()
-    
-    val currentFormatted = formatSeconds(currentSecs)
-    val totalFormatted = formatSeconds(totalSecs)
-    
-    return "$currentFormatted / $totalFormatted"
-}
-
-private fun formatSeconds(totalSeconds: Int): String {
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-    
-    return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format("%d:%02d", minutes, seconds)
     }
 }

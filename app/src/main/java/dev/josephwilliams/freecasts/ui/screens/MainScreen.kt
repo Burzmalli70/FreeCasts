@@ -2,6 +2,7 @@ package dev.josephwilliams.freecasts.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -20,9 +21,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -36,6 +40,7 @@ import androidx.navigation.navArgument
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
 import dev.josephwilliams.freecasts.data.remote.model.ItunesPodcast
 import dev.josephwilliams.freecasts.ui.components.MiniPlayer
+import dev.josephwilliams.freecasts.ui.components.NowPlayingOverlay
 import dev.josephwilliams.freecasts.ui.screens.playlists.CreateEditPlaylistScreen
 import dev.josephwilliams.freecasts.ui.screens.playlists.PlaylistDetailScreen
 import dev.josephwilliams.freecasts.ui.screens.playlists.PlaylistsScreen
@@ -54,9 +59,17 @@ fun MainScreen(
     playbackManager: PlaybackManager = koinInject()
 ) {
     val playbackState by playbackManager.state.collectAsState()
-    
+    var showNowPlaying by remember { mutableStateOf(false) }
+
+    LaunchedEffect(playbackState.hasMedia) {
+        if (!playbackState.hasMedia) {
+            showNowPlaying = false
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         bottomBar = {
             Column(
                 modifier = Modifier
@@ -71,7 +84,8 @@ fun MainScreen(
                     onSkipBackward = { playbackManager.skipBackward() },
                     onNextTrack = { playbackManager.playNext() },
                     onPreviousTrack = { playbackManager.playPrevious() },
-                    onStopClick = { playbackManager.stop() }
+                    onStopClick = { playbackManager.stop() },
+                    onExpandClick = { showNowPlaying = true }
                 )
                 
                 // Bottom navigation bar
@@ -211,6 +225,20 @@ fun MainScreen(
                 SettingsScreen()
             }
         }
+    }
+
+        NowPlayingOverlay(
+            modifier = Modifier.fillMaxSize(),
+            visible = showNowPlaying,
+            playbackState = playbackState,
+            onDismiss = { showNowPlaying = false },
+            onPlayPauseClick = { playbackManager.togglePlayPause() },
+            onSkipForward = { playbackManager.skipForward() },
+            onSkipBackward = { playbackManager.skipBackward() },
+            onNextTrack = { playbackManager.playNext() },
+            onPreviousTrack = { playbackManager.playPrevious() },
+            onSeekTo = { playbackManager.seekTo(it) }
+        )
     }
 }
 
