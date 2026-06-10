@@ -3,11 +3,11 @@ package dev.josephwilliams.freecasts.ui.screens.settings
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.josephwilliams.freecasts.data.export.ExportedPodcast
+import dev.josephwilliams.freecasts.data.export.FreeCastsBackupBuilder
+import dev.josephwilliams.freecasts.data.export.FreeCastsBackupImportHandler
+import dev.josephwilliams.freecasts.data.export.PODCASTS_EXPORT_FILENAME
 import dev.josephwilliams.freecasts.data.export.PodcastSubscriptionsFileManager
-import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
-import dev.josephwilliams.freecasts.data.repository.PodcastRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -22,8 +22,8 @@ import kotlinx.coroutines.launch
  */
 class SettingsViewModel(
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val podcastDao: PodcastDao,
-    private val podcastRepository: PodcastRepository,
+    private val backupBuilder: FreeCastsBackupBuilder,
+    private val backupImportHandler: FreeCastsBackupImportHandler,
     private val subscriptionsFileManager: PodcastSubscriptionsFileManager
 ) : ViewModel() {
 
@@ -119,131 +119,154 @@ class SettingsViewModel(
 
     fun exportToSelectedUri(uri: Uri) {
         viewModelScope.launch {
-            _state.update { it.copy(isExporting = true) }
+            performExport(toUri = uri)
+        }
+    }
 
-            val podcasts = podcastDao.getSubscribed()
-            val result = subscriptionsFileManager.exportToUri(uri, podcasts)
+    fun importFromSelectedUri(uri: Uri) {
+        viewModelScope.launch {
+            performImport(fromUri = uri)
+        }
+    }
 
-            _state.update { it.copy(isExporting = false) }
+    private suspend fun performExportToDocuments() {
+        performExport(toUri = null)
+    }
 
-            result.fold(
-                onSuccess = {
-                    _events.emit(
-                        SettingsEvent.ShowMessage(
-                            "Exported ${podcasts.size} podcast${if (podcasts.size == 1) "" else "s"}"
-                        )
-                    )
-                },
-                onFailure = { error ->
+    private suspend fun performImportFromDocuments() {
+        performImport(fromUri = null)
+    }
+
+    private suspend fun performExport(toUri: Uri?) {
+        _state.update {
+            it.copy(
+                isExporting = true,
+                isImporting = false,
+                transferProgress = TransferProgress(current = 0, total = 1, label = "Starting export…")
+            )
+        }
+
+        val backupResult = runCatching {
+            backupBuilder.buildBackup { current, total, label ->
+                _state.update {
+                    it.copy(transferProgress = TransferProgress(current, total, label))
+                }
+            }
+        }
+
+        val backup = backupResult.getOrNull()
+        if (backup == null) {
+            _state.update {
+                it.copy(isExporting = false, transferProgress = null)
+            }
+            _events.emit(
+                SettingsEvent.ShowMessage(
+                    "Export failed: ${backupResult.exceptionOrNull()?.message ?: "Unknown error"}"
+                )
+            )
+            return
+        }
+
+        _state.update {
+            it.copy(transferProgress = TransferProgress(1, 1, "Writing backup file…"))
+        }
+
+        val writeResult = if (toUri != null) {
+            subscriptionsFileManager.exportToUri(toUri, backup)
+        } else {
+            subscriptionsFileManager.exportBackup(backup)
+        }
+
+        _state.update {
+            it.copy(isExporting = false, transferProgress = null)
+        }
+
+        writeResult.fold(
+            onSuccess = {
+                val episodeStateCount = backup.episodeStates.size
+                val message = buildString {
+                    append("Exported ${backup.podcasts.size} podcast${if (backup.podcasts.size == 1) "" else "s"}")
+                    if (episodeStateCount > 0) {
+                        append(" and $episodeStateCount episode state${if (episodeStateCount == 1) "" else "s"}")
+                    }
+                    if (toUri == null) {
+                        append(" to Documents/$PODCASTS_EXPORT_FILENAME")
+                    }
+                }
+                _events.emit(SettingsEvent.ShowMessage(message))
+            },
+            onFailure = { error ->
+                if (toUri == null) {
+                    _events.emit(SettingsEvent.PickExportLocation)
+                } else {
                     _events.emit(
                         SettingsEvent.ShowMessage(
                             "Export failed: ${error.message ?: "Unknown error"}"
                         )
                     )
                 }
-            )
-        }
+            }
+        )
     }
 
-    fun importFromSelectedUri(uri: Uri) {
-        viewModelScope.launch {
-            _state.update { it.copy(isImporting = true) }
-
-            val result = subscriptionsFileManager.importFromUri(uri)
-            result.fold(
-                onSuccess = { podcasts ->
-                    importPodcasts(podcasts)
-                },
-                onFailure = { error ->
-                    _state.update { it.copy(isImporting = false) }
-                    _events.emit(
-                        SettingsEvent.ShowMessage(
-                            "Import failed: ${error.message ?: "Unknown error"}"
-                        )
-                    )
-                }
+    private suspend fun performImport(fromUri: Uri?) {
+        _state.update {
+            it.copy(
+                isImporting = true,
+                isExporting = false,
+                transferProgress = TransferProgress(current = 0, total = 1, label = "Reading backup file…")
             )
         }
-    }
 
-    private suspend fun performExportToDocuments() {
-        _state.update { it.copy(isExporting = true) }
+        val readResult = if (fromUri != null) {
+            subscriptionsFileManager.importFromUri(fromUri)
+        } else {
+            subscriptionsFileManager.importBackup()
+        }
 
-        val podcasts = podcastDao.getSubscribed()
-        val result = subscriptionsFileManager.exportPodcasts(podcasts)
-
-        _state.update { it.copy(isExporting = false) }
-
-        result.fold(
-            onSuccess = {
+        val backup = readResult.getOrNull()
+        if (backup == null) {
+            _state.update {
+                it.copy(isImporting = false, transferProgress = null)
+            }
+            if (fromUri == null) {
+                _events.emit(SettingsEvent.PickImportFile)
+            } else {
                 _events.emit(
                     SettingsEvent.ShowMessage(
-                        "Exported ${podcasts.size} podcast${if (podcasts.size == 1) "" else "s"} to Documents/$PODCASTS_EXPORT_FILENAME"
+                        "Import failed: ${readResult.exceptionOrNull()?.message ?: "Unknown error"}"
                     )
                 )
-            },
-            onFailure = {
-                _events.emit(SettingsEvent.PickExportLocation)
             }
-        )
-    }
+            return
+        }
 
-    private suspend fun performImportFromDocuments() {
-        _state.update { it.copy(isImporting = true) }
-
-        val result = subscriptionsFileManager.importPodcasts()
-        result.fold(
-            onSuccess = { podcasts ->
-                importPodcasts(podcasts)
-            },
-            onFailure = {
-                _state.update { it.copy(isImporting = false) }
-                _events.emit(SettingsEvent.PickImportFile)
-            }
-        )
-    }
-
-    private suspend fun importPodcasts(exportedPodcasts: List<ExportedPodcast>) {
-        var importedCount = 0
-        var skippedCount = 0
-        var failedCount = 0
-
-        for (exportedPodcast in exportedPodcasts) {
-            if (exportedPodcast.feedUrl.isBlank()) {
-                failedCount++
-                continue
-            }
-
-            val existing = podcastDao.getByFeedUrl(exportedPodcast.feedUrl)
-            if (existing?.isSubscribed == true) {
-                skippedCount++
-                continue
-            }
-
-            val subscribeResult = podcastRepository.subscribeToPodcast(exportedPodcast.feedUrl)
-            if (subscribeResult.isSuccess) {
-                importedCount++
-            } else {
-                failedCount++
+        val importResult = runCatching {
+            backupImportHandler.importBackup(backup) { current, total, label ->
+                _state.update {
+                    it.copy(transferProgress = TransferProgress(current, total, label))
+                }
             }
         }
 
-        _state.update { it.copy(isImporting = false) }
-
-        val message = buildString {
-            append("Imported $importedCount podcast${if (importedCount == 1) "" else "s"}")
-            if (skippedCount > 0) {
-                append(", skipped $skippedCount already subscribed")
-            }
-            if (failedCount > 0) {
-                append(", $failedCount failed")
-            }
+        _state.update {
+            it.copy(isImporting = false, transferProgress = null)
         }
-        _events.emit(SettingsEvent.ShowMessage(message))
+
+        importResult.fold(
+            onSuccess = { result ->
+                _events.emit(SettingsEvent.ShowMessage(result.toMessage()))
+            },
+            onFailure = { error ->
+                _events.emit(
+                    SettingsEvent.ShowMessage(
+                        "Import failed: ${error.message ?: "Unknown error"}"
+                    )
+                )
+            }
+        )
     }
 }
-
-private const val PODCASTS_EXPORT_FILENAME = "podcasts.json"
 
 /**
  * State for the settings screen.
@@ -254,8 +277,18 @@ data class SettingsState(
     val deletePlayedDownloads: Boolean = false,
     val isLoading: Boolean = true,
     val isExporting: Boolean = false,
-    val isImporting: Boolean = false
+    val isImporting: Boolean = false,
+    val transferProgress: TransferProgress? = null
 )
+
+data class TransferProgress(
+    val current: Int,
+    val total: Int,
+    val label: String
+) {
+    val fraction: Float
+        get() = if (total <= 0) 0f else (current.toFloat() / total).coerceIn(0f, 1f)
+}
 
 sealed class SettingsEvent {
     data class RequestStoragePermission(val isForExport: Boolean) : SettingsEvent()

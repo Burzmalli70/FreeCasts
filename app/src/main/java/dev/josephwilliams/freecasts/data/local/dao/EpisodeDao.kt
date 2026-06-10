@@ -112,6 +112,16 @@ interface EpisodeDao {
 
     @Query("SELECT * FROM episodes WHERE podcastId = :podcastId ORDER BY publishedAt DESC")
     suspend fun getAllByPodcastId(podcastId: Long): List<Episode>
+
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM episodes
+        WHERE podcastId IN (SELECT id FROM podcasts WHERE isSubscribed = 1)
+        AND (isFavorite = 1 OR isPlayed = 1 OR playbackPositionMs > 0)
+        """
+    )
+    suspend fun getStatefulEpisodesForExport(): List<EpisodeWithPodcast>
     
     // Search
     @Query("SELECT * FROM episodes WHERE title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%' ORDER BY publishedAt DESC")

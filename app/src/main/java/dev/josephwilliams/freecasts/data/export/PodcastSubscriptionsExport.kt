@@ -8,29 +8,13 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.core.content.ContextCompat
-import dev.josephwilliams.freecasts.data.local.entity.Podcast
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.IOException
 
-const val PODCASTS_EXPORT_FILENAME = "podcasts.json"
-
-@Serializable
-data class ExportedPodcast(
-    val name: String,
-    val feedUrl: String
-)
-
-@Serializable
-data class PodcastSubscriptionsExport(
-    val version: Int = 1,
-    val podcasts: List<ExportedPodcast>
-)
-
 /**
- * Handles reading and writing subscribed podcast data to podcasts.json.
+ * Handles reading and writing FreeCasts backup data to podcasts.json.
  */
 class PodcastSubscriptionsFileManager(
     private val context: Context
@@ -52,17 +36,8 @@ class PodcastSubscriptionsFileManager(
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
 
-    fun exportPodcasts(podcasts: List<Podcast>): Result<Unit> {
-        val exportData = PodcastSubscriptionsExport(
-            podcasts = podcasts.map { podcast ->
-                ExportedPodcast(
-                    name = podcast.title,
-                    feedUrl = podcast.feedUrl
-                )
-            }
-        )
-        val jsonContent = json.encodeToString(exportData)
-
+    fun exportBackup(backup: FreeCastsBackup): Result<Unit> {
+        val jsonContent = json.encodeToString(backup)
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 writeToDocumentsViaMediaStore(jsonContent)
@@ -75,32 +50,23 @@ class PodcastSubscriptionsFileManager(
         }
     }
 
-    fun importPodcasts(): Result<List<ExportedPodcast>> {
+    fun importBackup(): Result<FreeCastsBackup> {
         return try {
             val jsonContent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 readFromDocumentsViaMediaStore()
             } else {
                 readFromLegacyDocuments()
             }
-            val exportData = json.decodeFromString<PodcastSubscriptionsExport>(jsonContent)
-            Result.success(exportData.podcasts)
+            Result.success(decodeBackup(jsonContent))
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    fun exportToUri(uri: Uri, podcasts: List<Podcast>): Result<Unit> {
-        val exportData = PodcastSubscriptionsExport(
-            podcasts = podcasts.map { podcast ->
-                ExportedPodcast(
-                    name = podcast.title,
-                    feedUrl = podcast.feedUrl
-                )
-            }
-        )
+    fun exportToUri(uri: Uri, backup: FreeCastsBackup): Result<Unit> {
         return try {
             context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                outputStream.write(json.encodeToString(exportData).toByteArray())
+                outputStream.write(json.encodeToString(backup).toByteArray())
             } ?: return Result.failure(IOException("Could not open output stream"))
             Result.success(Unit)
         } catch (e: Exception) {
@@ -108,16 +74,27 @@ class PodcastSubscriptionsFileManager(
         }
     }
 
-    fun importFromUri(uri: Uri): Result<List<ExportedPodcast>> {
+    fun importFromUri(uri: Uri): Result<FreeCastsBackup> {
         return try {
             val jsonContent = context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 inputStream.bufferedReader().readText()
             } ?: return Result.failure(IOException("Could not open input stream"))
 
-            val exportData = json.decodeFromString<PodcastSubscriptionsExport>(jsonContent)
-            Result.success(exportData.podcasts)
+            Result.success(decodeBackup(jsonContent))
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    private fun decodeBackup(jsonContent: String): FreeCastsBackup {
+        return try {
+            json.decodeFromString<FreeCastsBackup>(jsonContent)
+        } catch (_: Exception) {
+            val legacy = json.decodeFromString<PodcastSubscriptionsExport>(jsonContent)
+            FreeCastsBackup(
+                version = legacy.version,
+                podcasts = legacy.podcasts
+            )
         }
     }
 

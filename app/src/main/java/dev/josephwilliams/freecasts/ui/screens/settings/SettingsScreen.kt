@@ -11,13 +11,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
@@ -163,13 +162,30 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Export or import your subscribed podcasts as $PODCASTS_EXPORT_FILENAME. " +
-                    "The app saves to Documents by default, or lets you choose a location if needed.",
+                text = "Export or import your subscriptions, favorites, played episodes, and " +
+                    "playback positions as $PODCASTS_EXPORT_FILENAME. The app saves to Documents " +
+                    "by default, or lets you choose a location if needed.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            state.transferProgress?.let { progress ->
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = progress.label,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { progress.fraction },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -180,14 +196,7 @@ fun SettingsScreen(
                     enabled = !state.isExporting && !state.isImporting,
                     modifier = Modifier.weight(1f)
                 ) {
-                    if (state.isExporting) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text("Export subscriptions")
+                    Text(if (state.isExporting) "Exporting…" else "Export backup")
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -197,14 +206,7 @@ fun SettingsScreen(
                     enabled = !state.isExporting && !state.isImporting,
                     modifier = Modifier.weight(1f)
                 ) {
-                    if (state.isImporting) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text("Import subscriptions")
+                    Text(if (state.isImporting) "Importing…" else "Import backup")
                 }
             }
         }

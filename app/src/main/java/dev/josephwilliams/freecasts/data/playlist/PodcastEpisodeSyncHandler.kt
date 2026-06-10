@@ -1,5 +1,6 @@
 package dev.josephwilliams.freecasts.data.playlist
 
+import dev.josephwilliams.freecasts.data.export.EpisodeStateImportSupport
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
@@ -11,7 +12,8 @@ import dev.josephwilliams.freecasts.data.local.entity.Episode
 class PodcastEpisodeSyncHandler(
     private val episodeDao: EpisodeDao,
     private val podcastDao: PodcastDao,
-    private val playlistAutoAddHandler: PlaylistAutoAddHandler
+    private val playlistAutoAddHandler: PlaylistAutoAddHandler,
+    private val episodeStateImportSupport: EpisodeStateImportSupport
 ) {
     /**
      * Inserts episodes from [feedEpisodes] that are not already stored for [podcastId],
@@ -46,6 +48,15 @@ class PodcastEpisodeSyncHandler(
             podcastId = podcastId,
             newEpisodes = insertedEpisodes
         )
+
+        val podcast = podcastDao.getById(podcastId)
+        if (podcast != null) {
+            episodeStateImportSupport.applyPendingStatesForPodcast(
+                feedUrl = podcast.feedUrl,
+                guids = insertedEpisodes.map { it.guid }
+            )
+            episodeStateImportSupport.applyAllPendingStatesForPodcast(podcast.feedUrl)
+        }
 
         return insertedEpisodes
     }

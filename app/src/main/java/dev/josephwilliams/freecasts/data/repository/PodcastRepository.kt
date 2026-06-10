@@ -5,7 +5,6 @@ import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
-import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoAddHandler
 import dev.josephwilliams.freecasts.data.playlist.PodcastEpisodeSyncHandler
 import dev.josephwilliams.freecasts.data.remote.PodcastSearchApi
 import dev.josephwilliams.freecasts.data.remote.model.ItunesPodcast
@@ -29,12 +28,7 @@ class PodcastRepository(
     private val episodeDao: EpisodeDao,
     private val playlistDao: PlaylistDao,
     private val searchApi: PodcastSearchApi,
-    private val playlistAutoAddHandler: PlaylistAutoAddHandler = PlaylistAutoAddHandler(playlistDao, episodeDao),
-    private val podcastEpisodeSyncHandler: PodcastEpisodeSyncHandler = PodcastEpisodeSyncHandler(
-        episodeDao = episodeDao,
-        podcastDao = podcastDao,
-        playlistAutoAddHandler = playlistAutoAddHandler
-    )
+    private val podcastEpisodeSyncHandler: PodcastEpisodeSyncHandler
 ) {
     private val httpClient = HttpClient(OkHttp)
     

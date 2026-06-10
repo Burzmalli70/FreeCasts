@@ -7,7 +7,9 @@ import dev.josephwilliams.freecasts.data.local.FreeCastsDatabase
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import dev.josephwilliams.freecasts.data.local.entity.Playlist
 import dev.josephwilliams.freecasts.data.local.entity.PlaylistEpisodeCrossRef
+import dev.josephwilliams.freecasts.data.export.EpisodeStateImportSupport
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
+import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -33,10 +35,16 @@ class PodcastEpisodeSyncPlaylistPreservationTest {
             .build()
 
         val playlistDao = database.playlistDao()
+        val episodeStateImportSupport = EpisodeStateImportSupport(
+            podcastDao = database.podcastDao(),
+            episodeDao = database.episodeDao(),
+            userPreferencesRepository = UserPreferencesRepository(context)
+        )
         syncHandler = PodcastEpisodeSyncHandler(
             episodeDao = database.episodeDao(),
             podcastDao = database.podcastDao(),
-            playlistAutoAddHandler = PlaylistAutoAddHandler(playlistDao, database.episodeDao())
+            playlistAutoAddHandler = PlaylistAutoAddHandler(playlistDao, database.episodeDao()),
+            episodeStateImportSupport = episodeStateImportSupport
         )
 
         podcastId = database.podcastDao().insert(
