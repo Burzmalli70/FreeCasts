@@ -21,10 +21,8 @@ import dev.josephwilliams.freecasts.MainActivity
 import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.data.local.dao.DownloadDao
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
-import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
-import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoRemoveHandler
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -62,13 +60,11 @@ class PlaybackService : MediaLibraryService() {
 
     private val podcastDao: PodcastDao by inject()
 
-    private val playlistDao: PlaylistDao by inject()
-
     private val downloadDao: DownloadDao by inject()
 
     private val userPreferencesRepository: UserPreferencesRepository by inject ()
 
-    private val playlistAutoRemoveHandler: PlaylistAutoRemoveHandler by inject()
+    private val episodeCompletionHandler: PlaybackEpisodeCompletionHandler by inject()
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -132,8 +128,10 @@ class PlaybackService : MediaLibraryService() {
         override fun onPlaybackStateChanged(playbackState: Int) {
             when (playbackState) {
                 Player.STATE_ENDED -> {
-                    savePlaybackPosition(0)
-                    markEpisodeAsPlayed()
+                    episodeCompletionHandler.onPlaybackEnded(
+                        scope = serviceScope,
+                        hasNextMediaItem = player?.hasNextMediaItem() == true
+                    )
 
                     if (player?.hasNextMediaItem() != true) {
                         playRandomFavorite()
@@ -149,10 +147,11 @@ class PlaybackService : MediaLibraryService() {
         }
         
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
-                savePlaybackPosition(0)
-                markEpisodeAsPlayed()
-            }
+            episodeCompletionHandler.onMediaItemTransition(
+                scope = serviceScope,
+                newMediaItem = mediaItem,
+                reason = reason
+            )
         }
     }
 
@@ -219,21 +218,6 @@ class PlaybackService : MediaLibraryService() {
         }
     }
     
-    private fun markEpisodeAsPlayed() {
-        val currentMediaItem = player?.currentMediaItem ?: return
-        val episodeId = currentMediaItem.mediaMetadata.extras?.getLong(EXTRA_EPISODE_ID, -1L) ?: -1L
-        if (episodeId > 0) {
-            serviceScope.launch(Dispatchers.IO) {
-                playlistAutoRemoveHandler.markEpisodeAsPlayed(episodeId)
-                episodeDao.incrementListenCount(episodeId)
-                episodeDao.incrementReplayPriority(episodeId)
-                if (userPreferencesRepository.deletePlayedDownloads.first() && (!userPreferencesRepository.keepFavoriteDownloads.first() || episodeDao.getById(episodeId)?.isFavorite == false)) {
-                    downloadDao.deleteByEpisodeId(episodeId)
-                }
-            }
-        }
-    }
-
     private fun createBrowsableItem(id: String, title: String, iconRes: Int): MediaItem {
         return MediaItem.Builder()
             .setMediaId(id)

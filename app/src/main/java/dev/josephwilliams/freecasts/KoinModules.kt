@@ -2,6 +2,7 @@ package dev.josephwilliams.freecasts
 
 import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
 import dev.josephwilliams.freecasts.data.export.PodcastSubscriptionsFileManager
+import dev.josephwilliams.freecasts.data.playback.PlaybackEpisodeCompletionHandler
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
 import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoAddHandler
 import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoRemoveHandler
@@ -57,6 +58,7 @@ val downloadModule = module {
 
 val playbackModule = module {
     single { PlaybackManager(androidContext(), get()) }
+    single { PlaybackEpisodeCompletionHandler(get(), get(), get(), get()) }
 }
 
 val searchApi = module {
