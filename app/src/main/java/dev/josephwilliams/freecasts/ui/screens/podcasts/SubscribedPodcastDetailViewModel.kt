@@ -7,6 +7,7 @@ import dev.josephwilliams.freecasts.data.download.DownloadStatus
 import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
 import dev.josephwilliams.freecasts.data.local.dao.DownloadDao
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
+import dev.josephwilliams.freecasts.ui.components.hasPartialPlayback
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
@@ -215,7 +216,7 @@ data class EpisodeDisplayState(
     val localFilePath: String? = null
 ) {
     val hasProgress: Boolean
-        get() = playbackPositionMs > 0 && !isPlayed
+        get() = hasPartialPlayback(playbackPositionMs, isPlayed)
     
     val progressPercent: Float
         get() {

@@ -59,6 +59,8 @@ import coil.compose.AsyncImage
 import dev.josephwilliams.freecasts.data.local.entity.Playlist
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
 import dev.josephwilliams.freecasts.data.playback.PlayingEpisode
+import dev.josephwilliams.freecasts.ui.components.formatEpisodeListDuration
+import dev.josephwilliams.freecasts.ui.components.hasPartialPlayback
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -475,19 +477,32 @@ private fun PlaylistEpisodeCard(
                         }
                     }
                     
-                    episode.durationSeconds?.let { seconds ->
+                    formatEpisodeListDuration(
+                        playbackPositionMs = episode.playbackPositionMs,
+                        durationSeconds = episode.durationSeconds,
+                        isPlayed = episode.isPlayed
+                    )?.let { durationLabel ->
+                        val hasProgress = hasPartialPlayback(episode.playbackPositionMs, episode.isPlayed)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
                                 contentDescription = null,
                                 modifier = Modifier.size(12.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if (hasProgress) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = formatDuration(seconds),
+                                text = durationLabel,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (hasProgress) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
                             )
                         }
                     }
@@ -518,12 +533,3 @@ private fun formatDate(timestamp: Long): String {
     }
 }
 
-private fun formatDuration(seconds: Int): String {
-    val hours = seconds / 3600
-    val minutes = (seconds % 3600) / 60
-    return if (hours > 0) {
-        "${hours}h ${minutes}m"
-    } else {
-        "${minutes} min"
-    }
-}

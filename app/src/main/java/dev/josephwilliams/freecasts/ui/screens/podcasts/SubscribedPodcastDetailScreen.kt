@@ -66,6 +66,7 @@ import coil.compose.AsyncImage
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
 import dev.josephwilliams.freecasts.data.playback.PlayingEpisode
+import dev.josephwilliams.freecasts.ui.components.formatEpisodeListDuration
 import kotlinx.datetime.Instant
 import org.koin.compose.koinInject
 import kotlinx.datetime.TimeZone
@@ -564,20 +565,32 @@ private fun EpisodeCard(
                     }
                 }
                 
-                // Duration
-                episode.durationSeconds?.let { seconds ->
+                // Duration or remaining time
+                formatEpisodeListDuration(
+                    playbackPositionMs = episodeState.playbackPositionMs,
+                    durationSeconds = episode.durationSeconds,
+                    isPlayed = episodeState.isPlayed
+                )?.let { durationLabel ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = null,
                             modifier = Modifier.size(12.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (episodeState.hasProgress) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = formatDuration(seconds),
+                            text = durationLabel,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (episodeState.hasProgress) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
                         )
                     }
                 }
@@ -595,24 +608,14 @@ private fun EpisodeCard(
             // Playback progress bar (if in progress)
             if (episodeState.hasProgress) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    LinearProgressIndicator(
-                        progress = { episodeState.progressPercent },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp)),
-                        strokeCap = StrokeCap.Round
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = formatPlaybackPosition(episodeState.playbackPositionMs, episode.durationSeconds),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                LinearProgressIndicator(
+                    progress = { episodeState.progressPercent },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp)),
+                    strokeCap = StrokeCap.Round
+                )
             }
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -808,18 +811,3 @@ private fun formatDate(timestamp: Long): String {
     }
 }
 
-private fun formatDuration(seconds: Int): String {
-    val hours = seconds / 3600
-    val minutes = (seconds % 3600) / 60
-    return if (hours > 0) {
-        "${hours}h ${minutes}m"
-    } else {
-        "${minutes} min"
-    }
-}
-
-private fun formatPlaybackPosition(positionMs: Long, durationSeconds: Int?): String {
-    val positionMinutes = (positionMs / 1000 / 60).toInt()
-    val totalMinutes = (durationSeconds ?: 0) / 60
-    return "${positionMinutes}m / ${totalMinutes}m"
-}
