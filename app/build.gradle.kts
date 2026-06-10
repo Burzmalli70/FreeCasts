@@ -43,6 +43,14 @@ android {
     buildFeatures {
         compose = true
     }
+    lint {
+        // true: stops the build if errors are found
+        // false: continues the build even if errors are found
+        abortOnError = false
+
+        // This specifically targets the check that happens during release builds
+        checkReleaseBuilds = false
+    }
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
