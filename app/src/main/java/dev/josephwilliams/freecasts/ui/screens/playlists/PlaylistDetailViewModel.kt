@@ -2,12 +2,12 @@ package dev.josephwilliams.freecasts.ui.screens.playlists
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import dev.josephwilliams.freecasts.data.local.entity.Playlist
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
+import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoRemoveHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 class PlaylistDetailViewModel(
     private val playlistDao: PlaylistDao,
     private val podcastDao: PodcastDao,
-    private val episodeDao: EpisodeDao
+    private val playlistAutoRemoveHandler: PlaylistAutoRemoveHandler
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(PlaylistDetailState())
@@ -79,7 +79,7 @@ class PlaylistDetailViewModel(
      */
     fun markAsPlayed(episodeId: Long) {
         viewModelScope.launch {
-            episodeDao.markAsPlayed(episodeId)
+            playlistAutoRemoveHandler.markEpisodeAsPlayed(episodeId)
         }
     }
     

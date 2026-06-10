@@ -12,6 +12,7 @@ import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
 import dev.josephwilliams.freecasts.data.local.relation.EpisodeWithDownload
+import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoRemoveHandler
 import dev.josephwilliams.freecasts.data.repository.PodcastRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +30,8 @@ class SubscribedPodcastDetailViewModel(
     private val episodeDao: EpisodeDao,
     private val downloadDao: DownloadDao,
     private val podcastRepository: PodcastRepository,
-    private val downloadManager: EpisodeDownloadManager
+    private val downloadManager: EpisodeDownloadManager,
+    private val playlistAutoRemoveHandler: PlaylistAutoRemoveHandler
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(SubscribedPodcastDetailState())
@@ -158,7 +160,7 @@ class SubscribedPodcastDetailViewModel(
      */
     fun markAsPlayed(episodeId: Long) {
         viewModelScope.launch {
-            episodeDao.markAsPlayed(episodeId)
+            playlistAutoRemoveHandler.markEpisodeAsPlayed(episodeId)
         }
     }
     

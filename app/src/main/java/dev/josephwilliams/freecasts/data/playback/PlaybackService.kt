@@ -24,6 +24,7 @@ import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
+import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoRemoveHandler
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,6 +67,8 @@ class PlaybackService : MediaLibraryService() {
     private val downloadDao: DownloadDao by inject()
 
     private val userPreferencesRepository: UserPreferencesRepository by inject ()
+
+    private val playlistAutoRemoveHandler: PlaylistAutoRemoveHandler by inject()
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -221,10 +224,9 @@ class PlaybackService : MediaLibraryService() {
         val episodeId = currentMediaItem.mediaMetadata.extras?.getLong(EXTRA_EPISODE_ID, -1L) ?: -1L
         if (episodeId > 0) {
             serviceScope.launch(Dispatchers.IO) {
-                episodeDao.markAsPlayed(episodeId)
+                playlistAutoRemoveHandler.markEpisodeAsPlayed(episodeId)
                 episodeDao.incrementListenCount(episodeId)
                 episodeDao.incrementReplayPriority(episodeId)
-                playlistDao.getPlaylistsWithAutoRemove().forEach { playlistDao.removeEpisodeFromPlaylist(it.id, episodeId) }
                 if (userPreferencesRepository.deletePlayedDownloads.first() && (!userPreferencesRepository.keepFavoriteDownloads.first() || episodeDao.getById(episodeId)?.isFavorite == false)) {
                     downloadDao.deleteByEpisodeId(episodeId)
                 }

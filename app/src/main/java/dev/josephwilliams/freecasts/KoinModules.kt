@@ -4,6 +4,7 @@ import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
 import dev.josephwilliams.freecasts.data.export.PodcastSubscriptionsFileManager
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
 import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoAddHandler
+import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoRemoveHandler
 import dev.josephwilliams.freecasts.data.local.FreeCastsDatabase
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 import dev.josephwilliams.freecasts.data.remote.PodcastSearchApi
@@ -33,6 +34,7 @@ val databaseModule = module {
 
 val repositoryModule = module {
     single { PlaylistAutoAddHandler(get(), get()) }
+    single { PlaylistAutoRemoveHandler(get(), get()) }
     single { PodcastRepository(get(), get(), get(), get()) }
     single { UserPreferencesRepository(androidContext()) }
     single { PodcastSubscriptionsFileManager(androidContext()) }
@@ -42,7 +44,7 @@ val viewModelModule = module {
     viewModel { SearchViewModel(get(), get(), get(), get()) }
     viewModel { SearchPodcastDetailViewModel(get()) }
     viewModel { PodcastsViewModel(get()) }
-    viewModel { SubscribedPodcastDetailViewModel(get(), get(), get(), get(), get()) }
+    viewModel { SubscribedPodcastDetailViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { PlaylistsViewModel(get()) }
     viewModel { CreateEditPlaylistViewModel(get(), get(), get()) }
     viewModel { PlaylistDetailViewModel(get(), get(), get()) }
