@@ -24,8 +24,19 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../keystore/freecasts-jw.jks")
+            storePassword = project.findProperty("RELEASE_STORE_PASSWORD")?.toString()
+            keyAlias = "freecasts"
+            keyPassword = project.findProperty("RELEASE_KEY_PASSWORD")?.toString()
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
+
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
