@@ -51,6 +51,9 @@ interface DownloadDao {
     
     @Query("SELECT * FROM downloads WHERE status = 'COMPLETED' ORDER BY completedAt DESC")
     fun observeCompleted(): Flow<List<Download>>
+
+    @Query("SELECT * FROM downloads WHERE status = 'COMPLETED' ORDER BY completedAt DESC LIMIT :limit")
+    suspend fun getCompleted(limit: Int): List<Download>
     
     @Query("SELECT * FROM downloads WHERE status IN ('PENDING', 'DOWNLOADING') ORDER BY requestedAt ASC")
     fun observeActive(): Flow<List<Download>>

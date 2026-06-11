@@ -9,6 +9,9 @@ import dev.josephwilliams.freecasts.data.export.FreeCastsBackupImportHandler
 import dev.josephwilliams.freecasts.data.export.PodcastSubscriptionsFileManager
 import dev.josephwilliams.freecasts.data.playback.PlaybackEpisodeCompletionHandler
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
+import dev.josephwilliams.freecasts.data.playback.auto.AutoMediaBrowser
+import dev.josephwilliams.freecasts.data.playback.auto.PackageValidator
+import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoAddHandler
 import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoRemoveHandler
 import dev.josephwilliams.freecasts.data.playlist.PodcastEpisodeSyncHandler
@@ -100,6 +103,8 @@ val downloadModule = module {
 val playbackModule = module {
     single { PlaybackManager(androidContext(), get()) }
     single { PlaybackEpisodeCompletionHandler(get(), get(), get(), get()) }
+    single { PackageValidator(androidContext(), R.xml.allowed_media_browser_callers) }
+    single { AutoMediaBrowser(androidContext(), get(), get(), get(), get()) }
 }
 
 val searchApi = module {

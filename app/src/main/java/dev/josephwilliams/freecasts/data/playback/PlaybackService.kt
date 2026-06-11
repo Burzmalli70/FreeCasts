@@ -14,16 +14,19 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
+import androidx.media3.session.SessionError
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.SettableFuture
 import dev.josephwilliams.freecasts.MainActivity
-import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.data.local.dao.DownloadDao
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.DownloadStatus
 import dev.josephwilliams.freecasts.data.local.entity.Episode
+import dev.josephwilliams.freecasts.data.playback.auto.AutoMediaBrowser
+import dev.josephwilliams.freecasts.data.playback.auto.PackageValidator
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,6 +69,10 @@ class PlaybackService : MediaLibraryService() {
     private val userPreferencesRepository: UserPreferencesRepository by inject ()
 
     private val episodeCompletionHandler: PlaybackEpisodeCompletionHandler by inject()
+
+    private val autoMediaBrowser: AutoMediaBrowser by inject()
+
+    private val packageValidator: PackageValidator by inject()
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -229,17 +236,30 @@ class PlaybackService : MediaLibraryService() {
         }
     }
     
-    private fun createBrowsableItem(id: String, title: String, iconRes: Int): MediaItem {
-        return MediaItem.Builder()
-            .setMediaId(id)
-            .setMediaMetadata(
-                MediaMetadata.Builder()
-                    .setTitle(title)
-                    .setIsBrowsable(true)
-                    .setIsPlayable(false)
-                    .build()
-            )
-            .build()
+    private fun isAuthorizedController(session: MediaSession, controller: MediaSession.ControllerInfo): Boolean {
+        if (controller.packageName == AutoMediaBrowser.LEGACY_BROWSER_PACKAGE) {
+            return true
+        }
+        if (controller.packageName == MediaSession.ControllerInfo.LEGACY_CONTROLLER_PACKAGE_NAME) {
+            return true
+        }
+        return session.isAutoCompanionController(controller) ||
+            session.isAutomotiveController(controller) ||
+            packageValidator.isKnownCaller(controller.packageName, controller.uid)
+    }
+
+    private fun <T : Any> runLibraryOperation(
+        block: suspend () -> LibraryResult<T>,
+    ): ListenableFuture<LibraryResult<T>> {
+        val future = SettableFuture.create<LibraryResult<T>>()
+        serviceScope.launch(Dispatchers.IO) {
+            try {
+                future.set(block())
+            } catch (_: Exception) {
+                future.set(LibraryResult.ofError<T>(SessionError.ERROR_UNKNOWN))
+            }
+        }
+        return future
     }
 
     private inner class LibraryCallback : MediaLibrarySession.Callback {
@@ -248,6 +268,9 @@ class PlaybackService : MediaLibraryService() {
             session: MediaSession,
             controller: MediaSession.ControllerInfo
         ): MediaSession.ConnectionResult {
+            if (!isAuthorizedController(session, controller)) {
+                return MediaSession.ConnectionResult.reject()
+            }
             val connectionResult = super.onConnect(session, controller)
             val availableCommands = connectionResult.availableSessionCommands.buildUpon()
                 .add(androidx.media3.session.SessionCommand(CUSTOM_COMMAND_SKIP_BACK, Bundle.EMPTY))
@@ -286,20 +309,21 @@ class PlaybackService : MediaLibraryService() {
             )
         }
 
-        // Root of the menu (e.g., "Subscriptions", "Downloads")
         override fun onGetLibraryRoot(
             session: MediaLibrarySession,
             browser: MediaSession.ControllerInfo,
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<MediaItem>> {
-            val rootItem = MediaItem.Builder()
-                .setMediaId("node_root")
-                .setMediaMetadata(MediaMetadata.Builder().setIsBrowsable(true).build())
-                .build()
-            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, params))
+            if (!isAuthorizedController(session, browser)) {
+                return Futures.immediateFuture(
+                    LibraryResult.ofError(SessionError.ERROR_PERMISSION_DENIED)
+                )
+            }
+            return Futures.immediateFuture(
+                LibraryResult.ofItem(autoMediaBrowser.createRootItem(), params)
+            )
         }
 
-        // When a user clicks "Subscriptions", fetch them from Room
         override fun onGetChildren(
             session: MediaLibrarySession,
             browser: MediaSession.ControllerInfo,
@@ -308,17 +332,56 @@ class PlaybackService : MediaLibraryService() {
             pageSize: Int,
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
-
-            // Note: You should launch a coroutine to fetch from your EpisodeDao/PodcastDao
-            // For Android Auto, you'd map your Room Entities to MediaItems here
-            val items = mutableListOf<MediaItem>()
-
-            if (parentId == "node_root") {
-                items.add(createBrowsableItem("node_subscriptions", "Subscriptions", R.drawable.ic_subscriptions))
-                items.add(createBrowsableItem("node_downloads", "Downloads", R.drawable.ic_download))
+            if (!isAuthorizedController(session, browser)) {
+                return Futures.immediateFuture(
+                    LibraryResult.ofError(SessionError.ERROR_PERMISSION_DENIED)
+                )
             }
+            val effectivePageSize = if (pageSize > 0) pageSize else AutoMediaBrowser.AUTO_PAGE_SIZE
+            return runLibraryOperation {
+                val items = autoMediaBrowser.getChildren(parentId, page, effectivePageSize)
+                LibraryResult.ofItemList(ImmutableList.copyOf(items), params)
+            }
+        }
 
-            return Futures.immediateFuture(LibraryResult.ofItemList(ImmutableList.copyOf(items), params))
+        override fun onGetItem(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            mediaId: String,
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            if (!isAuthorizedController(session, browser)) {
+                return Futures.immediateFuture(
+                    LibraryResult.ofError(SessionError.ERROR_PERMISSION_DENIED)
+                )
+            }
+            return runLibraryOperation {
+                val item = autoMediaBrowser.getItem(mediaId)
+                if (item != null) {
+                    LibraryResult.ofItem(item, null)
+                } else {
+                    LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
+                }
+            }
+        }
+
+        override fun onGetSearchResult(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            query: String,
+            page: Int,
+            pageSize: Int,
+            params: LibraryParams?,
+        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+            if (!isAuthorizedController(session, browser)) {
+                return Futures.immediateFuture(
+                    LibraryResult.ofError(SessionError.ERROR_PERMISSION_DENIED)
+                )
+            }
+            val effectivePageSize = if (pageSize > 0) pageSize else AutoMediaBrowser.AUTO_PAGE_SIZE
+            return runLibraryOperation {
+                val items = autoMediaBrowser.search(query, page, effectivePageSize)
+                LibraryResult.ofItemList(ImmutableList.copyOf(items), params)
+            }
         }
     }
 }

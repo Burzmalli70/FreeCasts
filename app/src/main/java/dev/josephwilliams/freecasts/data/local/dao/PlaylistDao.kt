@@ -38,6 +38,9 @@ interface PlaylistDao {
     
     @Query("SELECT * FROM playlists ORDER BY name ASC")
     fun observeAllByName(): Flow<List<Playlist>>
+
+    @Query("SELECT * FROM playlists ORDER BY name ASC")
+    suspend fun getAllOrderedByName(): List<Playlist>
     
     @Query("SELECT * FROM playlists WHERE name LIKE '%' || :query || '%'")
     fun search(query: String): Flow<List<Playlist>>

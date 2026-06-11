@@ -126,6 +126,16 @@ interface EpisodeDao {
     // Search
     @Query("SELECT * FROM episodes WHERE title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%' ORDER BY publishedAt DESC")
     fun search(query: String): Flow<List<Episode>>
+
+    @Query(
+        """
+        SELECT * FROM episodes
+        WHERE title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%'
+        ORDER BY publishedAt DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun searchForAuto(query: String, limit: Int): List<Episode>
     
     // Relations
     @Transaction
