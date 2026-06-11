@@ -22,6 +22,7 @@ import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.data.local.dao.DownloadDao
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
+import dev.josephwilliams.freecasts.data.local.entity.DownloadStatus
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
@@ -195,10 +196,20 @@ class PlaybackService : MediaLibraryService() {
             val pool = candidates.ifEmpty { favorites }
 
             val randomEpisode = pool.random()
-            val podcastTitle = podcastDao.getById(randomEpisode.podcastId)
+            val (podcastTitle, localFilePath) = withContext(Dispatchers.IO) {
+                val podcast = podcastDao.getById(randomEpisode.podcastId)
+                val download = downloadDao.getByEpisodeId(randomEpisode.id)
+                val filePath = if (download?.status == DownloadStatus.COMPLETED) {
+                    download.localFilePath
+                } else {
+                    null
+                }
+                (podcast?.title ?: "") to filePath
+            }
             val mediaItem = randomEpisode.toMediaItem(
-                podcastTitle = podcastTitle?.title ?: "",
-                randomFavoriteMode = true
+                podcastTitle = podcastTitle,
+                randomFavoriteMode = true,
+                localFilePath = localFilePath
             )
 
             player?.setMediaItem(mediaItem)
@@ -367,7 +378,8 @@ fun MediaItem.toPlayingEpisode(): PlayingEpisode? {
 
 fun Episode.toMediaItem(
     podcastTitle: String,
-    randomFavoriteMode: Boolean = false
+    randomFavoriteMode: Boolean = false,
+    localFilePath: String? = null
 ): MediaItem {
     val extras = Bundle().apply {
         putLong(PlaybackService.EXTRA_EPISODE_ID, id)
@@ -375,11 +387,22 @@ fun Episode.toMediaItem(
         if (randomFavoriteMode) {
             putBoolean(PlaybackService.EXTRA_RANDOM_FAVORITE_MODE, true)
         }
+        localFilePath?.let { putString(PlaybackService.EXTRA_LOCAL_FILE_PATH, it) }
     }
+
+    val audioSource = localFilePath?.let { path ->
+        val file = java.io.File(path)
+        if (file.exists()) path else audioUrl
+    } ?: audioUrl
 
     return MediaItem.Builder()
         .setMediaId(id.toString())
-        .setUri(audioUrl)
+        .setUri(audioSource)
+        .setRequestMetadata(
+            MediaItem.RequestMetadata.Builder()
+                .setMediaUri(android.net.Uri.parse(audioSource))
+                .build()
+        )
         .setMediaMetadata(
             MediaMetadata.Builder()
                 .setTitle(title)
