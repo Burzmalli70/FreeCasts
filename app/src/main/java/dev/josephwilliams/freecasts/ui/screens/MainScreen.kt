@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.zIndex
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
@@ -37,8 +38,11 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
 import dev.josephwilliams.freecasts.data.remote.model.ItunesPodcast
+import dev.josephwilliams.freecasts.ui.components.DownloadProgressFab
+import dev.josephwilliams.freecasts.ui.components.DownloadsOverlay
 import dev.josephwilliams.freecasts.ui.components.MiniPlayer
 import dev.josephwilliams.freecasts.ui.components.NowPlayingOverlay
 import dev.josephwilliams.freecasts.ui.screens.playlists.CreateEditPlaylistScreen
@@ -56,14 +60,23 @@ import org.koin.compose.koinInject
 fun MainScreen(
     modifier: Modifier = Modifier,
     navController: NavHostController,
-    playbackManager: PlaybackManager = koinInject()
+    playbackManager: PlaybackManager = koinInject(),
+    episodeDownloadManager: EpisodeDownloadManager = koinInject()
 ) {
     val playbackState by playbackManager.state.collectAsState()
+    val downloadState by episodeDownloadManager.state.collectAsState()
     var showNowPlaying by remember { mutableStateOf(false) }
+    var showDownloads by remember { mutableStateOf(false) }
 
     LaunchedEffect(playbackState.hasMedia) {
         if (!playbackState.hasMedia) {
             showNowPlaying = false
+        }
+    }
+
+    LaunchedEffect(downloadState.totalPendingCount) {
+        if (downloadState.totalPendingCount == 0) {
+            showDownloads = false
         }
     }
 
@@ -227,8 +240,28 @@ fun MainScreen(
         }
     }
 
+        DownloadProgressFab(
+            visible = downloadState.totalPendingCount > 0 && !showDownloads,
+            downloadState = downloadState,
+            onClick = { showDownloads = true },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .zIndex(1f)
+        )
+
+        DownloadsOverlay(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(2f),
+            visible = showDownloads,
+            downloadState = downloadState,
+            onDismiss = { showDownloads = false }
+        )
+
         NowPlayingOverlay(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(3f),
             visible = showNowPlaying,
             playbackState = playbackState,
             onDismiss = { showNowPlaying = false },
