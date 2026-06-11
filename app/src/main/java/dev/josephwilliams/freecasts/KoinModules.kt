@@ -6,6 +6,7 @@ import dev.josephwilliams.freecasts.data.download.FavoriteEpisodeDownloadHandler
 import dev.josephwilliams.freecasts.data.export.EpisodeStateImportSupport
 import dev.josephwilliams.freecasts.data.export.FreeCastsBackupBuilder
 import dev.josephwilliams.freecasts.data.export.FreeCastsBackupImportHandler
+import dev.josephwilliams.freecasts.data.export.PlaylistImportSupport
 import dev.josephwilliams.freecasts.data.export.PodcastSubscriptionsFileManager
 import dev.josephwilliams.freecasts.data.playback.PlaybackEpisodeCompletionHandler
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
@@ -46,17 +47,19 @@ val repositoryModule = module {
     single { PlaylistAutoAddHandler(get(), get()) }
     single { PlaylistAutoRemoveHandler(get(), get()) }
     single { EpisodeStateImportSupport(get(), get(), get(), get()) }
+    single { PlaylistImportSupport(get(), get(), get(), get()) }
     single {
         PodcastEpisodeSyncHandler(
             episodeDao = get(),
             podcastDao = get(),
             playlistAutoAddHandler = get(),
-            episodeStateImportSupport = get()
+            episodeStateImportSupport = get(),
+            playlistImportSupport = get(),
         )
     }
     single { PodcastRepository(get(), get(), get(), get(), get()) }
-    single { FreeCastsBackupBuilder(get(), get(), get()) }
-    single { FreeCastsBackupImportHandler(get(), get(), get(), get(), get()) }
+    single { FreeCastsBackupBuilder(get(), get(), get(), get()) }
+    single { FreeCastsBackupImportHandler(get(), get(), get(), get(), get(), get()) }
     single { UserPreferencesRepository(androidContext()) }
     single { PodcastSubscriptionsFileManager(androidContext()) }
 }

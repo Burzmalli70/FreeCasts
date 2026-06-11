@@ -162,7 +162,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Export or import your subscriptions, app settings, per-podcast download " +
+                text = "Export or import your subscriptions, playlists, app settings, per-podcast download " +
                     "preferences, favorites, played episodes, and playback positions as " +
                     "$PODCASTS_EXPORT_FILENAME. The app saves to Documents by default, or lets " +
                     "you choose a location if needed.",

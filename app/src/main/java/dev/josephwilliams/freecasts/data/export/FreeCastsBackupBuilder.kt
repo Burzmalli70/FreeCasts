@@ -1,6 +1,7 @@
 package dev.josephwilliams.freecasts.data.export
 
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
+import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import dev.josephwilliams.freecasts.data.local.relation.EpisodeWithPodcast
@@ -9,28 +10,33 @@ import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 class FreeCastsBackupBuilder(
     private val podcastDao: PodcastDao,
     private val episodeDao: EpisodeDao,
+    private val playlistDao: PlaylistDao,
     private val userPreferencesRepository: UserPreferencesRepository,
 ) {
     suspend fun buildBackup(
         onProgress: (current: Int, total: Int, label: String) -> Unit = { _, _, _ -> }
     ): FreeCastsBackup {
-        onProgress(0, 3, "Loading subscriptions…")
+        onProgress(0, 4, "Loading subscriptions…")
         val podcasts = podcastDao.getSubscribed()
 
-        onProgress(1, 3, "Loading listening state…")
+        onProgress(1, 4, "Loading playlists…")
+        val playlists = exportPlaylists(playlistDao, episodeDao, podcastDao)
+
+        onProgress(2, 4, "Loading listening state…")
         val episodeStates = episodeDao.getStatefulEpisodesForExport()
             .map { it.toExportedEpisodeState() }
 
-        onProgress(2, 3, "Loading settings…")
+        onProgress(3, 4, "Loading settings…")
         val appSettings = userPreferencesRepository.toExportedAppSettings(podcastDao)
 
-        onProgress(3, 3, "Preparing backup…")
+        onProgress(4, 4, "Preparing backup…")
         return FreeCastsBackup(
             version = BACKUP_VERSION,
             exportedAt = System.currentTimeMillis(),
             podcasts = podcasts.map { it.toExportedPodcast() },
             episodeStates = episodeStates,
             appSettings = appSettings,
+            playlists = playlists,
         )
     }
 }

@@ -8,6 +8,7 @@ import dev.josephwilliams.freecasts.data.local.FreeCastsDatabase
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
 import dev.josephwilliams.freecasts.data.local.entity.Playlist
+import dev.josephwilliams.freecasts.data.local.entity.PlaylistEpisodeCrossRef
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -28,6 +29,7 @@ class FreeCastsBackupTest {
     private lateinit var database: FreeCastsDatabase
     private lateinit var backupBuilder: FreeCastsBackupBuilder
     private lateinit var episodeStateImportSupport: EpisodeStateImportSupport
+    private lateinit var playlistImportSupport: PlaylistImportSupport
     private lateinit var userPreferencesRepository: UserPreferencesRepository
     private var podcastId: Long = 0
 
@@ -42,6 +44,13 @@ class FreeCastsBackupTest {
         backupBuilder = FreeCastsBackupBuilder(
             podcastDao = database.podcastDao(),
             episodeDao = database.episodeDao(),
+            playlistDao = database.playlistDao(),
+            userPreferencesRepository = userPreferencesRepository,
+        )
+        playlistImportSupport = PlaylistImportSupport(
+            podcastDao = database.podcastDao(),
+            episodeDao = database.episodeDao(),
+            playlistDao = database.playlistDao(),
             userPreferencesRepository = userPreferencesRepository,
         )
         episodeStateImportSupport = EpisodeStateImportSupport(
@@ -123,6 +132,61 @@ class FreeCastsBackupTest {
     }
 
     @Test
+    fun buildBackup_exportsPlaylistsWithEpisodes() = runTest {
+        val playlistId = database.playlistDao().insert(
+            Playlist(
+                name = "Morning Queue",
+                description = "Start the day",
+                removeAfterListening = true,
+                autoAddPodcastIds = podcastId.toString(),
+            )
+        )
+        val episode = insertEpisode("queued-ep")
+        database.playlistDao().insertPlaylistEpisode(
+            PlaylistEpisodeCrossRef(
+                playlistId = playlistId,
+                episodeId = episode.id,
+                position = 0,
+                addedAt = 5000L,
+            )
+        )
+
+        val backup = backupBuilder.buildBackup()
+
+        assertEquals(1, backup.playlists.size)
+        val exportedPlaylist = backup.playlists.first()
+        assertEquals(playlistId, exportedPlaylist.exportId)
+        assertEquals("Morning Queue", exportedPlaylist.name)
+        assertEquals("Start the day", exportedPlaylist.description)
+        assertTrue(exportedPlaylist.removeAfterListening)
+        assertEquals(listOf("https://example.com/feed.xml"), exportedPlaylist.autoAddPodcastFeedUrls)
+        assertEquals(1, exportedPlaylist.episodes.size)
+        assertEquals("queued-ep", exportedPlaylist.episodes.first().guid)
+        assertEquals(0, exportedPlaylist.episodes.first().position)
+    }
+
+    @Test
+    fun decodeLegacyV3Backup_withoutPlaylists() {
+        val json = Json { ignoreUnknownKeys = true }
+        val legacyJson = """
+            {
+              "version": 3,
+              "podcasts": [
+                { "name": "Legacy Podcast", "feedUrl": "https://example.com/legacy.xml" }
+              ],
+              "episodeStates": [],
+              "appSettings": { "autoDownloadOnSubscribe": true }
+            }
+        """.trimIndent()
+
+        val backup = json.decodeFromString<FreeCastsBackup>(legacyJson)
+
+        assertEquals(3, backup.version)
+        assertTrue(backup.playlists.isEmpty())
+        assertEquals(true, backup.appSettings?.autoDownloadOnSubscribe)
+    }
+
+    @Test
     fun decodeLegacyV2Backup_usesDefaultSettings() {
         val json = Json { ignoreUnknownKeys = true }
         val legacyJson = """
@@ -166,6 +230,80 @@ class FreeCastsBackupTest {
         assertEquals("ads", updated.episodeFilterPattern)
         assertTrue(updated.deleteAfterListening)
         assertEquals(3, updated.maxDownloadsToKeep)
+    }
+
+    @Test
+    fun applyExportedPodcastSettings_remapsPlaylistIdsFromImport() = runTest {
+        val playlistId = database.playlistDao().insert(Playlist(name = "Queue"))
+        val exportId = playlistId + 100
+
+        applyExportedPodcastSettings(
+            podcastDao = database.podcastDao(),
+            playlistDao = database.playlistDao(),
+            podcastId = podcastId,
+            exported = ExportedPodcast(
+                name = "Test Podcast",
+                feedUrl = "https://example.com/feed.xml",
+                autoAddToPlaylistIds = exportId.toString(),
+            ),
+            playlistIdMap = mapOf(exportId to playlistId),
+        )
+
+        val updated = database.podcastDao().getById(podcastId)!!
+        assertEquals(playlistId.toString(), updated.autoAddToPlaylistIds)
+    }
+
+    @Test
+    fun importPlaylists_restoresPlaylistMetadataAndEpisodes() = runTest {
+        val episode = insertEpisode("playlist-ep")
+        val exportedPlaylist = ExportedPlaylist(
+            exportId = 42,
+            name = "Imported Queue",
+            description = "From backup",
+            removeAfterListening = true,
+            autoAddPodcastFeedUrls = listOf("https://example.com/feed.xml"),
+            episodes = listOf(
+                ExportedPlaylistEpisode(
+                    feedUrl = "https://example.com/feed.xml",
+                    guid = "playlist-ep",
+                    position = 0,
+                    addedAt = 9000L,
+                )
+            ),
+        )
+
+        val metadataResult = playlistImportSupport.importPlaylists(listOf(exportedPlaylist))
+        playlistImportSupport.finalizePlaylistAutoAddSettings(
+            listOf(exportedPlaylist),
+            metadataResult.playlistIdMap,
+        )
+        val episodeResult = playlistImportSupport.applyPlaylistEpisodes(
+            listOf(exportedPlaylist),
+            metadataResult.playlistIdMap,
+        )
+
+        val localPlaylistId = metadataResult.playlistIdMap.getValue(42)
+        val playlist = database.playlistDao().getById(localPlaylistId)!!
+        assertEquals("Imported Queue", playlist.name)
+        assertEquals(podcastId.toString(), playlist.autoAddPodcastIds)
+        assertEquals(1, episodeResult.appliedPlaylistEpisodeCount)
+        assertTrue(database.playlistDao().isEpisodeInPlaylist(localPlaylistId, episode.id))
+    }
+
+    @Test
+    fun applyPlaylistEpisode_pendingWhenEpisodeNotYetSynced() = runTest {
+        val playlistId = database.playlistDao().insert(Playlist(name = "Queue"))
+
+        val result = playlistImportSupport.applyPlaylistEpisode(
+            playlistId = playlistId,
+            exportedEpisode = ExportedPlaylistEpisode(
+                feedUrl = "https://example.com/feed.xml",
+                guid = "missing-episode",
+                position = 0,
+            ),
+        )
+
+        assertEquals(PlaylistEpisodeApplyResult.PENDING, result)
     }
 
     @Test

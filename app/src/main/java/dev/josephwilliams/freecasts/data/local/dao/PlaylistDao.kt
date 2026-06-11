@@ -64,6 +64,9 @@ interface PlaylistDao {
     @Query("SELECT EXISTS(SELECT 1 FROM playlist_episode_cross_ref WHERE playlistId = :playlistId AND episodeId = :episodeId)")
     suspend fun isEpisodeInPlaylist(playlistId: Long, episodeId: Long): Boolean
     
+    @Query("SELECT * FROM playlist_episode_cross_ref WHERE playlistId = :playlistId ORDER BY position ASC")
+    suspend fun getPlaylistEpisodesOrdered(playlistId: Long): List<PlaylistEpisodeCrossRef>
+
     @Query("SELECT MAX(position) FROM playlist_episode_cross_ref WHERE playlistId = :playlistId")
     suspend fun getMaxPosition(playlistId: Long): Int?
     

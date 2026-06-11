@@ -11,20 +11,27 @@ class FreeCastsBackupImportHandler(
     private val playlistDao: PlaylistDao,
     private val podcastRepository: PodcastRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val episodeStateImportSupport: EpisodeStateImportSupport
+    private val episodeStateImportSupport: EpisodeStateImportSupport,
+    private val playlistImportSupport: PlaylistImportSupport,
 ) {
     suspend fun importBackup(
         backup: FreeCastsBackup,
         onProgress: (current: Int, total: Int, label: String) -> Unit = { _, _, _ -> }
     ): BackupImportResult {
         val podcasts = backup.podcasts
+        val playlists = backup.playlists
         val episodeStates = backup.episodeStates
-        val totalSteps = podcasts.size + episodeStates.size.coerceAtLeast(1)
+        val totalSteps = playlists.size + podcasts.size + episodeStates.size.coerceAtLeast(1)
         var currentStep = 0
 
         var importedPodcastCount = 0
         var skippedPodcastCount = 0
         var failedPodcastCount = 0
+        var importedPlaylistCount = 0
+        var updatedPlaylistCount = 0
+        var appliedPlaylistEpisodeCount = 0
+        var pendingPlaylistEpisodeCount = 0
+        var failedPlaylistEpisodeCount = 0
         var appliedEpisodeStateCount = 0
         var pendingEpisodeStateCount = 0
         var failedEpisodeStateCount = 0
@@ -35,6 +42,16 @@ class FreeCastsBackupImportHandler(
             onProgress(0, totalSteps, "Restoring app settings…")
             applyExportedAppSettings(userPreferencesRepository, podcastDao, appSettings)
         }
+
+        val playlistImportResult = if (playlists.isNotEmpty()) {
+            onProgress(0, totalSteps, "Importing playlists…")
+            playlistImportSupport.importPlaylists(playlists)
+        } else {
+            PlaylistImportResult(emptyMap(), 0, 0, 0, 0, 0)
+        }
+        val playlistIdMap = playlistImportResult.playlistIdMap
+        importedPlaylistCount = playlistImportResult.importedPlaylistCount
+        updatedPlaylistCount = playlistImportResult.updatedPlaylistCount
 
         for (exportedPodcast in podcasts) {
             currentStep++
@@ -54,6 +71,7 @@ class FreeCastsBackupImportHandler(
                     playlistDao = playlistDao,
                     podcastId = existing.id,
                     exported = exportedPodcast,
+                    playlistIdMap = playlistIdMap,
                 )
                 val refreshResult = podcastRepository.refreshPodcast(existing.id)
                 if (refreshResult.isFailure) {
@@ -71,11 +89,22 @@ class FreeCastsBackupImportHandler(
                         playlistDao = playlistDao,
                         podcastId = podcastId,
                         exported = exportedPodcast,
+                        playlistIdMap = playlistIdMap,
                     )
                 }
             } else {
                 failedPodcastCount++
             }
+        }
+
+        if (playlists.isNotEmpty()) {
+            onProgress(currentStep, totalSteps, "Finalizing playlist settings…")
+            playlistImportSupport.finalizePlaylistAutoAddSettings(playlists, playlistIdMap)
+
+            val episodeResult = playlistImportSupport.applyPlaylistEpisodes(playlists, playlistIdMap)
+            appliedPlaylistEpisodeCount = episodeResult.appliedPlaylistEpisodeCount
+            pendingPlaylistEpisodeCount = episodeResult.pendingPlaylistEpisodeCount
+            failedPlaylistEpisodeCount = episodeResult.failedPlaylistEpisodeCount
         }
 
         for (exportedState in episodeStates) {
@@ -105,6 +134,11 @@ class FreeCastsBackupImportHandler(
             importedPodcastCount = importedPodcastCount,
             skippedPodcastCount = skippedPodcastCount,
             failedPodcastCount = failedPodcastCount,
+            importedPlaylistCount = importedPlaylistCount,
+            updatedPlaylistCount = updatedPlaylistCount,
+            appliedPlaylistEpisodeCount = appliedPlaylistEpisodeCount,
+            pendingPlaylistEpisodeCount = pendingPlaylistEpisodeCount,
+            failedPlaylistEpisodeCount = failedPlaylistEpisodeCount,
             appliedEpisodeStateCount = appliedEpisodeStateCount,
             pendingEpisodeStateCount = pendingEpisodeStateCount,
             failedEpisodeStateCount = failedEpisodeStateCount

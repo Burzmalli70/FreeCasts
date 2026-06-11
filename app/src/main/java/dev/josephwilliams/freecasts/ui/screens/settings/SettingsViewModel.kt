@@ -186,8 +186,12 @@ class SettingsViewModel(
         writeResult.fold(
             onSuccess = {
                 val episodeStateCount = backup.episodeStates.size
+                val playlistCount = backup.playlists.size
                 val message = buildString {
                     append("Exported ${backup.podcasts.size} podcast${if (backup.podcasts.size == 1) "" else "s"}")
+                    if (playlistCount > 0) {
+                        append(", $playlistCount playlist${if (playlistCount == 1) "" else "s"}")
+                    }
                     if (episodeStateCount > 0) {
                         append(" and $episodeStateCount episode state${if (episodeStateCount == 1) "" else "s"}")
                     }

@@ -42,9 +42,11 @@ internal suspend fun applyExportedPodcastSettings(
     playlistDao: PlaylistDao,
     podcastId: Long,
     exported: ExportedPodcast,
+    playlistIdMap: Map<Long, Long> = emptyMap(),
 ) {
     val podcast = podcastDao.getById(podcastId) ?: return
-    val filteredPlaylistIds = filterValidPlaylistIds(exported.autoAddToPlaylistIds, playlistDao)
+    val remappedPlaylistIds = remapPlaylistIds(exported.autoAddToPlaylistIds, playlistIdMap)
+    val filteredPlaylistIds = filterValidPlaylistIds(remappedPlaylistIds, playlistDao)
     podcastDao.update(
         podcast.copy(
             autoDownloadNewEpisodes = exported.autoDownloadNewEpisodes,

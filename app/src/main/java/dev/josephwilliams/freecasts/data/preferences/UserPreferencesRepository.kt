@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dev.josephwilliams.freecasts.data.export.ExportedEpisodeState
+import dev.josephwilliams.freecasts.data.export.PendingPlaylistEpisode
 import dev.josephwilliams.freecasts.tools.normalizeFeedUrl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -30,6 +31,7 @@ class UserPreferencesRepository(
         val DELETE_PLAYED_DOWNLOADS = booleanPreferencesKey("delete_played_downloads")
         val RANDOM_PODCAST_FAVORITE_ID = longPreferencesKey("random_podcast_favorite_id")
         val PENDING_EPISODE_STATES_JSON = stringPreferencesKey("pending_episode_states_json")
+        val PENDING_PLAYLIST_EPISODES_JSON = stringPreferencesKey("pending_playlist_episodes_json")
         val FAVORITE_DOWNLOADS_AFTER_IMPORT_PENDING = booleanPreferencesKey("favorite_downloads_after_import_pending")
     }
 
@@ -171,5 +173,37 @@ class UserPreferencesRepository(
             it.feedUrl.normalizeFeedUrl() == normalizedFeedUrl && it.guid == guid
         }
         setPendingEpisodeStates(updated)
+    }
+
+    suspend fun getPendingPlaylistEpisodes(): List<PendingPlaylistEpisode> {
+        val raw = context.dataStore.data.first()[PreferencesKeys.PENDING_PLAYLIST_EPISODES_JSON]
+            ?: return emptyList()
+        return try {
+            json.decodeFromString<List<PendingPlaylistEpisode>>(raw)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun setPendingPlaylistEpisodes(episodes: List<PendingPlaylistEpisode>) {
+        val deduped = episodes.distinctBy { it.playlistId to it.feedUrl.normalizeFeedUrl() to it.guid }
+        context.dataStore.edit { preferences ->
+            if (deduped.isEmpty()) {
+                preferences.remove(PreferencesKeys.PENDING_PLAYLIST_EPISODES_JSON)
+            } else {
+                preferences[PreferencesKeys.PENDING_PLAYLIST_EPISODES_JSON] =
+                    json.encodeToString(deduped)
+            }
+        }
+    }
+
+    suspend fun removePendingPlaylistEpisode(playlistId: Long, feedUrl: String, guid: String) {
+        val normalizedFeedUrl = feedUrl.normalizeFeedUrl()
+        val updated = getPendingPlaylistEpisodes().filterNot {
+            it.playlistId == playlistId &&
+                it.feedUrl.normalizeFeedUrl() == normalizedFeedUrl &&
+                it.guid == guid
+        }
+        setPendingPlaylistEpisodes(updated)
     }
 }

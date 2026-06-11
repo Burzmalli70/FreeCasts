@@ -3,7 +3,7 @@ package dev.josephwilliams.freecasts.data.export
 import kotlinx.serialization.Serializable
 
 const val PODCASTS_EXPORT_FILENAME = "podcasts.json"
-const val BACKUP_VERSION = 3
+const val BACKUP_VERSION = 4
 
 @Serializable
 data class ExportedPodcast(
@@ -27,6 +27,35 @@ data class ExportedAppSettings(
 )
 
 @Serializable
+data class ExportedPlaylistEpisode(
+    val feedUrl: String,
+    val guid: String,
+    val position: Int = 0,
+    val addedAt: Long? = null,
+)
+
+@Serializable
+data class ExportedPlaylist(
+    val exportId: Long,
+    val name: String,
+    val description: String? = null,
+    val removeAfterListening: Boolean = false,
+    val autoAddPodcastFeedUrls: List<String> = emptyList(),
+    val createdAt: Long? = null,
+    val updatedAt: Long? = null,
+    val episodes: List<ExportedPlaylistEpisode> = emptyList(),
+)
+
+@Serializable
+data class PendingPlaylistEpisode(
+    val playlistId: Long,
+    val feedUrl: String,
+    val guid: String,
+    val position: Int = 0,
+    val addedAt: Long? = null,
+)
+
+@Serializable
 data class ExportedEpisodeState(
     val feedUrl: String,
     val guid: String,
@@ -46,6 +75,7 @@ data class FreeCastsBackup(
     val podcasts: List<ExportedPodcast> = emptyList(),
     val episodeStates: List<ExportedEpisodeState> = emptyList(),
     val appSettings: ExportedAppSettings? = null,
+    val playlists: List<ExportedPlaylist> = emptyList(),
 )
 
 /** @deprecated Use [FreeCastsBackup]. Kept for decoding v1 files. */
@@ -59,17 +89,40 @@ data class BackupImportResult(
     val importedPodcastCount: Int,
     val skippedPodcastCount: Int,
     val failedPodcastCount: Int,
+    val importedPlaylistCount: Int = 0,
+    val updatedPlaylistCount: Int = 0,
+    val appliedPlaylistEpisodeCount: Int = 0,
+    val pendingPlaylistEpisodeCount: Int = 0,
+    val failedPlaylistEpisodeCount: Int = 0,
     val appliedEpisodeStateCount: Int,
     val pendingEpisodeStateCount: Int,
     val failedEpisodeStateCount: Int
 ) {
     fun toMessage(): String = buildString {
-        append("Imported $importedPodcastCount podcast${if (importedPodcastCount == 1) "" else "s"}")
-        if (skippedPodcastCount > 0) {
-            append(", $skippedPodcastCount already subscribed")
+        val playlistCount = importedPlaylistCount + updatedPlaylistCount
+        if (playlistCount > 0) {
+            append("Imported $playlistCount playlist${if (playlistCount == 1) "" else "s"}")
         }
-        if (failedPodcastCount > 0) {
-            append(", $failedPodcastCount podcast${if (failedPodcastCount == 1) "" else "s"} failed")
+        if (importedPodcastCount > 0 || skippedPodcastCount > 0 || failedPodcastCount > 0) {
+            if (isNotEmpty()) append(", ")
+            append("imported $importedPodcastCount podcast${if (importedPodcastCount == 1) "" else "s"}")
+            if (skippedPodcastCount > 0) {
+                append(", $skippedPodcastCount already subscribed")
+            }
+            if (failedPodcastCount > 0) {
+                append(", $failedPodcastCount podcast${if (failedPodcastCount == 1) "" else "s"} failed")
+            }
+        } else if (isEmpty()) {
+            append("Imported $importedPodcastCount podcast${if (importedPodcastCount == 1) "" else "s"}")
+        }
+        if (appliedPlaylistEpisodeCount > 0) {
+            append(", restored $appliedPlaylistEpisodeCount playlist episode${if (appliedPlaylistEpisodeCount == 1) "" else "s"}")
+        }
+        if (pendingPlaylistEpisodeCount > 0) {
+            append(", $pendingPlaylistEpisodeCount playlist episode${if (pendingPlaylistEpisodeCount == 1) "" else "s"} pending until sync")
+        }
+        if (failedPlaylistEpisodeCount > 0) {
+            append(", $failedPlaylistEpisodeCount playlist episode${if (failedPlaylistEpisodeCount == 1) "" else "s"} failed")
         }
         if (appliedEpisodeStateCount > 0) {
             append(", restored $appliedEpisodeStateCount episode state${if (appliedEpisodeStateCount == 1) "" else "s"}")
