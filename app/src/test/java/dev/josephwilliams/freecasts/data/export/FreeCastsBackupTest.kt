@@ -7,11 +7,15 @@ import dev.josephwilliams.freecasts.data.download.NoOpFavoriteEpisodeDownloadHan
 import dev.josephwilliams.freecasts.data.local.FreeCastsDatabase
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
+import dev.josephwilliams.freecasts.data.local.entity.Playlist
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -24,6 +28,7 @@ class FreeCastsBackupTest {
     private lateinit var database: FreeCastsDatabase
     private lateinit var backupBuilder: FreeCastsBackupBuilder
     private lateinit var episodeStateImportSupport: EpisodeStateImportSupport
+    private lateinit var userPreferencesRepository: UserPreferencesRepository
     private var podcastId: Long = 0
 
     @Before
@@ -33,9 +38,11 @@ class FreeCastsBackupTest {
             .allowMainThreadQueries()
             .build()
 
+        userPreferencesRepository = UserPreferencesRepository(context)
         backupBuilder = FreeCastsBackupBuilder(
             podcastDao = database.podcastDao(),
-            episodeDao = database.episodeDao()
+            episodeDao = database.episodeDao(),
+            userPreferencesRepository = userPreferencesRepository,
         )
         episodeStateImportSupport = EpisodeStateImportSupport(
             podcastDao = database.podcastDao(),
@@ -48,7 +55,11 @@ class FreeCastsBackupTest {
             Podcast(
                 feedUrl = "https://example.com/feed.xml",
                 title = "Test Podcast",
-                isSubscribed = true
+                isSubscribed = true,
+                autoDownloadNewEpisodes = true,
+                episodeFilterPattern = "bonus|trailer",
+                deleteAfterListening = true,
+                maxDownloadsToKeep = 5,
             )
         )
     }
@@ -91,6 +102,109 @@ class FreeCastsBackupTest {
         assertEquals("https://example.com/feed.xml", backup.podcasts.first().feedUrl)
         assertEquals(3, backup.episodeStates.size)
         assertEquals(BACKUP_VERSION, backup.version)
+        val exportedPodcast = backup.podcasts.first()
+        assertTrue(exportedPodcast.autoDownloadNewEpisodes)
+        assertEquals("bonus|trailer", exportedPodcast.episodeFilterPattern)
+        assertTrue(exportedPodcast.deleteAfterListening)
+        assertEquals(5, exportedPodcast.maxDownloadsToKeep)
+    }
+
+    @Test
+    fun buildBackup_exportsAppSettings() = runTest {
+        userPreferencesRepository.setAutoDownloadOnSubscribe(true)
+        userPreferencesRepository.setDeletePlayedDownloads(true)
+        userPreferencesRepository.setRandomPodcastId(podcastId)
+
+        val backup = backupBuilder.buildBackup()
+
+        assertEquals(true, backup.appSettings?.autoDownloadOnSubscribe)
+        assertEquals(true, backup.appSettings?.deletePlayedDownloads)
+        assertEquals("https://example.com/feed.xml", backup.appSettings?.randomPodcastFavoriteFeedUrl)
+    }
+
+    @Test
+    fun decodeLegacyV2Backup_usesDefaultSettings() {
+        val json = Json { ignoreUnknownKeys = true }
+        val legacyJson = """
+            {
+              "version": 2,
+              "podcasts": [
+                { "name": "Legacy Podcast", "feedUrl": "https://example.com/legacy.xml" }
+              ],
+              "episodeStates": []
+            }
+        """.trimIndent()
+
+        val backup = json.decodeFromString<FreeCastsBackup>(legacyJson)
+
+        assertEquals(2, backup.version)
+        assertNull(backup.appSettings)
+        assertFalse(backup.podcasts.first().autoDownloadNewEpisodes)
+        assertNull(backup.podcasts.first().episodeFilterPattern)
+    }
+
+    @Test
+    fun applyExportedPodcastSettings_restoresPerPodcastPreferences() = runTest {
+        val exported = ExportedPodcast(
+            name = "Test Podcast",
+            feedUrl = "https://example.com/feed.xml",
+            autoDownloadNewEpisodes = true,
+            episodeFilterPattern = "ads",
+            deleteAfterListening = true,
+            maxDownloadsToKeep = 3,
+        )
+
+        applyExportedPodcastSettings(
+            podcastDao = database.podcastDao(),
+            playlistDao = database.playlistDao(),
+            podcastId = podcastId,
+            exported = exported,
+        )
+
+        val updated = database.podcastDao().getById(podcastId)!!
+        assertTrue(updated.autoDownloadNewEpisodes)
+        assertEquals("ads", updated.episodeFilterPattern)
+        assertTrue(updated.deleteAfterListening)
+        assertEquals(3, updated.maxDownloadsToKeep)
+    }
+
+    @Test
+    fun applyExportedPodcastSettings_filtersMissingPlaylistIds() = runTest {
+        val playlistId = database.playlistDao().insert(Playlist(name = "Queue"))
+
+        applyExportedPodcastSettings(
+            podcastDao = database.podcastDao(),
+            playlistDao = database.playlistDao(),
+            podcastId = podcastId,
+            exported = ExportedPodcast(
+                name = "Test Podcast",
+                feedUrl = "https://example.com/feed.xml",
+                autoAddToPlaylistIds = "$playlistId,999",
+            ),
+        )
+
+        val updated = database.podcastDao().getById(podcastId)!!
+        assertEquals(playlistId.toString(), updated.autoAddToPlaylistIds)
+    }
+
+    @Test
+    fun applyExportedAppSettings_restoresGlobalPreferences() = runTest {
+        applyExportedAppSettings(
+            userPreferencesRepository = userPreferencesRepository,
+            podcastDao = database.podcastDao(),
+            settings = ExportedAppSettings(
+                autoDownloadOnSubscribe = true,
+                keepFavoriteDownloads = true,
+                deletePlayedDownloads = true,
+                randomPodcastFavoriteFeedUrl = "https://example.com/feed.xml",
+            ),
+        )
+
+        val preferences = userPreferencesRepository.userPreferences.first()
+        assertTrue(preferences.autoDownloadOnSubscribe)
+        assertTrue(preferences.keepFavoriteDownloads)
+        assertTrue(preferences.deletePlayedDownloads)
+        assertEquals(podcastId, preferences.randomPodcastFavoriteId)
     }
 
     @Test

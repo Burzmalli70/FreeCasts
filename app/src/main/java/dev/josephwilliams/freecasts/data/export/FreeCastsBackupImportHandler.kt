@@ -1,5 +1,6 @@
 package dev.josephwilliams.freecasts.data.export
 
+import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.repository.PodcastRepository
@@ -7,6 +8,7 @@ import dev.josephwilliams.freecasts.tools.normalizeFeedUrl
 
 class FreeCastsBackupImportHandler(
     private val podcastDao: PodcastDao,
+    private val playlistDao: PlaylistDao,
     private val podcastRepository: PodcastRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val episodeStateImportSupport: EpisodeStateImportSupport
@@ -29,6 +31,11 @@ class FreeCastsBackupImportHandler(
 
         val pendingStates = mutableListOf<ExportedEpisodeState>()
 
+        backup.appSettings?.let { appSettings ->
+            onProgress(0, totalSteps, "Restoring app settings…")
+            applyExportedAppSettings(userPreferencesRepository, podcastDao, appSettings)
+        }
+
         for (exportedPodcast in podcasts) {
             currentStep++
             onProgress(currentStep, totalSteps, "Importing ${exportedPodcast.name.ifBlank { "podcast" }}…")
@@ -42,6 +49,12 @@ class FreeCastsBackupImportHandler(
             val existing = podcastDao.getByFeedUrl(feedUrl)
             if (existing?.isSubscribed == true) {
                 skippedPodcastCount++
+                applyExportedPodcastSettings(
+                    podcastDao = podcastDao,
+                    playlistDao = playlistDao,
+                    podcastId = existing.id,
+                    exported = exportedPodcast,
+                )
                 val refreshResult = podcastRepository.refreshPodcast(existing.id)
                 if (refreshResult.isFailure) {
                     failedPodcastCount++
@@ -52,6 +65,14 @@ class FreeCastsBackupImportHandler(
             val subscribeResult = podcastRepository.subscribeToPodcast(feedUrl)
             if (subscribeResult.isSuccess) {
                 importedPodcastCount++
+                subscribeResult.getOrNull()?.let { podcastId ->
+                    applyExportedPodcastSettings(
+                        podcastDao = podcastDao,
+                        playlistDao = playlistDao,
+                        podcastId = podcastId,
+                        exported = exportedPodcast,
+                    )
+                }
             } else {
                 failedPodcastCount++
             }

@@ -55,8 +55,8 @@ val repositoryModule = module {
         )
     }
     single { PodcastRepository(get(), get(), get(), get(), get()) }
-    single { FreeCastsBackupBuilder(get(), get()) }
-    single { FreeCastsBackupImportHandler(get(), get(), get(), get()) }
+    single { FreeCastsBackupBuilder(get(), get(), get()) }
+    single { FreeCastsBackupImportHandler(get(), get(), get(), get(), get()) }
     single { UserPreferencesRepository(androidContext()) }
     single { PodcastSubscriptionsFileManager(androidContext()) }
 }
