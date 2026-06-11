@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -33,7 +35,9 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,6 +47,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -63,8 +68,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -228,16 +236,20 @@ private fun SubscribedPodcastContent(
     modifier: Modifier = Modifier
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
+    var episodeSearchQuery by remember { mutableStateOf("") }
+    var isEpisodeSearchFocused by remember { mutableStateOf(false) }
     val tabs = listOf("About", "Episodes")
+    val isEpisodeSearchActive = selectedTabIndex == 1 &&
+        (episodeSearchQuery.isNotBlank() || isEpisodeSearchFocused)
     
     Column(modifier = modifier.fillMaxSize()) {
-        // Header
-        PodcastDetailHeader(
-            podcast = podcast,
-            onUnsubscribe = onUnsubscribe
-        )
+        if (!isEpisodeSearchActive) {
+            PodcastDetailHeader(
+                podcast = podcast,
+                onUnsubscribe = onUnsubscribe
+            )
+        }
         
-        // Tab row
         TabRow(selectedTabIndex = selectedTabIndex) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -256,11 +268,13 @@ private fun SubscribedPodcastContent(
             }
         }
         
-        // Tab content
         when (selectedTabIndex) {
             0 -> AboutTabContent(podcast = podcast)
             1 -> EpisodesTabContent(
                 episodes = episodes,
+                searchQuery = episodeSearchQuery,
+                onSearchQueryChange = { episodeSearchQuery = it },
+                onSearchFocusChange = { isEpisodeSearchFocused = it },
                 onDownloadEpisode = onDownloadEpisode,
                 onCancelDownload = onCancelDownload,
                 onDeleteDownload = onDeleteDownload,
@@ -442,6 +456,9 @@ private fun DetailRow(
 @Composable
 private fun EpisodesTabContent(
     episodes: List<EpisodeDisplayState>,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onSearchFocusChange: (Boolean) -> Unit,
     onDownloadEpisode: (EpisodeDisplayState) -> Unit,
     onCancelDownload: (EpisodeDisplayState) -> Unit,
     onDeleteDownload: (EpisodeDisplayState) -> Unit,
@@ -451,39 +468,107 @@ private fun EpisodesTabContent(
     onSwipeToAddToPlaylist: (EpisodeDisplayState) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (episodes.isEmpty()) {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "No episodes",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    } else {
-        LazyColumn(
-            modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(
-                items = episodes,
-                key = { it.episode.id }
-            ) { episodeState ->
-                SwipeableEpisodeCard(
-                    episodeState = episodeState,
-                    onDownload = { onDownloadEpisode(episodeState) },
-                    onCancelDownload = { onCancelDownload(episodeState) },
-                    onDeleteDownload = { onDeleteDownload(episodeState) },
-                    onTogglePlayed = { onTogglePlayed(episodeState) },
-                    onToggleFavorite = { onToggleFavorite(episodeState) },
-                    onLongPress = { onPlayEpisode(episodeState) },
-                    onSwipeToAddToPlaylist = { onSwipeToAddToPlaylist(episodeState) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val filteredEpisodes = remember(episodes, searchQuery) {
+        filterEpisodes(episodes, searchQuery)
+    }
+    
+    Column(modifier = modifier.fillMaxSize()) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .onFocusChanged { onSearchFocusChange(it.isFocused) },
+            placeholder = { Text("Search episodes...") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search episodes"
                 )
+            },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { onSearchQueryChange("") }) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear search"
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(
+                onSearch = { keyboardController?.hide() }
+            ),
+            shape = RoundedCornerShape(12.dp)
+        )
+        
+        when {
+            episodes.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No episodes",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            filteredEpisodes.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No episodes match \"$searchQuery\"",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(
+                        items = filteredEpisodes,
+                        key = { it.episode.id }
+                    ) { episodeState ->
+                        SwipeableEpisodeCard(
+                            episodeState = episodeState,
+                            onDownload = { onDownloadEpisode(episodeState) },
+                            onCancelDownload = { onCancelDownload(episodeState) },
+                            onDeleteDownload = { onDeleteDownload(episodeState) },
+                            onTogglePlayed = { onTogglePlayed(episodeState) },
+                            onToggleFavorite = { onToggleFavorite(episodeState) },
+                            onLongPress = { onPlayEpisode(episodeState) },
+                            onSwipeToAddToPlaylist = { onSwipeToAddToPlaylist(episodeState) }
+                        )
+                    }
+                }
             }
         }
+    }
+}
+
+private fun filterEpisodes(
+    episodes: List<EpisodeDisplayState>,
+    query: String
+): List<EpisodeDisplayState> {
+    val trimmed = query.trim()
+    if (trimmed.isEmpty()) return episodes
+    
+    return episodes.filter { episodeState ->
+        val episode = episodeState.episode
+        episode.title.contains(trimmed, ignoreCase = true) ||
+            episode.description?.contains(trimmed, ignoreCase = true) == true
     }
 }
 
