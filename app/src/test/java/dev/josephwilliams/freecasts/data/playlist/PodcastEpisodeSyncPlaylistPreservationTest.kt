@@ -7,6 +7,7 @@ import dev.josephwilliams.freecasts.data.local.FreeCastsDatabase
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import dev.josephwilliams.freecasts.data.local.entity.Playlist
 import dev.josephwilliams.freecasts.data.local.entity.PlaylistEpisodeCrossRef
+import dev.josephwilliams.freecasts.data.download.NoOpFavoriteEpisodeDownloadHandler
 import dev.josephwilliams.freecasts.data.export.EpisodeStateImportSupport
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
@@ -38,7 +39,8 @@ class PodcastEpisodeSyncPlaylistPreservationTest {
         val episodeStateImportSupport = EpisodeStateImportSupport(
             podcastDao = database.podcastDao(),
             episodeDao = database.episodeDao(),
-            userPreferencesRepository = UserPreferencesRepository(context)
+            userPreferencesRepository = UserPreferencesRepository(context),
+            favoriteEpisodeDownloadHandler = NoOpFavoriteEpisodeDownloadHandler
         )
         syncHandler = PodcastEpisodeSyncHandler(
             episodeDao = database.episodeDao(),

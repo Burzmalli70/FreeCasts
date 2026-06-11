@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import dev.josephwilliams.freecasts.data.local.dao.DownloadDao
+import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.data.local.entity.Download
 import dev.josephwilliams.freecasts.data.local.entity.DownloadStatus as DbDownloadStatus
 import kotlinx.coroutines.CoroutineScope
@@ -43,8 +44,11 @@ import java.util.concurrent.TimeUnit
  */
 class EpisodeDownloadManager(
     private val context: Context,
-    private val downloadDao: DownloadDao
-) {
+    private val downloadDao: DownloadDao,
+    private val episodeDao: EpisodeDao,
+    private val resumeFavoriteDownloads: suspend () -> Unit = {},
+    private val onFavoriteDownloadsMayBeComplete: suspend () -> Unit = {}
+) : EpisodeDownloadEnqueuer {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
     private val androidDownloadManager: DownloadManager? = context.getSystemService()
@@ -122,9 +126,88 @@ class EpisodeDownloadManager(
     }
     
     private suspend fun restoreState() {
-        // Load active and pending downloads from database
-        val pendingStatuses = listOf(DbDownloadStatus.PENDING, DbDownloadStatus.DOWNLOADING)
-        // We'll observe the database for active downloads
+        val pendingDownloads = downloadDao.getPendingAndDownloading()
+        val downloadManager = androidDownloadManager
+
+        for (download in pendingDownloads) {
+            val request = buildDownloadRequest(download.episodeId) ?: continue
+
+            if (download.status == DbDownloadStatus.DOWNLOADING &&
+                download.androidDownloadManagerId != null &&
+                downloadManager != null
+            ) {
+                val androidDownloadId = download.androidDownloadManagerId
+                val query = DownloadManager.Query().setFilterById(androidDownloadId)
+                val cursor = downloadManager.query(query)
+                val isStillActive = cursor?.use {
+                    if (it.moveToFirst()) {
+                        val statusIndex = it.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                        val status = it.getInt(statusIndex)
+                        status == DownloadManager.STATUS_RUNNING ||
+                            status == DownloadManager.STATUS_PENDING ||
+                            status == DownloadManager.STATUS_PAUSED
+                    } else {
+                        false
+                    }
+                } ?: false
+
+                if (isStillActive) {
+                    downloadIdToEpisodeId[androidDownloadId] = download.episodeId
+                    episodeIdToDownloadId[download.episodeId] = androidDownloadId
+                    pendingRequests[download.episodeId] = request
+                    _state.update { state ->
+                        state.copy(
+                            activeDownloads = state.activeDownloads + DownloadState(
+                                episodeId = request.episodeId,
+                                episodeName = request.episodeName,
+                                podcastName = request.podcastName,
+                                status = DownloadStatus.DOWNLOADING,
+                                progressPercent = download.progressPercent,
+                                downloadedBytes = download.downloadedBytes,
+                                downloadManagerId = androidDownloadId
+                            )
+                        )
+                    }
+                    continue
+                }
+
+                downloadDao.updateStatus(download.id, DbDownloadStatus.PENDING)
+            }
+
+            pendingRequests[download.episodeId] = request
+            _state.update { state ->
+                if (state.queuedDownloads.any { it.episodeId == request.episodeId } ||
+                    state.activeDownloads.any { it.episodeId == request.episodeId }
+                ) {
+                    state
+                } else {
+                    state.copy(
+                        queuedDownloads = state.queuedDownloads + DownloadState(
+                            episodeId = request.episodeId,
+                            episodeName = request.episodeName,
+                            podcastName = request.podcastName,
+                            status = DownloadStatus.QUEUED
+                        )
+                    )
+                }
+            }
+        }
+
+        processQueue()
+        resumeFavoriteDownloads()
+    }
+
+    private suspend fun buildDownloadRequest(episodeId: Long): DownloadRequest? {
+        val episodeWithPodcast = episodeDao.getEpisodeWithPodcast(episodeId) ?: return null
+        if (episodeWithPodcast.episode.audioUrl.isBlank()) return null
+
+        return DownloadRequest(
+            episodeId = episodeWithPodcast.episode.id,
+            episodeName = episodeWithPodcast.episode.title,
+            podcastName = episodeWithPodcast.podcast.title,
+            downloadUrl = episodeWithPodcast.episode.audioUrl,
+            mimeType = episodeWithPodcast.episode.mimeType
+        )
     }
     
     /**
@@ -137,7 +220,7 @@ class EpisodeDownloadManager(
      * @param request The download request containing episode information
      * @return true if the download was started or queued successfully
      */
-    suspend fun enqueueDownload(request: DownloadRequest): Boolean {
+    override suspend fun enqueueDownload(request: DownloadRequest): Boolean {
         // Check if already downloading or queued
         val existingDownload = downloadDao.getByEpisodeId(request.episodeId)
         if (existingDownload != null) {
@@ -250,6 +333,7 @@ class EpisodeDownloadManager(
         }
         
         downloadDao.markAsDownloading(downloadDbId)
+        downloadDao.updateAndroidDownloadManagerId(downloadDbId, downloadId)
     }
     
     private suspend fun handleDownloadComplete(downloadId: Long) {
@@ -303,6 +387,7 @@ class EpisodeDownloadManager(
                             delay(2000)
                             removeFromActive(episodeId)
                             processQueue()
+                            onFavoriteDownloadsMayBeComplete()
                         }
                     }
                     

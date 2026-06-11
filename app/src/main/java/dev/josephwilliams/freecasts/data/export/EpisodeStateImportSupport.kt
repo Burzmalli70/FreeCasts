@@ -1,5 +1,6 @@
 package dev.josephwilliams.freecasts.data.export
 
+import dev.josephwilliams.freecasts.data.download.FavoriteEpisodeDownloadHandler
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
@@ -8,7 +9,8 @@ import dev.josephwilliams.freecasts.tools.normalizeFeedUrl
 class EpisodeStateImportSupport(
     private val podcastDao: PodcastDao,
     private val episodeDao: EpisodeDao,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val favoriteEpisodeDownloadHandler: FavoriteEpisodeDownloadHandler
 ) {
     suspend fun applyEpisodeState(exportedState: ExportedEpisodeState): EpisodeStateApplyResult {
         val feedUrl = exportedState.feedUrl.normalizeFeedUrl()
@@ -18,8 +20,16 @@ class EpisodeStateImportSupport(
         val episode = episodeDao.getByGuid(exportedState.guid)
             ?: return EpisodeStateApplyResult.PENDING
 
-        episodeDao.update(mergeEpisodeState(episode, exportedState))
+        val mergedEpisode = mergeEpisodeState(episode, exportedState)
+        episodeDao.update(mergedEpisode)
         userPreferencesRepository.removePendingEpisodeState(feedUrl, exportedState.guid)
+
+        if (mergedEpisode.isFavorite &&
+            userPreferencesRepository.isFavoriteDownloadsAfterImportPending()
+        ) {
+            favoriteEpisodeDownloadHandler.enqueueFavoriteDownloadIfNeeded(mergedEpisode.id)
+        }
+
         return EpisodeStateApplyResult.APPLIED
     }
 

@@ -1,6 +1,8 @@
 package dev.josephwilliams.freecasts
 
 import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
+import dev.josephwilliams.freecasts.data.download.FavoriteEpisodeDownloadCoordinator
+import dev.josephwilliams.freecasts.data.download.FavoriteEpisodeDownloadHandler
 import dev.josephwilliams.freecasts.data.export.EpisodeStateImportSupport
 import dev.josephwilliams.freecasts.data.export.FreeCastsBackupBuilder
 import dev.josephwilliams.freecasts.data.export.FreeCastsBackupImportHandler
@@ -40,7 +42,7 @@ val databaseModule = module {
 val repositoryModule = module {
     single { PlaylistAutoAddHandler(get(), get()) }
     single { PlaylistAutoRemoveHandler(get(), get()) }
-    single { EpisodeStateImportSupport(get(), get(), get()) }
+    single { EpisodeStateImportSupport(get(), get(), get(), get()) }
     single {
         PodcastEpisodeSyncHandler(
             episodeDao = get(),
@@ -64,11 +66,35 @@ val viewModelModule = module {
     viewModel { PlaylistsViewModel(get()) }
     viewModel { CreateEditPlaylistViewModel(get(), get(), get()) }
     viewModel { PlaylistDetailViewModel(get(), get(), get()) }
-    viewModel { SettingsViewModel(get(), get(), get(), get()) }
+    viewModel { SettingsViewModel(get(), get(), get(), get(), get()) }
 }
 
 val downloadModule = module {
-    single { EpisodeDownloadManager(androidContext(), get()) }
+    single {
+        EpisodeDownloadManager(
+            context = androidContext(),
+            downloadDao = get(),
+            episodeDao = get(),
+            resumeFavoriteDownloads = {
+                org.koin.java.KoinJavaComponent.getKoin()
+                    .get<FavoriteEpisodeDownloadHandler>()
+                    .resumeFavoriteDownloadsIfNeeded()
+            },
+            onFavoriteDownloadsMayBeComplete = {
+                org.koin.java.KoinJavaComponent.getKoin()
+                    .get<FavoriteEpisodeDownloadHandler>()
+                    .clearPendingIfAllFavoritesDownloaded()
+            }
+        )
+    }
+    single<FavoriteEpisodeDownloadHandler> {
+        FavoriteEpisodeDownloadCoordinator(
+            episodeDao = get(),
+            downloadDao = get(),
+            episodeDownloadEnqueuer = get<EpisodeDownloadManager>(),
+            userPreferencesRepository = get()
+        )
+    }
 }
 
 val playbackModule = module {

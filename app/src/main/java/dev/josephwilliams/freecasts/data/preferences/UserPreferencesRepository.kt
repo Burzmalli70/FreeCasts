@@ -30,6 +30,7 @@ class UserPreferencesRepository(
         val DELETE_PLAYED_DOWNLOADS = booleanPreferencesKey("delete_played_downloads")
         val RANDOM_PODCAST_FAVORITE_ID = longPreferencesKey("random_podcast_favorite_id")
         val PENDING_EPISODE_STATES_JSON = stringPreferencesKey("pending_episode_states_json")
+        val FAVORITE_DOWNLOADS_AFTER_IMPORT_PENDING = booleanPreferencesKey("favorite_downloads_after_import_pending")
     }
 
     private val json = Json {
@@ -146,6 +147,20 @@ class UserPreferencesRepository(
             } else {
                 preferences[PreferencesKeys.PENDING_EPISODE_STATES_JSON] =
                     json.encodeToString(deduped)
+            }
+        }
+    }
+
+    suspend fun isFavoriteDownloadsAfterImportPending(): Boolean {
+        return context.dataStore.data.first()[PreferencesKeys.FAVORITE_DOWNLOADS_AFTER_IMPORT_PENDING] ?: false
+    }
+
+    suspend fun setFavoriteDownloadsAfterImportPending(pending: Boolean) {
+        context.dataStore.edit { preferences ->
+            if (pending) {
+                preferences[PreferencesKeys.FAVORITE_DOWNLOADS_AFTER_IMPORT_PENDING] = true
+            } else {
+                preferences.remove(PreferencesKeys.FAVORITE_DOWNLOADS_AFTER_IMPORT_PENDING)
             }
         }
     }

@@ -3,6 +3,7 @@ package dev.josephwilliams.freecasts.data.export
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import dev.josephwilliams.freecasts.data.download.NoOpFavoriteEpisodeDownloadHandler
 import dev.josephwilliams.freecasts.data.local.FreeCastsDatabase
 import dev.josephwilliams.freecasts.data.local.entity.Episode
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
@@ -39,7 +40,8 @@ class FreeCastsBackupTest {
         episodeStateImportSupport = EpisodeStateImportSupport(
             podcastDao = database.podcastDao(),
             episodeDao = database.episodeDao(),
-            userPreferencesRepository = UserPreferencesRepository(context)
+            userPreferencesRepository = UserPreferencesRepository(context),
+            favoriteEpisodeDownloadHandler = NoOpFavoriteEpisodeDownloadHandler
         )
 
         podcastId = database.podcastDao().insert(
@@ -167,7 +169,8 @@ class FreeCastsBackupTest {
         val support = EpisodeStateImportSupport(
             podcastDao = database.podcastDao(),
             episodeDao = database.episodeDao(),
-            userPreferencesRepository = preferences
+            userPreferencesRepository = preferences,
+            favoriteEpisodeDownloadHandler = NoOpFavoriteEpisodeDownloadHandler
         )
 
         insertEpisode("new-ep")

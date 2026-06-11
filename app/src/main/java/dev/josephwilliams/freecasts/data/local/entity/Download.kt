@@ -58,7 +58,10 @@ data class Download(
     val errorMessage: String? = null,
     
     /** Number of retry attempts */
-    val retryCount: Int = 0
+    val retryCount: Int = 0,
+
+    /** Android DownloadManager ID, used to resume in-progress downloads */
+    val androidDownloadManagerId: Long? = null
 )
 
 /**

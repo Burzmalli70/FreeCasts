@@ -139,6 +139,10 @@ interface EpisodeDao {
     @Transaction
     @Query("SELECT * FROM episodes WHERE isFavorite = 1 ORDER BY favoritedAt DESC")
     fun observeFavoritesWithPodcast(): Flow<List<EpisodeWithPodcast>>
+
+    @Transaction
+    @Query("SELECT * FROM episodes WHERE isFavorite = 1 ORDER BY favoritedAt DESC")
+    suspend fun getFavoritesWithPodcast(): List<EpisodeWithPodcast>
     
     @Transaction
     @Query("SELECT * FROM episodes ORDER BY publishedAt DESC LIMIT :limit")

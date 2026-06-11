@@ -3,6 +3,7 @@ package dev.josephwilliams.freecasts.ui.screens.settings
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.josephwilliams.freecasts.data.download.FavoriteEpisodeDownloadHandler
 import dev.josephwilliams.freecasts.data.export.FreeCastsBackupBuilder
 import dev.josephwilliams.freecasts.data.export.FreeCastsBackupImportHandler
 import dev.josephwilliams.freecasts.data.export.PODCASTS_EXPORT_FILENAME
@@ -24,7 +25,8 @@ class SettingsViewModel(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val backupBuilder: FreeCastsBackupBuilder,
     private val backupImportHandler: FreeCastsBackupImportHandler,
-    private val subscriptionsFileManager: PodcastSubscriptionsFileManager
+    private val subscriptionsFileManager: PodcastSubscriptionsFileManager,
+    private val favoriteEpisodeDownloadHandler: FavoriteEpisodeDownloadHandler
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsState())
@@ -249,13 +251,17 @@ class SettingsViewModel(
             }
         }
 
-        _state.update {
-            it.copy(isImporting = false, transferProgress = null)
-        }
-
         importResult.fold(
             onSuccess = { result ->
-                _events.emit(SettingsEvent.ShowMessage(result.toMessage()))
+                val favoriteDownloadsQueued = queueFavoriteDownloadsAfterImport()
+                val message = buildString {
+                    append(result.toMessage())
+                    if (favoriteDownloadsQueued > 0) {
+                        append(", queued $favoriteDownloadsQueued favorite episode download")
+                        if (favoriteDownloadsQueued != 1) append("s")
+                    }
+                }
+                _events.emit(SettingsEvent.ShowMessage(message))
             },
             onFailure = { error ->
                 _events.emit(
@@ -265,6 +271,22 @@ class SettingsViewModel(
                 )
             }
         )
+
+        _state.update {
+            it.copy(isImporting = false, transferProgress = null)
+        }
+    }
+
+    private suspend fun queueFavoriteDownloadsAfterImport(): Int {
+        _state.update {
+            it.copy(transferProgress = TransferProgress(0, 1, "Queueing favorite downloads…"))
+        }
+        favoriteEpisodeDownloadHandler.markFavoriteDownloadsPendingAfterImport()
+        return favoriteEpisodeDownloadHandler.enqueueDownloadsForAllFavorites { current, total, label ->
+            _state.update {
+                it.copy(transferProgress = TransferProgress(current, total, label))
+            }
+        }
     }
 }
 

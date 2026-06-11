@@ -86,6 +86,12 @@ interface DownloadDao {
     
     @Query("UPDATE downloads SET localFilePath = :path WHERE id = :downloadId")
     suspend fun updateLocalFilePath(downloadId: Long, path: String)
+
+    @Query("UPDATE downloads SET androidDownloadManagerId = :downloadManagerId WHERE id = :downloadId")
+    suspend fun updateAndroidDownloadManagerId(downloadId: Long, downloadManagerId: Long)
+
+    @Query("SELECT * FROM downloads WHERE status IN ('PENDING', 'DOWNLOADING') ORDER BY requestedAt ASC")
+    suspend fun getPendingAndDownloading(): List<Download>
     
     @Query("UPDATE downloads SET retryCount = retryCount + 1 WHERE id = :downloadId")
     suspend fun incrementRetryCount(downloadId: Long)
