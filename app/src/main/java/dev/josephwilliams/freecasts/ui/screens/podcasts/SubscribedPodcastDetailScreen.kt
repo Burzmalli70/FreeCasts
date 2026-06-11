@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -43,16 +44,20 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -66,6 +71,7 @@ import coil.compose.AsyncImage
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
 import dev.josephwilliams.freecasts.data.playback.PlayingEpisode
+import dev.josephwilliams.freecasts.ui.components.PlaylistPickerDialog
 import dev.josephwilliams.freecasts.ui.components.formatEpisodeListDuration
 import kotlinx.datetime.Instant
 import org.koin.compose.koinInject
@@ -84,9 +90,22 @@ fun SubscribedPodcastDetailScreen(
     playbackManager: PlaybackManager = koinInject()
 ) {
     val state by viewModel.state.collectAsState()
+    var episodeForPlaylist by remember { mutableStateOf<EpisodeDisplayState?>(null) }
     
     LaunchedEffect(podcastId) {
         viewModel.loadPodcast(podcastId)
+    }
+    
+    episodeForPlaylist?.let { episodeState ->
+        PlaylistPickerDialog(
+            playlists = state.playlists,
+            episodeTitle = episodeState.episode.title,
+            onPlaylistSelected = { playlist ->
+                viewModel.addEpisodeToPlaylist(playlist.id, episodeState.episode.id)
+                episodeForPlaylist = null
+            },
+            onDismiss = { episodeForPlaylist = null }
+        )
     }
     
     Scaffold(
@@ -185,7 +204,8 @@ fun SubscribedPodcastDetailScreen(
                                     localFilePath = episodeState.localFilePath
                                 )
                             )
-                        }
+                        },
+                        onSwipeToAddToPlaylist = { episodeForPlaylist = it }
                     )
                 }
             }
@@ -204,6 +224,7 @@ private fun SubscribedPodcastContent(
     onTogglePlayed: (EpisodeDisplayState) -> Unit,
     onToggleFavorite: (EpisodeDisplayState) -> Unit,
     onPlayEpisode: (EpisodeDisplayState) -> Unit,
+    onSwipeToAddToPlaylist: (EpisodeDisplayState) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -245,7 +266,8 @@ private fun SubscribedPodcastContent(
                 onDeleteDownload = onDeleteDownload,
                 onTogglePlayed = onTogglePlayed,
                 onToggleFavorite = onToggleFavorite,
-                onPlayEpisode = onPlayEpisode
+                onPlayEpisode = onPlayEpisode,
+                onSwipeToAddToPlaylist = onSwipeToAddToPlaylist
             )
         }
     }
@@ -426,6 +448,7 @@ private fun EpisodesTabContent(
     onTogglePlayed: (EpisodeDisplayState) -> Unit,
     onToggleFavorite: (EpisodeDisplayState) -> Unit,
     onPlayEpisode: (EpisodeDisplayState) -> Unit,
+    onSwipeToAddToPlaylist: (EpisodeDisplayState) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (episodes.isEmpty()) {
@@ -449,18 +472,101 @@ private fun EpisodesTabContent(
                 items = episodes,
                 key = { it.episode.id }
             ) { episodeState ->
-                EpisodeCard(
+                SwipeableEpisodeCard(
                     episodeState = episodeState,
                     onDownload = { onDownloadEpisode(episodeState) },
                     onCancelDownload = { onCancelDownload(episodeState) },
                     onDeleteDownload = { onDeleteDownload(episodeState) },
                     onTogglePlayed = { onTogglePlayed(episodeState) },
                     onToggleFavorite = { onToggleFavorite(episodeState) },
-                    onLongPress = { onPlayEpisode(episodeState) }
+                    onLongPress = { onPlayEpisode(episodeState) },
+                    onSwipeToAddToPlaylist = { onSwipeToAddToPlaylist(episodeState) }
                 )
             }
         }
     }
+}
+
+@Composable
+private fun SwipeableEpisodeCard(
+    episodeState: EpisodeDisplayState,
+    onDownload: () -> Unit,
+    onCancelDownload: () -> Unit,
+    onDeleteDownload: () -> Unit,
+    onTogglePlayed: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    onLongPress: () -> Unit,
+    onSwipeToAddToPlaylist: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            when (value) {
+                SwipeToDismissBoxValue.StartToEnd,
+                SwipeToDismissBoxValue.EndToStart -> {
+                    onSwipeToAddToPlaylist()
+                    false
+                }
+                else -> true
+            }
+        }
+    )
+    
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = modifier,
+        enableDismissFromStartToEnd = true,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
+            val backgroundColor = MaterialTheme.colorScheme.primaryContainer
+            val contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            
+            when (dismissState.dismissDirection) {
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(backgroundColor, RoundedCornerShape(12.dp))
+                            .padding(horizontal = 20.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
+                            contentDescription = "Add to playlist",
+                            tint = contentColor
+                        )
+                    }
+                }
+                SwipeToDismissBoxValue.EndToStart -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(backgroundColor, RoundedCornerShape(12.dp))
+                            .padding(horizontal = 20.dp),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
+                            contentDescription = "Add to playlist",
+                            tint = contentColor
+                        )
+                    }
+                }
+                else -> {}
+            }
+        },
+        content = {
+            EpisodeCard(
+                episodeState = episodeState,
+                onDownload = onDownload,
+                onCancelDownload = onCancelDownload,
+                onDeleteDownload = onDeleteDownload,
+                onTogglePlayed = onTogglePlayed,
+                onToggleFavorite = onToggleFavorite,
+                onLongPress = onLongPress
+            )
+        }
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)

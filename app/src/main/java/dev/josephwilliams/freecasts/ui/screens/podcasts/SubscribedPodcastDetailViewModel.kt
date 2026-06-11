@@ -8,8 +8,11 @@ import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
 import dev.josephwilliams.freecasts.data.local.dao.DownloadDao
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.ui.components.hasPartialPlayback
+import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
+import dev.josephwilliams.freecasts.data.local.entity.Playlist
+import dev.josephwilliams.freecasts.data.local.entity.PlaylistEpisodeCrossRef
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
 import dev.josephwilliams.freecasts.data.local.relation.EpisodeWithDownload
 import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoRemoveHandler
@@ -29,6 +32,7 @@ class SubscribedPodcastDetailViewModel(
     private val podcastDao: PodcastDao,
     private val episodeDao: EpisodeDao,
     private val downloadDao: DownloadDao,
+    private val playlistDao: PlaylistDao,
     private val podcastRepository: PodcastRepository,
     private val downloadManager: EpisodeDownloadManager,
     private val playlistAutoRemoveHandler: PlaylistAutoRemoveHandler
@@ -38,6 +42,14 @@ class SubscribedPodcastDetailViewModel(
     val state: StateFlow<SubscribedPodcastDetailState> = _state.asStateFlow()
     
     private var currentPodcastId: Long = -1
+    
+    init {
+        viewModelScope.launch {
+            playlistDao.observeAllByName().collect { playlists ->
+                _state.update { it.copy(playlists = playlists) }
+            }
+        }
+    }
     
     /**
      * Load a podcast by its database ID.
@@ -190,6 +202,26 @@ class SubscribedPodcastDetailViewModel(
             episodeDao.toggleFavorite(episode.id, willBeFavorite)
         }
     }
+    
+    /**
+     * Add an episode to the given playlist if it is not already present.
+     */
+    fun addEpisodeToPlaylist(playlistId: Long, episodeId: Long) {
+        viewModelScope.launch {
+            if (playlistDao.isEpisodeInPlaylist(playlistId, episodeId)) return@launch
+            
+            val maxPosition = playlistDao.getMaxPosition(playlistId) ?: -1
+            playlistDao.insertPlaylistEpisode(
+                PlaylistEpisodeCrossRef(
+                    playlistId = playlistId,
+                    episodeId = episodeId,
+                    position = maxPosition + 1,
+                    addedAt = System.currentTimeMillis()
+                )
+            )
+            playlistDao.updateTimestamp(playlistId)
+        }
+    }
 }
 
 /**
@@ -198,6 +230,7 @@ class SubscribedPodcastDetailViewModel(
 data class SubscribedPodcastDetailState(
     val podcast: Podcast? = null,
     val episodes: List<EpisodeDisplayState> = emptyList(),
+    val playlists: List<Playlist> = emptyList(),
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false
 ) {
