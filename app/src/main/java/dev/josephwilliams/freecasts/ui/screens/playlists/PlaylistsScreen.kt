@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.josephwilliams.freecasts.data.local.entity.Playlist
+import dev.josephwilliams.freecasts.data.local.relation.PlaylistWithEpisodeCount
 import dev.josephwilliams.freecasts.ui.theme.Link
 import org.koin.androidx.compose.koinViewModel
 
@@ -175,7 +176,7 @@ private fun EmptyPlaylistsView(
 
 @Composable
 private fun PlaylistsList(
-    playlists: List<Playlist>,
+    playlists: List<PlaylistWithEpisodeCount>,
     onPlaylistSelected: (Playlist) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -186,11 +187,12 @@ private fun PlaylistsList(
     ) {
         items(
             items = playlists,
-            key = { it.id }
-        ) { playlist ->
+            key = { it.playlist.id }
+        ) { playlistWithCount ->
             PlaylistItem(
-                playlist = playlist,
-                onClick = { onPlaylistSelected(playlist) }
+                playlist = playlistWithCount.playlist,
+                episodeCount = playlistWithCount.episodeCount,
+                onClick = { onPlaylistSelected(playlistWithCount.playlist) }
             )
         }
     }
@@ -199,6 +201,7 @@ private fun PlaylistsList(
 @Composable
 private fun PlaylistItem(
     playlist: Playlist,
+    episodeCount: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -237,26 +240,28 @@ private fun PlaylistItem(
                 )
                 
                 Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = formatPlaylistEpisodeCount(episodeCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (playlist.removeAfterListening) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.AutoDelete,
-                                contentDescription = "Auto-remove played",
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.tertiary
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Auto-remove",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
+                if (playlist.removeAfterListening) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.AutoDelete,
+                            contentDescription = "Auto-remove played",
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Auto-remove",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
                     }
                 }
             }
@@ -269,4 +274,8 @@ private fun PlaylistItem(
             )
         }
     }
+}
+
+internal fun formatPlaylistEpisodeCount(count: Int): String {
+    return "$count episode${if (count == 1) "" else "s"}"
 }

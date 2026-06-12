@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.entity.Playlist
+import dev.josephwilliams.freecasts.data.local.relation.PlaylistWithEpisodeCount
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +31,7 @@ class PlaylistsViewModel(
     
     private fun observePlaylists() {
         viewModelScope.launch {
-            playlistDao.observeAll().collect { playlists ->
+            playlistDao.observeAllWithEpisodeCount().collect { playlists ->
                 _state.update { it.copy(
                     playlists = playlists,
                     isLoading = false
@@ -57,7 +58,7 @@ class PlaylistsViewModel(
  * State for the playlists screen.
  */
 data class PlaylistsState(
-    val playlists: List<Playlist> = emptyList(),
+    val playlists: List<PlaylistWithEpisodeCount> = emptyList(),
     val isLoading: Boolean = true
 ) {
     val isEmpty: Boolean

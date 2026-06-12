@@ -25,13 +25,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import dev.josephwilliams.freecasts.data.local.entity.Playlist
+import dev.josephwilliams.freecasts.data.local.relation.PlaylistWithEpisodeCount
+import dev.josephwilliams.freecasts.ui.screens.playlists.formatPlaylistEpisodeCount
 
 @Composable
 fun PlaylistPickerDialog(
-    playlists: List<Playlist>,
+    playlists: List<PlaylistWithEpisodeCount>,
     episodeTitle: String,
-    onPlaylistSelected: (Playlist) -> Unit,
+    onPlaylistSelected: (PlaylistWithEpisodeCount) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -61,11 +62,11 @@ fun PlaylistPickerDialog(
                     ) {
                         items(
                             items = playlists,
-                            key = { it.id }
-                        ) { playlist ->
+                            key = { it.playlist.id }
+                        ) { playlistWithCount ->
                             PlaylistPickerRow(
-                                playlist = playlist,
-                                onClick = { onPlaylistSelected(playlist) }
+                                playlistWithCount = playlistWithCount,
+                                onClick = { onPlaylistSelected(playlistWithCount) }
                             )
                         }
                     }
@@ -83,7 +84,7 @@ fun PlaylistPickerDialog(
 
 @Composable
 private fun PlaylistPickerRow(
-    playlist: Playlist,
+    playlistWithCount: PlaylistWithEpisodeCount,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -102,12 +103,19 @@ private fun PlaylistPickerRow(
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = playlist.name,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = playlistWithCount.playlist.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = formatPlaylistEpisodeCount(playlistWithCount.episodeCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         HorizontalDivider()
     }

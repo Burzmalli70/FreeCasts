@@ -181,6 +181,24 @@ class PlaylistDaoTest {
     }
     
     @Test
+    fun observeAllWithEpisodeCount() = runTest {
+        val playlistId = playlistDao.insert(createTestPlaylist(name = "Counted"))
+        val emptyPlaylistId = playlistDao.insert(createTestPlaylist(name = "Empty"))
+        val episodeId1 = episodeDao.insert(createTestEpisode("ep1", "Episode 1"))
+        val episodeId2 = episodeDao.insert(createTestEpisode("ep2", "Episode 2"))
+
+        playlistDao.insertPlaylistEpisode(PlaylistEpisodeCrossRef(playlistId, episodeId1, 0))
+        playlistDao.insertPlaylistEpisode(PlaylistEpisodeCrossRef(playlistId, episodeId2, 1))
+
+        val playlists = playlistDao.observeAllWithEpisodeCount().first()
+        val counted = playlists.first { it.playlist.id == playlistId }
+        val empty = playlists.first { it.playlist.id == emptyPlaylistId }
+
+        assertEquals(2, counted.episodeCount)
+        assertEquals(0, empty.episodeCount)
+    }
+
+    @Test
     fun getEpisodeCount() = runTest {
         val playlistId = playlistDao.insert(createTestPlaylist())
         val episodeId1 = episodeDao.insert(createTestEpisode("ep1", "Episode 1"))

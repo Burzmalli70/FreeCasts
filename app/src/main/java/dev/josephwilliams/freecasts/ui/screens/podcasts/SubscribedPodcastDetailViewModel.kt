@@ -11,10 +11,10 @@ import dev.josephwilliams.freecasts.ui.components.hasPartialPlayback
 import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Episode
-import dev.josephwilliams.freecasts.data.local.entity.Playlist
 import dev.josephwilliams.freecasts.data.local.entity.PlaylistEpisodeCrossRef
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
 import dev.josephwilliams.freecasts.data.local.relation.EpisodeWithDownload
+import dev.josephwilliams.freecasts.data.local.relation.PlaylistWithEpisodeCount
 import dev.josephwilliams.freecasts.data.playlist.PlaylistAutoRemoveHandler
 import dev.josephwilliams.freecasts.data.repository.PodcastRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,7 +45,7 @@ class SubscribedPodcastDetailViewModel(
     
     init {
         viewModelScope.launch {
-            playlistDao.observeAllByName().collect { playlists ->
+            playlistDao.observeAllByNameWithEpisodeCount().collect { playlists ->
                 _state.update { it.copy(playlists = playlists) }
             }
         }
@@ -230,7 +230,7 @@ class SubscribedPodcastDetailViewModel(
 data class SubscribedPodcastDetailState(
     val podcast: Podcast? = null,
     val episodes: List<EpisodeDisplayState> = emptyList(),
-    val playlists: List<Playlist> = emptyList(),
+    val playlists: List<PlaylistWithEpisodeCount> = emptyList(),
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false
 ) {

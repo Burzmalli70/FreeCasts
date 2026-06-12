@@ -9,6 +9,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import dev.josephwilliams.freecasts.data.local.entity.Playlist
 import dev.josephwilliams.freecasts.data.local.entity.PlaylistEpisodeCrossRef
+import dev.josephwilliams.freecasts.data.local.relation.PlaylistWithEpisodeCount
 import dev.josephwilliams.freecasts.data.local.relation.PlaylistWithEpisodes
 import kotlinx.coroutines.flow.Flow
 
@@ -35,9 +36,31 @@ interface PlaylistDao {
     
     @Query("SELECT * FROM playlists ORDER BY updatedAt DESC")
     fun observeAll(): Flow<List<Playlist>>
+
+    @Query(
+        """
+        SELECT playlists.*,
+        (SELECT COUNT(*) FROM playlist_episode_cross_ref
+         WHERE playlistId = playlists.id) AS episodeCount
+        FROM playlists
+        ORDER BY updatedAt DESC
+        """
+    )
+    fun observeAllWithEpisodeCount(): Flow<List<PlaylistWithEpisodeCount>>
     
     @Query("SELECT * FROM playlists ORDER BY name ASC")
     fun observeAllByName(): Flow<List<Playlist>>
+
+    @Query(
+        """
+        SELECT playlists.*,
+        (SELECT COUNT(*) FROM playlist_episode_cross_ref
+         WHERE playlistId = playlists.id) AS episodeCount
+        FROM playlists
+        ORDER BY name ASC
+        """
+    )
+    fun observeAllByNameWithEpisodeCount(): Flow<List<PlaylistWithEpisodeCount>>
 
     @Query("SELECT * FROM playlists ORDER BY name ASC")
     suspend fun getAllOrderedByName(): List<Playlist>

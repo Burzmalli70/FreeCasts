@@ -108,8 +108,8 @@ fun SubscribedPodcastDetailScreen(
         PlaylistPickerDialog(
             playlists = state.playlists,
             episodeTitle = episodeState.episode.title,
-            onPlaylistSelected = { playlist ->
-                viewModel.addEpisodeToPlaylist(playlist.id, episodeState.episode.id)
+            onPlaylistSelected = { playlistWithCount ->
+                viewModel.addEpisodeToPlaylist(playlistWithCount.playlist.id, episodeState.episode.id)
                 episodeForPlaylist = null
             },
             onDismiss = { episodeForPlaylist = null }
