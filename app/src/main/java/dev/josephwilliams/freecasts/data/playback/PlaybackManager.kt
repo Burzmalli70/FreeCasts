@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
  * Features:
  * - Background playback with notification
  * - Play/pause control
- * - Skip forward/backward by 30 seconds
+ * - Skip forward/backward using user-configured intervals
  * - Position tracking and progress updates
  * - Queue support for playlist playback
  * - Lock screen and Bluetooth controls
@@ -43,7 +43,6 @@ class PlaybackManager(
 ) {
     companion object {
         private const val TAG = "PlaybackManager"
-        private const val SKIP_DURATION_MS = 30_000L
         private const val POSITION_UPDATE_INTERVAL_MS = 500L
     }
     
@@ -323,7 +322,7 @@ class PlaybackManager(
     }
     
     /**
-     * Skip forward by 30 seconds.
+     * Skip forward by the configured interval.
      */
     fun skipForward() {
         mediaController?.sendCustomCommand(
@@ -338,7 +337,7 @@ class PlaybackManager(
     }
     
     /**
-     * Skip backward by 30 seconds.
+     * Skip backward by the configured interval.
      */
     fun skipBackward() {
         mediaController?.sendCustomCommand(

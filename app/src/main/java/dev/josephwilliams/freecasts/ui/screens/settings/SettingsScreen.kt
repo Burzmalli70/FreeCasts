@@ -4,7 +4,10 @@ import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.josephwilliams.freecasts.data.export.PODCASTS_EXPORT_FILENAME
+import dev.josephwilliams.freecasts.data.preferences.SKIP_INTERVAL_OPTIONS_SECONDS
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -150,6 +155,36 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
+                text = "Playback",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            HorizontalDivider()
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SkipIntervalSetting(
+                title = "Skip forward interval",
+                description = "How far the skip forward button moves in the player",
+                selectedSeconds = state.skipForwardIntervalSeconds,
+                onSelected = { viewModel.setSkipForwardIntervalSeconds(it) }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SkipIntervalSetting(
+                title = "Skip back interval",
+                description = "How far the skip back button moves in the player",
+                selectedSeconds = state.skipBackwardIntervalSeconds,
+                onSelected = { viewModel.setSkipBackwardIntervalSeconds(it) }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
                 text = "Backup",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
@@ -216,6 +251,46 @@ fun SettingsScreen(
             hostState = snackbarHostState,
             modifier = Modifier.padding(16.dp)
         )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SkipIntervalSetting(
+    title: String,
+    description: String,
+    selectedSeconds: Int,
+    onSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SKIP_INTERVAL_OPTIONS_SECONDS.forEach { seconds ->
+                FilterChip(
+                    selected = selectedSeconds == seconds,
+                    onClick = { onSelected(seconds) },
+                    label = { Text("${seconds}s") }
+                )
+            }
+        }
     }
 }
 

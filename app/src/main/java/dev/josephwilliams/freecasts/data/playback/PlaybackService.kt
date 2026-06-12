@@ -45,10 +45,9 @@ import org.koin.android.ext.android.inject
 class PlaybackService : MediaLibraryService() {
     
     companion object {
-        const val CUSTOM_COMMAND_SKIP_BACK = "SKIP_BACK_30"
-        const val CUSTOM_COMMAND_SKIP_FORWARD = "SKIP_FORWARD_30"
+        const val CUSTOM_COMMAND_SKIP_BACK = "SKIP_BACK"
+        const val CUSTOM_COMMAND_SKIP_FORWARD = "SKIP_FORWARD"
         const val CUSTOM_COMMAND_PLAY_RANDOM_FAVORITE = "PLAY_RANDOM_FAVORITE"
-        private const val SKIP_DURATION_MS = 30_000L
         
         const val EXTRA_EPISODE_ID = "episode_id"
         const val EXTRA_PODCAST_ID = "podcast_id"
@@ -75,9 +74,18 @@ class PlaybackService : MediaLibraryService() {
     private val packageValidator: PackageValidator by inject()
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var skipForwardDurationMs = 30_000L
+    private var skipBackwardDurationMs = 30_000L
 
     override fun onCreate() {
         super.onCreate()
+
+        serviceScope.launch {
+            userPreferencesRepository.userPreferences.collect { preferences ->
+                skipForwardDurationMs = preferences.skipForwardIntervalSeconds * 1000L
+                skipBackwardDurationMs = preferences.skipBackwardIntervalSeconds * 1000L
+            }
+        }
         
         player = ExoPlayer.Builder(this)
             .setAudioAttributes(
@@ -291,12 +299,12 @@ class PlaybackService : MediaLibraryService() {
         ): ListenableFuture<androidx.media3.session.SessionResult> {
             when (customCommand.customAction) {
                 CUSTOM_COMMAND_SKIP_BACK -> {
-                    val newPosition = (player?.currentPosition ?: 0) - SKIP_DURATION_MS
+                    val newPosition = (player?.currentPosition ?: 0) - skipBackwardDurationMs
                     player?.seekTo(maxOf(0, newPosition))
                 }
                 CUSTOM_COMMAND_SKIP_FORWARD -> {
                     val duration = player?.duration ?: 0
-                    val newPosition = (player?.currentPosition ?: 0) + SKIP_DURATION_MS
+                    val newPosition = (player?.currentPosition ?: 0) + skipForwardDurationMs
                     player?.seekTo(minOf(duration, newPosition))
                 }
                 CUSTOM_COMMAND_PLAY_RANDOM_FAVORITE -> {

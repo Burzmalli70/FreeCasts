@@ -40,6 +40,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import dev.josephwilliams.freecasts.data.download.EpisodeDownloadManager
 import dev.josephwilliams.freecasts.data.playback.PlaybackManager
+import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
 import dev.josephwilliams.freecasts.data.remote.model.ItunesPodcast
 import dev.josephwilliams.freecasts.ui.components.DownloadProgressFab
 import dev.josephwilliams.freecasts.ui.components.DownloadsOverlay
@@ -61,10 +62,14 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     navController: NavHostController,
     playbackManager: PlaybackManager = koinInject(),
-    episodeDownloadManager: EpisodeDownloadManager = koinInject()
+    episodeDownloadManager: EpisodeDownloadManager = koinInject(),
+    userPreferencesRepository: UserPreferencesRepository = koinInject(),
 ) {
     val playbackState by playbackManager.state.collectAsState()
     val downloadState by episodeDownloadManager.state.collectAsState()
+    val userPreferences by userPreferencesRepository.userPreferences.collectAsState(
+        initial = UserPreferencesRepository.UserPreferences()
+    )
     var showNowPlaying by remember { mutableStateOf(false) }
     var showDownloads by remember { mutableStateOf(false) }
 
@@ -98,7 +103,9 @@ fun MainScreen(
                     onNextTrack = { playbackManager.playNext() },
                     onPreviousTrack = { playbackManager.playPrevious() },
                     onStopClick = { playbackManager.stop() },
-                    onExpandClick = { showNowPlaying = true }
+                    onExpandClick = { showNowPlaying = true },
+                    skipForwardIntervalSeconds = userPreferences.skipForwardIntervalSeconds,
+                    skipBackwardIntervalSeconds = userPreferences.skipBackwardIntervalSeconds,
                 )
                 
                 // Bottom navigation bar
@@ -270,7 +277,9 @@ fun MainScreen(
             onSkipBackward = { playbackManager.skipBackward() },
             onNextTrack = { playbackManager.playNext() },
             onPreviousTrack = { playbackManager.playPrevious() },
-            onSeekTo = { playbackManager.seekTo(it) }
+            onSeekTo = { playbackManager.seekTo(it) },
+            skipForwardIntervalSeconds = userPreferences.skipForwardIntervalSeconds,
+            skipBackwardIntervalSeconds = userPreferences.skipBackwardIntervalSeconds,
         )
     }
 }

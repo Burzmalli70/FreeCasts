@@ -48,16 +48,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.data.local.dao.EpisodeDao
 import dev.josephwilliams.freecasts.data.playback.PlaybackState
+import dev.josephwilliams.freecasts.data.preferences.DEFAULT_SKIP_INTERVAL_SECONDS
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,6 +69,8 @@ fun NowPlayingScreen(
     onNextTrack: () -> Unit,
     onPreviousTrack: () -> Unit,
     onSeekTo: (Long) -> Unit,
+    skipForwardIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS,
+    skipBackwardIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS,
     modifier: Modifier = Modifier,
     episodeDao: EpisodeDao = koinInject()
 ) {
@@ -196,37 +196,40 @@ fun NowPlayingScreen(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (playbackState.hasQueue) {
-                    IconButton(
-                        onClick = onPreviousTrack,
-                        enabled = playbackState.hasPreviousInQueue || playbackState.currentPositionMs > 3000,
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SkipPrevious,
-                            contentDescription = "Previous track",
-                            modifier = Modifier.size(36.dp),
-                            tint = if (playbackState.hasPreviousInQueue || playbackState.currentPositionMs > 3000) {
-                                MaterialTheme.colorScheme.onSurface
-                            } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            }
-                        )
-                    }
-                } else {
-                    IconButton(
-                        onClick = onSkipBackward,
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Icon(
-                            imageVector = ImageVector.vectorResource(R.drawable.ic_replay_30),
-                            contentDescription = "Skip back 30 seconds",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
+                val canGoToPreviousTrack =
+                    playbackState.hasPreviousInQueue || playbackState.currentPositionMs > 3000
+                val canGoToNextTrack =
+                    playbackState.hasNextInQueue || playbackState.canPlayRandomFavoriteNext
+                val disabledControlTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+
+                IconButton(
+                    onClick = onPreviousTrack,
+                    enabled = canGoToPreviousTrack,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SkipPrevious,
+                        contentDescription = "Previous track",
+                        modifier = Modifier.size(28.dp),
+                        tint = if (canGoToPreviousTrack) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            disabledControlTint
+                        }
+                    )
                 }
 
-                Spacer(modifier = Modifier.size(16.dp))
+                IconButton(
+                    onClick = onSkipBackward,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    SkipBackwardIcon(
+                        intervalSeconds = skipBackwardIntervalSeconds,
+                        iconSize = 28.dp,
+                    )
+                }
+
+                Spacer(modifier = Modifier.size(8.dp))
 
                 Box(
                     modifier = Modifier
@@ -256,36 +259,33 @@ fun NowPlayingScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.size(8.dp))
 
-                if (playbackState.hasQueue || playbackState.isRandomFavoriteMode) {
-                    IconButton(
-                        onClick = onNextTrack,
-                        enabled = playbackState.hasNextInQueue || playbackState.canPlayRandomFavoriteNext,
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SkipNext,
-                            contentDescription = "Next track",
-                            modifier = Modifier.size(36.dp),
-                            tint = if (playbackState.hasNextInQueue || playbackState.canPlayRandomFavoriteNext) {
-                                MaterialTheme.colorScheme.onSurface
-                            } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            }
-                        )
-                    }
-                } else {
-                    IconButton(
-                        onClick = onSkipForward,
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Icon(
-                            imageVector = ImageVector.vectorResource(R.drawable.ic_forward_30),
-                            contentDescription = "Skip forward 30 seconds",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
+                IconButton(
+                    onClick = onSkipForward,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    SkipForwardIcon(
+                        intervalSeconds = skipForwardIntervalSeconds,
+                        iconSize = 28.dp,
+                    )
+                }
+
+                IconButton(
+                    onClick = onNextTrack,
+                    enabled = canGoToNextTrack,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SkipNext,
+                        contentDescription = "Next track",
+                        modifier = Modifier.size(28.dp),
+                        tint = if (canGoToNextTrack) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            disabledControlTint
+                        }
+                    )
                 }
             }
 
@@ -314,6 +314,8 @@ fun NowPlayingOverlay(
     onNextTrack: () -> Unit,
     onPreviousTrack: () -> Unit,
     onSeekTo: (Long) -> Unit,
+    skipForwardIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS,
+    skipBackwardIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS,
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
@@ -330,7 +332,9 @@ fun NowPlayingOverlay(
             onSkipBackward = onSkipBackward,
             onNextTrack = onNextTrack,
             onPreviousTrack = onPreviousTrack,
-            onSeekTo = onSeekTo
+            onSeekTo = onSeekTo,
+            skipForwardIntervalSeconds = skipForwardIntervalSeconds,
+            skipBackwardIntervalSeconds = skipBackwardIntervalSeconds,
         )
     }
 }

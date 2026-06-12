@@ -34,14 +34,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import dev.josephwilliams.freecasts.R
 import dev.josephwilliams.freecasts.data.playback.PlaybackState
+import dev.josephwilliams.freecasts.data.preferences.DEFAULT_SKIP_INTERVAL_SECONDS
 
 @Composable
 fun MiniPlayer(
@@ -53,6 +51,8 @@ fun MiniPlayer(
     onPreviousTrack: () -> Unit,
     onStopClick: () -> Unit,
     onExpandClick: () -> Unit,
+    skipForwardIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS,
+    skipBackwardIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS,
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
@@ -142,38 +142,39 @@ fun MiniPlayer(
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Previous track (only when queue exists)
-                        if (playbackState.hasQueue) {
-                            IconButton(
-                                onClick = onPreviousTrack,
-                                enabled = playbackState.hasPreviousInQueue || playbackState.currentPositionMs > 3000,
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.SkipPrevious,
-                                    contentDescription = "Previous track",
-                                    modifier = Modifier.size(22.dp),
-                                    tint = if (playbackState.hasPreviousInQueue || playbackState.currentPositionMs > 3000) {
-                                        MaterialTheme.colorScheme.onSurface
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                                    }
-                                )
-                            }
-                        } else {
-                            // Skip backward 30s (when no queue)
-                            IconButton(
-                                onClick = onSkipBackward,
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Icon(
-                                    imageVector = ImageVector.vectorResource(R.drawable.ic_replay_30),
-                                    contentDescription = "Skip back 30 seconds",
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
+                        val canGoToPreviousTrack =
+                            playbackState.hasPreviousInQueue || playbackState.currentPositionMs > 3000
+                        val canGoToNextTrack =
+                            playbackState.hasNextInQueue || playbackState.canPlayRandomFavoriteNext
+                        val disabledControlTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+
+                        IconButton(
+                            onClick = onPreviousTrack,
+                            enabled = canGoToPreviousTrack,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SkipPrevious,
+                                contentDescription = "Previous track",
+                                modifier = Modifier.size(20.dp),
+                                tint = if (canGoToPreviousTrack) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    disabledControlTint
+                                }
+                            )
                         }
-                        
+
+                        IconButton(
+                            onClick = onSkipBackward,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            SkipBackwardIcon(
+                                intervalSeconds = skipBackwardIntervalSeconds,
+                                iconSize = 20.dp,
+                            )
+                        }
+
                         // Play/Pause button
                         Box(
                             modifier = Modifier
@@ -203,42 +204,36 @@ fun MiniPlayer(
                             }
                         }
                         
-                        // Next track (when queue exists or random favorite mode)
-                        if (playbackState.hasQueue || playbackState.isRandomFavoriteMode) {
-                            IconButton(
-                                onClick = onNextTrack,
-                                enabled = playbackState.hasNextInQueue || playbackState.canPlayRandomFavoriteNext,
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.SkipNext,
-                                    contentDescription = "Next track",
-                                    modifier = Modifier.size(22.dp),
-                                    tint = if (playbackState.hasNextInQueue || playbackState.canPlayRandomFavoriteNext) {
-                                        MaterialTheme.colorScheme.onSurface
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                                    }
-                                )
-                            }
-                        } else {
-                            // Skip forward 30s (when no queue)
-                            IconButton(
-                                onClick = onSkipForward,
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Icon(
-                                    imageVector = ImageVector.vectorResource(R.drawable.ic_forward_30),
-                                    contentDescription = "Skip forward 30 seconds",
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
+                        IconButton(
+                            onClick = onSkipForward,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            SkipForwardIcon(
+                                intervalSeconds = skipForwardIntervalSeconds,
+                                iconSize = 20.dp,
+                            )
                         }
-                        
-                        // Stop button
+
+                        IconButton(
+                            onClick = onNextTrack,
+                            enabled = canGoToNextTrack,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SkipNext,
+                                contentDescription = "Next track",
+                                modifier = Modifier.size(20.dp),
+                                tint = if (canGoToNextTrack) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    disabledControlTint
+                                }
+                            )
+                        }
+
                         IconButton(
                             onClick = onStopClick,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,

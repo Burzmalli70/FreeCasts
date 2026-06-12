@@ -47,6 +47,8 @@ class SettingsViewModel(
                         autoDownloadOnSubscribe = preferences.autoDownloadOnSubscribe,
                         keepFavoriteDownloads = preferences.keepFavoriteDownloads,
                         deletePlayedDownloads = preferences.deletePlayedDownloads,
+                        skipForwardIntervalSeconds = preferences.skipForwardIntervalSeconds,
+                        skipBackwardIntervalSeconds = preferences.skipBackwardIntervalSeconds,
                         isLoading = false
                     )
                 }
@@ -69,6 +71,18 @@ class SettingsViewModel(
     fun setDeletePlayedDownloads(enabled: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.setDeletePlayedDownloads(enabled)
+        }
+    }
+
+    fun setSkipForwardIntervalSeconds(seconds: Int) {
+        viewModelScope.launch {
+            userPreferencesRepository.setSkipForwardIntervalSeconds(seconds)
+        }
+    }
+
+    fun setSkipBackwardIntervalSeconds(seconds: Int) {
+        viewModelScope.launch {
+            userPreferencesRepository.setSkipBackwardIntervalSeconds(seconds)
         }
     }
 
@@ -301,6 +315,8 @@ data class SettingsState(
     val autoDownloadOnSubscribe: Boolean = false,
     val keepFavoriteDownloads: Boolean = false,
     val deletePlayedDownloads: Boolean = false,
+    val skipForwardIntervalSeconds: Int = 30,
+    val skipBackwardIntervalSeconds: Int = 30,
     val isLoading: Boolean = true,
     val isExporting: Boolean = false,
     val isImporting: Boolean = false,

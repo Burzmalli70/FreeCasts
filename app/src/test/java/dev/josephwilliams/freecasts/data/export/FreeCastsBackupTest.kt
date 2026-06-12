@@ -123,12 +123,50 @@ class FreeCastsBackupTest {
         userPreferencesRepository.setAutoDownloadOnSubscribe(true)
         userPreferencesRepository.setDeletePlayedDownloads(true)
         userPreferencesRepository.setRandomPodcastId(podcastId)
+        userPreferencesRepository.setSkipForwardIntervalSeconds(45)
+        userPreferencesRepository.setSkipBackwardIntervalSeconds(20)
 
         val backup = backupBuilder.buildBackup()
 
         assertEquals(true, backup.appSettings?.autoDownloadOnSubscribe)
         assertEquals(true, backup.appSettings?.deletePlayedDownloads)
         assertEquals("https://example.com/feed.xml", backup.appSettings?.randomPodcastFavoriteFeedUrl)
+        assertEquals(45, backup.appSettings?.skipForwardIntervalSeconds)
+        assertEquals(20, backup.appSettings?.skipBackwardIntervalSeconds)
+    }
+
+    @Test
+    fun applyExportedAppSettings_restoresSkipIntervals() = runTest {
+        applyExportedAppSettings(
+            userPreferencesRepository = userPreferencesRepository,
+            podcastDao = database.podcastDao(),
+            settings = ExportedAppSettings(
+                skipForwardIntervalSeconds = 60,
+                skipBackwardIntervalSeconds = 10,
+            ),
+        )
+
+        val preferences = userPreferencesRepository.userPreferences.first()
+        assertEquals(60, preferences.skipForwardIntervalSeconds)
+        assertEquals(10, preferences.skipBackwardIntervalSeconds)
+    }
+
+    @Test
+    fun decodeLegacyBackup_usesDefaultSkipIntervals() {
+        val json = Json { ignoreUnknownKeys = true }
+        val legacyJson = """
+            {
+              "version": 4,
+              "podcasts": [],
+              "episodeStates": [],
+              "appSettings": { "autoDownloadOnSubscribe": true }
+            }
+        """.trimIndent()
+
+        val backup = json.decodeFromString<FreeCastsBackup>(legacyJson)
+
+        assertEquals(30, backup.appSettings?.skipForwardIntervalSeconds)
+        assertEquals(30, backup.appSettings?.skipBackwardIntervalSeconds)
     }
 
     @Test

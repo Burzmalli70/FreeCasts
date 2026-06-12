@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -33,6 +34,8 @@ class UserPreferencesRepository(
         val PENDING_EPISODE_STATES_JSON = stringPreferencesKey("pending_episode_states_json")
         val PENDING_PLAYLIST_EPISODES_JSON = stringPreferencesKey("pending_playlist_episodes_json")
         val FAVORITE_DOWNLOADS_AFTER_IMPORT_PENDING = booleanPreferencesKey("favorite_downloads_after_import_pending")
+        val SKIP_FORWARD_INTERVAL_SECONDS = intPreferencesKey("skip_forward_interval_seconds")
+        val SKIP_BACKWARD_INTERVAL_SECONDS = intPreferencesKey("skip_backward_interval_seconds")
     }
 
     private val json = Json {
@@ -46,7 +49,9 @@ class UserPreferencesRepository(
         val autoDownloadOnSubscribe: Boolean = false,
         val keepFavoriteDownloads: Boolean = false,
         val deletePlayedDownloads: Boolean = false,
-        val randomPodcastFavoriteId: Long = -1L
+        val randomPodcastFavoriteId: Long = -1L,
+        val skipForwardIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS,
+        val skipBackwardIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS,
     )
     
     /**
@@ -57,7 +62,13 @@ class UserPreferencesRepository(
             autoDownloadOnSubscribe = preferences[PreferencesKeys.AUTO_DOWNLOAD_ON_SUBSCRIBE] ?: false,
             keepFavoriteDownloads = preferences[PreferencesKeys.KEEP_FAVORITE_DOWNLOADS] ?: false,
             deletePlayedDownloads = preferences[PreferencesKeys.DELETE_PLAYED_DOWNLOADS] ?: false,
-            randomPodcastFavoriteId = preferences[PreferencesKeys.RANDOM_PODCAST_FAVORITE_ID] ?: -1L
+            randomPodcastFavoriteId = preferences[PreferencesKeys.RANDOM_PODCAST_FAVORITE_ID] ?: -1L,
+            skipForwardIntervalSeconds = normalizeSkipIntervalSeconds(
+                preferences[PreferencesKeys.SKIP_FORWARD_INTERVAL_SECONDS] ?: DEFAULT_SKIP_INTERVAL_SECONDS
+            ),
+            skipBackwardIntervalSeconds = normalizeSkipIntervalSeconds(
+                preferences[PreferencesKeys.SKIP_BACKWARD_INTERVAL_SECONDS] ?: DEFAULT_SKIP_INTERVAL_SECONDS
+            ),
         )
     }
     
@@ -128,6 +139,20 @@ class UserPreferencesRepository(
     suspend fun clearRandomPodcastId() {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.RANDOM_PODCAST_FAVORITE_ID] = -1L
+        }
+    }
+
+    suspend fun setSkipForwardIntervalSeconds(seconds: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SKIP_FORWARD_INTERVAL_SECONDS] =
+                normalizeSkipIntervalSeconds(seconds)
+        }
+    }
+
+    suspend fun setSkipBackwardIntervalSeconds(seconds: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SKIP_BACKWARD_INTERVAL_SECONDS] =
+                normalizeSkipIntervalSeconds(seconds)
         }
     }
 

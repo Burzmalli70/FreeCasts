@@ -4,6 +4,7 @@ import dev.josephwilliams.freecasts.data.local.dao.PlaylistDao
 import dev.josephwilliams.freecasts.data.local.dao.PodcastDao
 import dev.josephwilliams.freecasts.data.local.entity.Podcast
 import dev.josephwilliams.freecasts.data.preferences.UserPreferencesRepository
+import dev.josephwilliams.freecasts.data.preferences.normalizeSkipIntervalSeconds
 import dev.josephwilliams.freecasts.tools.normalizeFeedUrl
 import kotlinx.coroutines.flow.first
 
@@ -34,6 +35,8 @@ internal suspend fun UserPreferencesRepository.toExportedAppSettings(
         keepFavoriteDownloads = preferences.keepFavoriteDownloads,
         deletePlayedDownloads = preferences.deletePlayedDownloads,
         randomPodcastFavoriteFeedUrl = randomFeedUrl,
+        skipForwardIntervalSeconds = preferences.skipForwardIntervalSeconds,
+        skipBackwardIntervalSeconds = preferences.skipBackwardIntervalSeconds,
     )
 }
 
@@ -68,6 +71,12 @@ internal suspend fun applyExportedAppSettings(
     userPreferencesRepository.setAutoDownloadOnSubscribe(settings.autoDownloadOnSubscribe)
     userPreferencesRepository.setKeepFavoriteDownloads(settings.keepFavoriteDownloads)
     userPreferencesRepository.setDeletePlayedDownloads(settings.deletePlayedDownloads)
+    userPreferencesRepository.setSkipForwardIntervalSeconds(
+        normalizeSkipIntervalSeconds(settings.skipForwardIntervalSeconds)
+    )
+    userPreferencesRepository.setSkipBackwardIntervalSeconds(
+        normalizeSkipIntervalSeconds(settings.skipBackwardIntervalSeconds)
+    )
 
     val randomFeedUrl = settings.randomPodcastFavoriteFeedUrl?.normalizeFeedUrl()
     if (randomFeedUrl.isNullOrBlank()) {
