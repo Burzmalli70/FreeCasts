@@ -32,41 +32,27 @@ class PlaylistImportSupport(
     suspend fun importPlaylists(playlists: List<ExportedPlaylist>): PlaylistImportResult {
         val playlistIdMap = mutableMapOf<Long, Long>()
         var importedPlaylistCount = 0
-        var updatedPlaylistCount = 0
 
         for (exported in playlists) {
-            val existing = playlistDao.getById(exported.exportId)
-            val localId = if (existing != null) {
-                playlistDao.update(
-                    existing.copy(
-                        name = exported.name,
-                        description = exported.description,
-                        removeAfterListening = exported.removeAfterListening,
-                        createdAt = exported.createdAt ?: existing.createdAt,
-                        updatedAt = exported.updatedAt ?: System.currentTimeMillis(),
-                    )
+            // Never treat exportId as a local primary key. Matching getById(exportId) on another
+            // device can overwrite an unrelated playlist and clearPlaylist its episodes.
+            val localId = playlistDao.insert(
+                Playlist(
+                    name = exported.name,
+                    description = exported.description,
+                    removeAfterListening = exported.removeAfterListening,
+                    createdAt = exported.createdAt ?: System.currentTimeMillis(),
+                    updatedAt = exported.updatedAt ?: System.currentTimeMillis(),
                 )
-                updatedPlaylistCount++
-                existing.id
-            } else {
-                importedPlaylistCount++
-                playlistDao.insert(
-                    Playlist(
-                        name = exported.name,
-                        description = exported.description,
-                        removeAfterListening = exported.removeAfterListening,
-                        createdAt = exported.createdAt ?: System.currentTimeMillis(),
-                        updatedAt = exported.updatedAt ?: System.currentTimeMillis(),
-                    )
-                )
-            }
+            )
             playlistIdMap[exported.exportId] = localId
+            importedPlaylistCount++
         }
 
         return PlaylistImportResult(
             playlistIdMap = playlistIdMap,
             importedPlaylistCount = importedPlaylistCount,
-            updatedPlaylistCount = updatedPlaylistCount,
+            updatedPlaylistCount = 0,
             appliedPlaylistEpisodeCount = 0,
             pendingPlaylistEpisodeCount = 0,
             failedPlaylistEpisodeCount = 0,

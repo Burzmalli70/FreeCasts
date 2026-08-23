@@ -71,8 +71,9 @@ object RssParser {
                             }
                             tagName.equals("item", ignoreCase = true) -> {
                                 currentEpisode?.let { episode ->
-                                    if (episode.title.isNotBlank() || episode.audioUrl.isNotBlank()) {
-                                        episodes.add(episode)
+                                    val withStableGuid = ensureStableEpisodeGuid(episode)
+                                    if (withStableGuid.title.isNotBlank() || withStableGuid.audioUrl.isNotBlank()) {
+                                        episodes.add(withStableGuid)
                                     }
                                 }
                                 currentEpisode = null
@@ -239,6 +240,20 @@ object RssParser {
         }
         
         return episode
+    }
+
+    /**
+     * GUID is unique in the local DB. Missing or blank RSS guids would otherwise collide
+     * (often as "") and, under REPLACE conflict handling, delete prior rows and CASCADE
+     * playlist memberships. Prefer enclosure URL, then a stable title/pubDate key.
+     */
+    internal fun ensureStableEpisodeGuid(episode: Episode): Episode {
+        if (episode.guid.isNotBlank()) return episode
+        val fallback = when {
+            episode.audioUrl.isNotBlank() -> episode.audioUrl
+            else -> "title:${episode.title}|pub:${episode.publishedAt ?: 0}"
+        }
+        return episode.copy(guid = fallback)
     }
 
     data class ParseResult(

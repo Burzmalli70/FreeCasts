@@ -14,10 +14,14 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PodcastDao {
     
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    /**
+     * Inserts a podcast. Conflicts on unique feedUrl are ignored so the existing row
+     * (and cascaded episodes / playlist memberships) are preserved.
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(podcast: Podcast): Long
     
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(podcasts: List<Podcast>): List<Long>
     
     @Update

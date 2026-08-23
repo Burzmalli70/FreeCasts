@@ -54,6 +54,57 @@ class RssParserTest {
         }
     }
 
+    @Test
+    fun `uses enclosure url as guid when guid element is missing`() {
+        val xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <rss version="2.0">
+              <channel>
+                <title>No Guid Show</title>
+                <item>
+                  <title>Episode Without Guid</title>
+                  <enclosure url="https://cdn.example.com/ep1.mp3" type="audio/mpeg" />
+                  <pubDate>Mon, 01 Jan 2024 12:00:00 GMT</pubDate>
+                </item>
+              </channel>
+            </rss>
+        """.trimIndent()
+
+        val result = RssParser.parsePodcastFeed(xml.byteInputStream())
+
+        assertNotNull(result)
+        assertEquals(1, result!!.episodes.size)
+        assertEquals("https://cdn.example.com/ep1.mp3", result.episodes.first().guid)
+    }
+
+    @Test
+    fun `assigns distinct fallback guids when guid and enclosure are missing`() {
+        val xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <rss version="2.0">
+              <channel>
+                <title>Title Only Show</title>
+                <item>
+                  <title>First</title>
+                  <pubDate>Mon, 01 Jan 2024 12:00:00 GMT</pubDate>
+                </item>
+                <item>
+                  <title>Second</title>
+                  <pubDate>Tue, 02 Jan 2024 12:00:00 GMT</pubDate>
+                </item>
+              </channel>
+            </rss>
+        """.trimIndent()
+
+        val result = RssParser.parsePodcastFeed(xml.byteInputStream())
+
+        assertNotNull(result)
+        assertEquals(2, result!!.episodes.size)
+        val guids = result.episodes.map { it.guid }
+        assertTrue(guids.all { it.isNotBlank() })
+        assertEquals(2, guids.toSet().size)
+    }
+
     private fun parseResource(name: String): RssParser.ParseResult? {
         val inputStream = javaClass.classLoader!!.getResourceAsStream(name)
         checkNotNull(inputStream) { "Missing test resource: $name" }

@@ -38,8 +38,11 @@ class PodcastEpisodeSyncHandler(
             emptyList()
         } else {
             val insertedIds = episodeDao.insertAll(newEpisodes)
-            newEpisodes.mapIndexed { index, episode ->
-                episode.copy(id = insertedIds[index])
+            newEpisodes.mapIndexedNotNull { index, episode ->
+                val id = insertedIds[index]
+                // OnConflictStrategy.IGNORE returns -1 for skipped conflicts; never treat
+                // those as newly inserted (would risk bad auto-add / pending apply).
+                if (id > 0) episode.copy(id = id) else null
             }
         }
 

@@ -63,6 +63,18 @@ class EpisodeDaoTest {
     )
     
     @Test
+    fun insertConflictingGuidIsIgnoredAndPreservesExistingRow() = runTest {
+        val originalId = episodeDao.insert(createTestEpisode(guid = "dup", title = "Original"))
+        val ignoredId = episodeDao.insert(createTestEpisode(guid = "dup", title = "Duplicate"))
+
+        assertEquals(-1L, ignoredId)
+        val retrieved = episodeDao.getByGuid("dup")
+        assertNotNull(retrieved)
+        assertEquals(originalId, retrieved?.id)
+        assertEquals("Original", retrieved?.title)
+    }
+    
+    @Test
     fun insertAndGetEpisode() = runTest {
         val episode = createTestEpisode()
         val id = episodeDao.insert(episode)

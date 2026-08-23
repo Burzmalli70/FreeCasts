@@ -141,12 +141,19 @@ class PodcastRepository(
                     podcastDao.insert(podcast)
                 }
                 
-                // Save episodes
-                val episodesWithPodcastId = parseResult.episodes.map { episode ->
-                    episode.copy(podcastId = podcastId, cached = false)
+                // Insert only episodes whose GUID is not already stored. Blind insertAll of
+                // the full feed would conflict on guid; with REPLACE that deleted old rows and
+                // CASCADE-cleared playlist memberships on re-subscribe.
+                val existingGuids = episodeDao.getAllByPodcastId(podcastId).map { it.guid }.toSet()
+                val newEpisodes = parseResult.episodes
+                    .filter { it.guid !in existingGuids }
+                    .map { episode -> episode.copy(podcastId = podcastId, cached = false) }
+                if (newEpisodes.isNotEmpty()) {
+                    episodeDao.insertAll(newEpisodes)
                 }
-                episodeDao.insertAll(episodesWithPodcastId)
-                
+                podcastDao.updateLastFetchedAt(podcastId)
+                podcastDao.updateEpisodeCount(podcastId, parseResult.episodes.size)
+
                 Result.success(podcastId)
             } catch (e: Exception) {
                 Result.failure(e)

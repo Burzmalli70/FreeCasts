@@ -15,10 +15,19 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface EpisodeDao {
     
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    /**
+     * Inserts an episode. Conflicts on unique [Episode.guid] are ignored so the existing
+     * row (and its id) are preserved — REPLACE would delete the old row and CASCADE-remove
+     * playlist memberships.
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(episode: Episode): Long
     
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    /**
+     * Inserts episodes. GUID conflicts are ignored (see [insert]).
+     * @return row ids for inserted rows, or -1 for ignored conflicts
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(episodes: List<Episode>): List<Long>
     
     @Update
