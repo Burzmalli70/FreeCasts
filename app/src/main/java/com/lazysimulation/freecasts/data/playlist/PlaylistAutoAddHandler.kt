@@ -8,9 +8,9 @@ import com.lazysimulation.freecasts.data.local.entity.PlaylistEpisodeCrossRef
 /**
  * Adds episodes to playlists that have auto-add enabled for a podcast.
  *
- * Per design: only the most recent episode for a podcast is eligible, and it must be unplayed.
- * If the most recent episode is already played, nothing is added for that podcast — even when
- * older unplayed episodes exist.
+ * On sync, every newly discovered unplayed episode is added to matching playlists.
+ * When auto-add is first enabled on a playlist, only the most recent unplayed episode
+ * is seeded (if the podcast's latest episode is already played, nothing is added).
  */
 class PlaylistAutoAddHandler(
     private val playlistDao: PlaylistDao,
@@ -18,7 +18,7 @@ class PlaylistAutoAddHandler(
 ) {
     /**
      * Adds newly synced episodes to every playlist configured to auto-add from [podcastId].
-     * Only the most recent unplayed episode is considered, and it must be among [newEpisodes].
+     * All unplayed episodes in [newEpisodes] are added, oldest first.
      */
     suspend fun addNewEpisodesToAutoAddPlaylists(
         podcastId: Long,
@@ -26,12 +26,13 @@ class PlaylistAutoAddHandler(
     ) {
         if (newEpisodes.isEmpty()) return
 
-        val episodeToAdd = resolveAutoAddEpisode(
-            podcastId = podcastId,
-            restrictToNewEpisodes = newEpisodes
-        ) ?: return
+        val episodesToAdd = newEpisodes
+            .filter { !it.isPlayed && it.id > 0 }
+            .sortedBy { it.publishedAt }
 
-        addEpisodeToAutoAddPlaylists(podcastId, episodeToAdd)
+        for (episode in episodesToAdd) {
+            addEpisodeToAutoAddPlaylists(podcastId, episode)
+        }
     }
 
     /**
@@ -39,27 +40,10 @@ class PlaylistAutoAddHandler(
      * Used when enabling auto-add on a playlist (e.g. on create/edit save).
      */
     suspend fun addMostRecentUnplayedEpisodeToPlaylist(playlistId: Long, podcastId: Long) {
-        val episodeToAdd = resolveAutoAddEpisode(
-            podcastId = podcastId,
-            restrictToNewEpisodes = null
-        ) ?: return
+        val mostRecentEpisode = episodeDao.getAllByPodcastId(podcastId).firstOrNull() ?: return
+        if (mostRecentEpisode.isPlayed || mostRecentEpisode.id <= 0) return
 
-        addEpisodeToPlaylist(playlistId, episodeToAdd)
-    }
-
-    private suspend fun resolveAutoAddEpisode(
-        podcastId: Long,
-        restrictToNewEpisodes: List<Episode>?
-    ): Episode? {
-        val mostRecentEpisode = episodeDao.getAllByPodcastId(podcastId).firstOrNull() ?: return null
-        if (mostRecentEpisode.isPlayed || mostRecentEpisode.id <= 0) return null
-
-        if (restrictToNewEpisodes != null) {
-            val newEpisodeIds = restrictToNewEpisodes.map { it.id }.toSet()
-            if (mostRecentEpisode.id !in newEpisodeIds) return null
-        }
-
-        return mostRecentEpisode
+        addEpisodeToPlaylist(playlistId, mostRecentEpisode)
     }
 
     private suspend fun addEpisodeToAutoAddPlaylists(podcastId: Long, episode: Episode) {
