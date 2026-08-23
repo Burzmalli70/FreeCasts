@@ -3,5 +3,6 @@
     <string name="auto_browse_subscriptions">Subscriptions</string>
     <string name="auto_browse_downloads">Downloads</string>
     <string name="auto_browse_playlists">Playlists</string>
+    <string name="auto_browse_play_random_favorite">Play Random Favorite</string>
     <string name="allowed_caller_log">Add caller to allowed_media_browser_callers.xml:\n  name=%1$s\n  package=%2$s\n  signature=%3$s</string>
 </resources>

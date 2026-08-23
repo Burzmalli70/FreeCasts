@@ -28,6 +28,7 @@ import com.lazysimulation.freecasts.data.local.dao.PodcastDao
 import com.lazysimulation.freecasts.data.local.entity.DownloadStatus
 import com.lazysimulation.freecasts.data.local.entity.Episode
 import com.lazysimulation.freecasts.data.playback.auto.AutoMediaBrowser
+import com.lazysimulation.freecasts.data.playback.auto.AutoMediaIds
 import com.lazysimulation.freecasts.data.playback.auto.PackageValidator
 import com.lazysimulation.freecasts.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
@@ -280,64 +281,75 @@ class PlaybackService : MediaLibraryService() {
 
     fun playRandomFavorite(excludeCurrentEpisode: Boolean = false) {
         serviceScope.launch(Dispatchers.Main) {
-            val currentEpisodeId = if (excludeCurrentEpisode) {
-                player?.currentMediaItem?.mediaMetadata?.extras?.getLong(EXTRA_EPISODE_ID, -1L)?.takeIf { it > 0 }
-            } else {
-                null
-            }
-
-            if (excludeCurrentEpisode && currentEpisodeId != null) {
-                savePlaybackPosition(player?.currentPosition ?: 0)
-                withContext(Dispatchers.IO) {
-                    episodeDao.incrementReplayPriority(currentEpisodeId)
-                }
-            }
-
-            val favorites = withContext(Dispatchers.IO) {
-                val favoriteId = userPreferencesRepository.randomPodcastId.first()
-                if (favoriteId >= 0L) {
-                    val podcastFavorites = episodeDao.getFavoriteEpisodesForPodcast(favoriteId)
-                    if (podcastFavorites.isNotEmpty()) {
-                        val minPriority = podcastFavorites.minOf { it.replayPriority }
-                        podcastFavorites.filter { it.replayPriority == minPriority }
-                    } else {
-                        emptyList()
-                    }
-                } else {
-                    episodeDao.getFavoritesWithLowestReplayPriority()
-                }
-            }
-
-            if (favorites.isEmpty()) return@launch
-
-            val candidates = if (currentEpisodeId != null) {
-                favorites.filter { it.id != currentEpisodeId }
-            } else {
-                favorites
-            }
-            val pool = candidates.ifEmpty { favorites }
-
-            val randomEpisode = pool.random()
-            val (podcastTitle, localFilePath) = withContext(Dispatchers.IO) {
-                val podcast = podcastDao.getById(randomEpisode.podcastId)
-                val download = downloadDao.getByEpisodeId(randomEpisode.id)
-                val filePath = if (download?.status == DownloadStatus.COMPLETED) {
-                    download.localFilePath
-                } else {
-                    null
-                }
-                (podcast?.title ?: "") to filePath
-            }
-            val mediaItem = randomEpisode.toMediaItem(
-                podcastTitle = podcastTitle,
-                randomFavoriteMode = true,
-                localFilePath = localFilePath
-            )
-
+            val mediaItem = resolveRandomFavoriteMediaItem(excludeCurrentEpisode) ?: return@launch
             player?.setMediaItem(mediaItem)
             player?.prepare()
             player?.play()
         }
+    }
+
+    /**
+     * Picks a random favorite episode and builds a playable [MediaItem].
+     * Used by in-app / custom-command playback and Android Auto browse.
+     */
+    private suspend fun resolveRandomFavoriteMediaItem(
+        excludeCurrentEpisode: Boolean = false,
+    ): MediaItem? {
+        val currentEpisodeId = if (excludeCurrentEpisode) {
+            player?.currentMediaItem?.mediaMetadata?.extras
+                ?.getLong(EXTRA_EPISODE_ID, -1L)
+                ?.takeIf { it > 0 }
+        } else {
+            null
+        }
+
+        if (excludeCurrentEpisode && currentEpisodeId != null) {
+            savePlaybackPosition(player?.currentPosition ?: 0)
+            withContext(Dispatchers.IO) {
+                episodeDao.incrementReplayPriority(currentEpisodeId)
+            }
+        }
+
+        val favorites = withContext(Dispatchers.IO) {
+            val favoriteId = userPreferencesRepository.randomPodcastId.first()
+            if (favoriteId >= 0L) {
+                val podcastFavorites = episodeDao.getFavoriteEpisodesForPodcast(favoriteId)
+                if (podcastFavorites.isNotEmpty()) {
+                    val minPriority = podcastFavorites.minOf { it.replayPriority }
+                    podcastFavorites.filter { it.replayPriority == minPriority }
+                } else {
+                    emptyList()
+                }
+            } else {
+                episodeDao.getFavoritesWithLowestReplayPriority()
+            }
+        }
+
+        if (favorites.isEmpty()) return null
+
+        val candidates = if (currentEpisodeId != null) {
+            favorites.filter { it.id != currentEpisodeId }
+        } else {
+            favorites
+        }
+        val pool = candidates.ifEmpty { favorites }
+
+        val randomEpisode = pool.random()
+        val (podcastTitle, localFilePath) = withContext(Dispatchers.IO) {
+            val podcast = podcastDao.getById(randomEpisode.podcastId)
+            val download = downloadDao.getByEpisodeId(randomEpisode.id)
+            val filePath = if (download?.status == DownloadStatus.COMPLETED) {
+                download.localFilePath
+            } else {
+                null
+            }
+            (podcast?.title ?: "") to filePath
+        }
+        return randomEpisode.toMediaItem(
+            podcastTitle = podcastTitle,
+            randomFavoriteMode = true,
+            localFilePath = localFilePath
+        )
     }
     
     private fun savePlaybackPosition(position: Long) {
@@ -372,6 +384,74 @@ class PlaybackService : MediaLibraryService() {
                 future.set(block())
             } catch (_: Exception) {
                 future.set(LibraryResult.ofError<T>(SessionError.ERROR_UNKNOWN))
+            }
+        }
+        return future
+    }
+
+    /**
+     * Resolves browse-tree media IDs into playable items for Android Auto and other
+     * external controllers. Auto typically sends mediaId-only items when the user
+     * selects something to play.
+     */
+    private suspend fun resolveMediaItemsForPlayback(mediaItems: List<MediaItem>): List<MediaItem> {
+        val resolved = mutableListOf<MediaItem>()
+        for (item in mediaItems) {
+            resolveMediaItemForPlayback(item)?.let { resolved.add(it) }
+        }
+        return resolved
+    }
+
+    private suspend fun resolveMediaItemForPlayback(item: MediaItem): MediaItem? {
+        when {
+            item.mediaId == AutoMediaIds.PLAY_RANDOM_FAVORITE -> {
+                return resolveRandomFavoriteMediaItem(excludeCurrentEpisode = false)
+            }
+            item.hasPlayableUri() -> return item
+            else -> {
+                val lookedUp = withContext(Dispatchers.IO) {
+                    autoMediaBrowser.getItem(item.mediaId)
+                } ?: return null
+                return when {
+                    lookedUp.mediaId == AutoMediaIds.PLAY_RANDOM_FAVORITE ->
+                        resolveRandomFavoriteMediaItem(excludeCurrentEpisode = false)
+                    lookedUp.hasPlayableUri() -> lookedUp
+                    else -> null
+                }
+            }
+        }
+    }
+
+    private fun resolveMediaItemsFuture(
+        mediaItems: List<MediaItem>,
+    ): ListenableFuture<List<MediaItem>> {
+        val future = SettableFuture.create<List<MediaItem>>()
+        serviceScope.launch {
+            try {
+                future.set(resolveMediaItemsForPlayback(mediaItems))
+            } catch (_: Exception) {
+                future.set(mediaItems)
+            }
+        }
+        return future
+    }
+
+    private fun resolveMediaItemsWithStartPositionFuture(
+        mediaItems: List<MediaItem>,
+        startIndex: Int,
+        startPositionMs: Long,
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+        val future = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
+        serviceScope.launch {
+            try {
+                val resolved = resolveMediaItemsForPlayback(mediaItems)
+                future.set(
+                    MediaSession.MediaItemsWithStartPosition(resolved, startIndex, startPositionMs)
+                )
+            } catch (_: Exception) {
+                future.set(
+                    MediaSession.MediaItemsWithStartPosition(mediaItems, startIndex, startPositionMs)
+                )
             }
         }
         return future
@@ -432,6 +512,24 @@ class PlaybackService : MediaLibraryService() {
             return Futures.immediateFuture(
                 androidx.media3.session.SessionResult(androidx.media3.session.SessionResult.RESULT_SUCCESS)
             )
+        }
+
+        override fun onAddMediaItems(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            mediaItems: MutableList<MediaItem>,
+        ): ListenableFuture<List<MediaItem>> {
+            return resolveMediaItemsFuture(mediaItems)
+        }
+
+        override fun onSetMediaItems(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            mediaItems: MutableList<MediaItem>,
+            startIndex: Int,
+            startPositionMs: Long,
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            return resolveMediaItemsWithStartPositionFuture(mediaItems, startIndex, startPositionMs)
         }
 
         override fun onGetLibraryRoot(
@@ -539,6 +637,8 @@ fun PlayingEpisode.toMediaItem(): MediaItem {
                 .setTitle(episodeTitle)
                 .setArtist(podcastName)
                 .setArtworkUri(artworkUrl?.let { android.net.Uri.parse(it) })
+                .setIsBrowsable(false)
+                .setIsPlayable(true)
                 .setExtras(extras)
                 .build()
         )
@@ -596,8 +696,16 @@ fun Episode.toMediaItem(
                 .setTitle(title)
                 .setArtist(podcastTitle)
                 .setArtworkUri(artworkUrl?.let { android.net.Uri.parse(it) })
+                .setIsBrowsable(false)
+                .setIsPlayable(true)
                 .setExtras(extras)
                 .build()
         )
         .build()
+}
+
+private fun MediaItem.hasPlayableUri(): Boolean {
+    val uri = localConfiguration?.uri?.toString()
+        ?: requestMetadata.mediaUri?.toString()
+    return !uri.isNullOrBlank()
 }

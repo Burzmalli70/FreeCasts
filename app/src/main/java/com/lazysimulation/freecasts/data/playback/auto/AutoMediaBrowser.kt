@@ -68,12 +68,7 @@ class AutoMediaBrowser(
                     .map { it.toBrowsableMediaItem() }
             }
             AutoMediaIds.DOWNLOADS -> loadDownloadedEpisodes(offset, limit)
-            AutoMediaIds.PLAYLISTS -> {
-                playlistDao.getAllOrderedByName()
-                    .drop(offset)
-                    .take(limit)
-                    .map { it.toBrowsableMediaItem() }
-            }
+            AutoMediaIds.PLAYLISTS -> loadPlaylistsWithRandomFavorite(offset, limit)
             else -> {
                 AutoMediaIds.parsePodcastId(parentId)?.let { podcastId ->
                     return episodeDao.getAllByPodcastId(podcastId)
@@ -94,6 +89,9 @@ class AutoMediaBrowser(
     }
 
     suspend fun getItem(mediaId: String): MediaItem? {
+        if (mediaId == AutoMediaIds.PLAY_RANDOM_FAVORITE) {
+            return createPlayRandomFavoriteItem()
+        }
         AutoMediaIds.parsePodcastId(mediaId)?.let { podcastId ->
             return podcastDao.getById(podcastId)?.toBrowsableMediaItem()
         }
@@ -120,6 +118,32 @@ class AutoMediaBrowser(
             .map { episode -> episode.toPlayableMediaItem() }
     }
 
+    private suspend fun loadPlaylistsWithRandomFavorite(offset: Int, limit: Int): List<MediaItem> {
+        val playlists = playlistDao.getAllOrderedByName()
+        val items = mutableListOf<MediaItem>()
+        var remaining = limit
+        val playlistOffset: Int
+
+        if (offset == 0) {
+            items.add(createPlayRandomFavoriteItem())
+            remaining -= 1
+            playlistOffset = 0
+        } else {
+            // Account for the synthetic "Play Random Favorite" item on page 0.
+            playlistOffset = offset - 1
+        }
+
+        if (remaining > 0) {
+            items.addAll(
+                playlists
+                    .drop(playlistOffset)
+                    .take(remaining)
+                    .map { it.toBrowsableMediaItem() }
+            )
+        }
+        return items
+    }
+
     private suspend fun loadDownloadedEpisodes(offset: Int, limit: Int): List<MediaItem> {
         val downloads = downloadDao.getCompleted(limit + offset)
         return downloads
@@ -128,6 +152,20 @@ class AutoMediaBrowser(
             .mapNotNull { download ->
                 episodeDao.getById(download.episodeId)?.toPlayableMediaItem()
             }
+    }
+
+    private fun createPlayRandomFavoriteItem(): MediaItem {
+        return MediaItem.Builder()
+            .setMediaId(AutoMediaIds.PLAY_RANDOM_FAVORITE)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(context.getString(R.string.auto_browse_play_random_favorite))
+                    .setArtworkUri(drawableUri(R.drawable.ic_random_favorite))
+                    .setIsBrowsable(false)
+                    .setIsPlayable(true)
+                    .build()
+            )
+            .build()
     }
 
     private fun Podcast.toBrowsableMediaItem(): MediaItem {
