@@ -11,11 +11,11 @@ ksp {
 }
 
 android {
-    namespace = "dev.josephwilliams.freecasts"
+    namespace = "com.lazysimulation.freecasts"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "dev.josephwilliams.freecasts"
+        applicationId = "com.lazysimulation.freecasts"
         minSdk = 28
         targetSdk = 36
         versionCode = 1
