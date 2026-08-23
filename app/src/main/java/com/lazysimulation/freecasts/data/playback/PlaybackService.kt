@@ -2,7 +2,9 @@ package com.lazysimulation.freecasts.data.playback
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -48,6 +50,8 @@ import org.koin.android.ext.android.inject
 class PlaybackService : MediaLibraryService() {
     
     companion object {
+        private const val TAG = "PlaybackService"
+
         const val CUSTOM_COMMAND_PLAY_RANDOM_FAVORITE = "PLAY_RANDOM_FAVORITE"
         
         const val EXTRA_EPISODE_ID = "episode_id"
@@ -391,34 +395,49 @@ class PlaybackService : MediaLibraryService() {
 
     /**
      * Resolves browse-tree media IDs into playable items for Android Auto and other
-     * external controllers. Auto typically sends mediaId-only items when the user
-     * selects something to play.
+     * external controllers. Auto typically sends mediaId-only items (or items whose
+     * [MediaItem.localConfiguration] was stripped across process boundaries).
+     * ExoPlayer requires localConfiguration.uri, so we must rebuild items here.
      */
     private suspend fun resolveMediaItemsForPlayback(mediaItems: List<MediaItem>): List<MediaItem> {
         val resolved = mutableListOf<MediaItem>()
         for (item in mediaItems) {
-            resolveMediaItemForPlayback(item)?.let { resolved.add(it) }
+            val playable = resolveMediaItemForPlayback(item)
+            if (playable != null) {
+                Log.i(
+                    TAG,
+                    "Resolved mediaId=${item.mediaId} -> playableId=${playable.mediaId} uri=${playable.localConfiguration?.uri}"
+                )
+                resolved.add(playable)
+            } else {
+                Log.w(TAG, "Failed to resolve mediaId=${item.mediaId} for playback")
+            }
         }
         return resolved
     }
 
     private suspend fun resolveMediaItemForPlayback(item: MediaItem): MediaItem? {
-        when {
-            item.mediaId == AutoMediaIds.PLAY_RANDOM_FAVORITE -> {
-                return resolveRandomFavoriteMediaItem(excludeCurrentEpisode = false)
-            }
-            item.hasPlayableUri() -> return item
-            else -> {
-                val lookedUp = withContext(Dispatchers.IO) {
-                    autoMediaBrowser.getItem(item.mediaId)
-                } ?: return null
-                return when {
-                    lookedUp.mediaId == AutoMediaIds.PLAY_RANDOM_FAVORITE ->
-                        resolveRandomFavoriteMediaItem(excludeCurrentEpisode = false)
-                    lookedUp.hasPlayableUri() -> lookedUp
-                    else -> null
-                }
-            }
+        // Only trust localConfiguration — requestMetadata survives IPC but is not
+        // enough for ExoPlayer to load/play the stream.
+        if (item.localConfiguration?.uri != null &&
+            item.mediaId != AutoMediaIds.PLAY_RANDOM_FAVORITE
+        ) {
+            return item
+        }
+
+        if (item.mediaId == AutoMediaIds.PLAY_RANDOM_FAVORITE) {
+            return resolveRandomFavoriteMediaItem(excludeCurrentEpisode = false)
+        }
+
+        val lookedUp = withContext(Dispatchers.IO) {
+            autoMediaBrowser.getItem(item.mediaId)
+        } ?: return null
+
+        return when {
+            lookedUp.mediaId == AutoMediaIds.PLAY_RANDOM_FAVORITE ->
+                resolveRandomFavoriteMediaItem(excludeCurrentEpisode = false)
+            lookedUp.localConfiguration?.uri != null -> lookedUp
+            else -> null
         }
     }
 
@@ -428,9 +447,11 @@ class PlaybackService : MediaLibraryService() {
         val future = SettableFuture.create<List<MediaItem>>()
         serviceScope.launch {
             try {
+                Log.i(TAG, "onAdd/SetMediaItems resolving ${mediaItems.size} item(s): ${mediaItems.map { it.mediaId }}")
                 future.set(resolveMediaItemsForPlayback(mediaItems))
-            } catch (_: Exception) {
-                future.set(mediaItems)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed resolving media items for playback", e)
+                future.set(emptyList())
             }
         }
         return future
@@ -444,13 +465,15 @@ class PlaybackService : MediaLibraryService() {
         val future = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
         serviceScope.launch {
             try {
+                Log.i(TAG, "onSetMediaItems resolving ${mediaItems.size} item(s): ${mediaItems.map { it.mediaId }}")
                 val resolved = resolveMediaItemsForPlayback(mediaItems)
                 future.set(
                     MediaSession.MediaItemsWithStartPosition(resolved, startIndex, startPositionMs)
                 )
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed resolving media items for setMediaItems", e)
                 future.set(
-                    MediaSession.MediaItemsWithStartPosition(mediaItems, startIndex, startPositionMs)
+                    MediaSession.MediaItemsWithStartPosition(emptyList(), startIndex, startPositionMs)
                 )
             }
         }
@@ -464,19 +487,23 @@ class PlaybackService : MediaLibraryService() {
             controller: MediaSession.ControllerInfo,
             playerCommand: Int,
         ): Int {
+            // Must return a SessionResult code (RESULT_SUCCESS=0), NOT a Player.Command value.
+            // Returning playerCommand (e.g. COMMAND_PLAY_PAUSE=1) rejects the request and
+            // leaves Android Auto stuck on "Getting your selection...".
             if (!externalPrevNextUsesSkipIntervals || isInAppController(controller)) {
-                return playerCommand
+                return androidx.media3.session.SessionResult.RESULT_SUCCESS
             }
             return when {
                 isPreviousTrackCommand(playerCommand) -> {
                     player?.seekBack()
-                    Player.COMMAND_INVALID
+                    // Reject the original prev-track command; seekBack already ran.
+                    androidx.media3.session.SessionResult.RESULT_INFO_SKIPPED
                 }
                 isNextTrackCommand(playerCommand) -> {
                     player?.seekForward()
-                    Player.COMMAND_INVALID
+                    androidx.media3.session.SessionResult.RESULT_INFO_SKIPPED
                 }
-                else -> playerCommand
+                else -> androidx.media3.session.SessionResult.RESULT_SUCCESS
             }
         }
 
@@ -618,25 +645,22 @@ fun PlayingEpisode.toMediaItem(): MediaItem {
         putLong(PlaybackService.EXTRA_PODCAST_ID, podcastId)
         localFilePath?.let { putString(PlaybackService.EXTRA_LOCAL_FILE_PATH, it) }
     }
-    
-    val audioSource = localFilePath?.let { path ->
-        val file = java.io.File(path)
-        if (file.exists()) path else audioUrl
-    } ?: audioUrl
-    
+
+    val audioUri = playbackUri(localFilePath, audioUrl)
+
     return MediaItem.Builder()
         .setMediaId(episodeId.toString())
-        .setUri(audioSource)
+        .setUri(audioUri)
         .setRequestMetadata(
             MediaItem.RequestMetadata.Builder()
-                .setMediaUri(android.net.Uri.parse(audioSource))
+                .setMediaUri(audioUri)
                 .build()
         )
         .setMediaMetadata(
             MediaMetadata.Builder()
                 .setTitle(episodeTitle)
                 .setArtist(podcastName)
-                .setArtworkUri(artworkUrl?.let { android.net.Uri.parse(it) })
+                .setArtworkUri(artworkUrl?.let { Uri.parse(it) })
                 .setIsBrowsable(false)
                 .setIsPlayable(true)
                 .setExtras(extras)
@@ -678,24 +702,21 @@ fun Episode.toMediaItem(
         localFilePath?.let { putString(PlaybackService.EXTRA_LOCAL_FILE_PATH, it) }
     }
 
-    val audioSource = localFilePath?.let { path ->
-        val file = java.io.File(path)
-        if (file.exists()) path else audioUrl
-    } ?: audioUrl
+    val audioUri = playbackUri(localFilePath, audioUrl)
 
     return MediaItem.Builder()
         .setMediaId(id.toString())
-        .setUri(audioSource)
+        .setUri(audioUri)
         .setRequestMetadata(
             MediaItem.RequestMetadata.Builder()
-                .setMediaUri(android.net.Uri.parse(audioSource))
+                .setMediaUri(audioUri)
                 .build()
         )
         .setMediaMetadata(
             MediaMetadata.Builder()
                 .setTitle(title)
                 .setArtist(podcastTitle)
-                .setArtworkUri(artworkUrl?.let { android.net.Uri.parse(it) })
+                .setArtworkUri(artworkUrl?.let { Uri.parse(it) })
                 .setIsBrowsable(false)
                 .setIsPlayable(true)
                 .setExtras(extras)
@@ -704,8 +725,21 @@ fun Episode.toMediaItem(
         .build()
 }
 
-private fun MediaItem.hasPlayableUri(): Boolean {
-    val uri = localConfiguration?.uri?.toString()
-        ?: requestMetadata.mediaUri?.toString()
-    return !uri.isNullOrBlank()
+/**
+ * Prefer a local download when the file still exists; otherwise use the remote URL.
+ * Local paths are normalized to file:// URIs so ExoPlayer can open them.
+ */
+private fun playbackUri(localFilePath: String?, audioUrl: String): Uri {
+    if (!localFilePath.isNullOrBlank()) {
+        val localUri = when {
+            localFilePath.startsWith("file:", ignoreCase = true) ||
+                localFilePath.startsWith("content:", ignoreCase = true) -> Uri.parse(localFilePath)
+            else -> Uri.fromFile(java.io.File(localFilePath))
+        }
+        val path = localUri.path
+        if (path != null && java.io.File(path).exists()) {
+            return localUri
+        }
+    }
+    return Uri.parse(audioUrl)
 }

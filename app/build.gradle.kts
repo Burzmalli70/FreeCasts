@@ -18,8 +18,8 @@ android {
         applicationId = "com.lazysimulation.freecasts"
         minSdk = 28
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.9.1"
+        versionCode = 7
+        versionName = "0.9.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
