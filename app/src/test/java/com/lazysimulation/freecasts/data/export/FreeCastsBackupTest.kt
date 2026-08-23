@@ -175,6 +175,64 @@ class FreeCastsBackupTest {
     }
 
     @Test
+    fun decodeLegacyAppSettings_preservesAutoDownloadOnSubscribeAndDefaultsOtherDownloadFlags() {
+        val json = Json { ignoreUnknownKeys = true }
+        // Older backups used this field name and often omitted the other download prefs.
+        val legacyJson = """
+            {
+              "version": 3,
+              "podcasts": [],
+              "episodeStates": [],
+              "appSettings": {
+                "autoDownloadOnSubscribe": true,
+                "deletePlayedDownloads": true
+              }
+            }
+        """.trimIndent()
+
+        val backup = json.decodeFromString<FreeCastsBackup>(legacyJson)
+        val settings = backup.appSettings!!
+
+        assertTrue(settings.autoDownloadOnSubscribe)
+        assertTrue(settings.deletePlayedDownloads)
+        assertFalse(settings.keepFavoriteDownloads)
+        assertNull(settings.randomPodcastFavoriteFeedUrl)
+    }
+
+    @Test
+    fun applyExportedAppSettings_fromLegacyPartialDownloadSettings_isBackwardCompatible() = runTest {
+        // Simulate values a user might already have enabled locally before import.
+        userPreferencesRepository.setAutoDownloadOnSubscribe(false)
+        userPreferencesRepository.setKeepFavoriteDownloads(true)
+        userPreferencesRepository.setDeletePlayedDownloads(false)
+
+        val json = Json { ignoreUnknownKeys = true }
+        val legacyJson = """
+            {
+              "version": 3,
+              "podcasts": [],
+              "episodeStates": [],
+              "appSettings": { "autoDownloadOnSubscribe": true }
+            }
+        """.trimIndent()
+        val settings = json.decodeFromString<FreeCastsBackup>(legacyJson).appSettings!!
+
+        applyExportedAppSettings(
+            userPreferencesRepository = userPreferencesRepository,
+            podcastDao = database.podcastDao(),
+            settings = settings,
+        )
+
+        val preferences = userPreferencesRepository.userPreferences.first()
+        // Historical wire name still restores the auto-download preference used at runtime
+        // for both subscribe and playlist-add downloads.
+        assertTrue(preferences.autoDownloadOnSubscribe)
+        // Omitted keys decode to defaults and are applied as such on restore.
+        assertFalse(preferences.keepFavoriteDownloads)
+        assertFalse(preferences.deletePlayedDownloads)
+    }
+
+    @Test
     fun buildBackup_exportsPlaylistsWithEpisodes() = runTest {
         val playlistId = database.playlistDao().insert(
             Playlist(

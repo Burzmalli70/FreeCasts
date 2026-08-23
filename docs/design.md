@@ -37,7 +37,9 @@ Subscribing to a podcast means:
 ## Playlist creation and organization
 - The user will be able to create playlists that podcasts can be set to automatically add downloaded episodes to
 - When automatically adding episodes to a playlist during sync, all newly discovered unplayed episodes (those with isPlayed set to false) since the previous sync are added. When auto-add is first enabled for a podcast on a playlist, only the most recent unplayed episode is seeded.
+- When the auto-download setting is enabled, episodes are downloaded when subscribing (latest episode) and when episodes are added to a playlist.
 - Playlists will include a setting indicating whether played podcast episodes should automatically be removed from the playlist after listening
+- When "Delete played episode downloads" is enabled, a download is removed after playback only if the episode is not still on any playlist. Favorite downloads are also kept when "Keep downloaded favorite episodes" is enabled.
 - The user will be able to tap a "Random" button when viewing a playlist that begins playing a random episode from the list. When that episode ends, the app will then play another random episode from the same playlist.
 
 ## Episode playback

@@ -2,6 +2,7 @@ package com.lazysimulation.freecasts.ui.screens.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lazysimulation.freecasts.data.download.AutoDownloadHandler
 import com.lazysimulation.freecasts.data.local.entity.Episode
 import com.lazysimulation.freecasts.data.local.entity.Podcast
 import com.lazysimulation.freecasts.data.remote.model.ItunesPodcast
@@ -17,7 +18,8 @@ import kotlinx.coroutines.launch
  * Handles fetching podcast data from RSS feed and subscription management.
  */
 class SearchPodcastDetailViewModel(
-    private val podcastRepository: PodcastRepository
+    private val podcastRepository: PodcastRepository,
+    private val autoDownloadHandler: AutoDownloadHandler,
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(SearchPodcastDetailState())
@@ -103,7 +105,8 @@ class SearchPodcastDetailViewModel(
             val result = podcastRepository.subscribeToPodcast(feedUrl, itunesPodcast)
             
             result.fold(
-                onSuccess = {
+                onSuccess = { podcastId ->
+                    autoDownloadHandler.downloadLatestEpisodeIfEnabled(podcastId)
                     _state.update { state ->
                         state.copy(
                             isSubscribed = true,

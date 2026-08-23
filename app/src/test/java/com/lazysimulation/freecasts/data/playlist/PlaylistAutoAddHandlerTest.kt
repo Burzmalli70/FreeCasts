@@ -3,11 +3,14 @@ package com.lazysimulation.freecasts.data.playlist
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.lazysimulation.freecasts.data.download.AutoDownloadHandler
+import com.lazysimulation.freecasts.data.download.RecordingEpisodeDownloadEnqueuer
 import com.lazysimulation.freecasts.data.local.FreeCastsDatabase
 import com.lazysimulation.freecasts.data.local.entity.Episode
 import com.lazysimulation.freecasts.data.local.entity.Playlist
 import com.lazysimulation.freecasts.data.local.entity.PlaylistEpisodeCrossRef
 import com.lazysimulation.freecasts.data.local.entity.Podcast
+import com.lazysimulation.freecasts.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -23,11 +26,14 @@ import org.robolectric.RobolectricTestRunner
  * - On sync, all newly discovered unplayed episodes are added
  * - Played episodes are never auto-added
  * - When enabling auto-add, only the most recent unplayed episode is seeded
+ * - Newly added playlist episodes trigger auto-download when that setting is on
  */
 @RunWith(RobolectricTestRunner::class)
 class PlaylistAutoAddHandlerTest {
 
     private lateinit var database: FreeCastsDatabase
+    private lateinit var preferences: UserPreferencesRepository
+    private lateinit var recordingEnqueuer: RecordingEpisodeDownloadEnqueuer
     private lateinit var handler: PlaylistAutoAddHandler
     private var podcastId1: Long = 0
     private var podcastId2: Long = 0
@@ -38,10 +44,17 @@ class PlaylistAutoAddHandlerTest {
         database = Room.inMemoryDatabaseBuilder(context, FreeCastsDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-
+        preferences = UserPreferencesRepository(context)
+        recordingEnqueuer = RecordingEpisodeDownloadEnqueuer()
         handler = PlaylistAutoAddHandler(
             playlistDao = database.playlistDao(),
-            episodeDao = database.episodeDao()
+            episodeDao = database.episodeDao(),
+            autoDownloadHandler = AutoDownloadHandler(
+                userPreferencesRepository = preferences,
+                episodeDao = database.episodeDao(),
+                downloadDao = database.downloadDao(),
+                episodeDownloadEnqueuer = recordingEnqueuer,
+            )
         )
 
         podcastId1 = database.podcastDao().insert(
@@ -366,5 +379,55 @@ class PlaylistAutoAddHandlerTest {
 
         assertEquals(0, database.playlistDao().getEpisodeCount(playlistId))
         assertFalse(database.playlistDao().isEpisodeInPlaylist(playlistId, olderUnplayed.id))
+    }
+
+    @Test
+    fun downloadsEpisodeWhenAddedToPlaylistAndAutoDownloadEnabled() = runTest {
+        preferences.setAutoDownloadOnSubscribe(true)
+        val playlistId = createAutoAddPlaylist("Daily", podcastId1.toString())
+        val episode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "new-ep",
+            title = "New Episode",
+            publishedAt = 3_000L
+        )
+
+        handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(episode))
+
+        assertEquals(listOf(episode.id), recordingEnqueuer.enqueuedEpisodeIds)
+        assertTrue(database.playlistDao().isEpisodeInPlaylist(playlistId, episode.id))
+    }
+
+    @Test
+    fun doesNotDownloadWhenAddedToPlaylistAndAutoDownloadDisabled() = runTest {
+        preferences.setAutoDownloadOnSubscribe(false)
+        createAutoAddPlaylist("Daily", podcastId1.toString())
+        val episode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "new-ep",
+            title = "New Episode",
+            publishedAt = 3_000L
+        )
+
+        handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(episode))
+
+        assertTrue(recordingEnqueuer.enqueuedEpisodeIds.isEmpty())
+    }
+
+    @Test
+    fun downloadsOnlyOnceWhenEpisodeAddedToMultipleAutoAddPlaylists() = runTest {
+        preferences.setAutoDownloadOnSubscribe(true)
+        createAutoAddPlaylist("Morning", podcastId1.toString())
+        createAutoAddPlaylist("Commute", podcastId1.toString())
+        val episode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "new-ep",
+            title = "New Episode",
+            publishedAt = 3_000L
+        )
+
+        handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(episode))
+
+        assertEquals(listOf(episode.id), recordingEnqueuer.enqueuedEpisodeIds)
     }
 }

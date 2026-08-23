@@ -1,8 +1,10 @@
 package com.lazysimulation.freecasts
 
+import com.lazysimulation.freecasts.data.download.AutoDownloadHandler
 import com.lazysimulation.freecasts.data.download.EpisodeDownloadManager
 import com.lazysimulation.freecasts.data.download.FavoriteEpisodeDownloadCoordinator
 import com.lazysimulation.freecasts.data.download.FavoriteEpisodeDownloadHandler
+import com.lazysimulation.freecasts.data.download.PlayedEpisodeDownloadCleanup
 import com.lazysimulation.freecasts.data.export.EpisodeStateImportSupport
 import com.lazysimulation.freecasts.data.export.FreeCastsBackupBuilder
 import com.lazysimulation.freecasts.data.export.FreeCastsBackupImportHandler
@@ -44,7 +46,6 @@ val databaseModule = module {
 }
 
 val repositoryModule = module {
-    single { PlaylistAutoAddHandler(get(), get()) }
     single { PlaylistAutoRemoveHandler(get(), get()) }
     single { EpisodeStateImportSupport(get(), get(), get(), get()) }
     single { PlaylistImportSupport(get(), get(), get(), get()) }
@@ -65,10 +66,10 @@ val repositoryModule = module {
 }
 
 val viewModelModule = module {
-    viewModel { SearchViewModel(get(), get(), get(), get()) }
-    viewModel { SearchPodcastDetailViewModel(get()) }
+    viewModel { SearchViewModel(get(), get()) }
+    viewModel { SearchPodcastDetailViewModel(get(), get()) }
     viewModel { PodcastsViewModel(get()) }
-    viewModel { SubscribedPodcastDetailViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { SubscribedPodcastDetailViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { PlaylistsViewModel(get()) }
     viewModel { CreateEditPlaylistViewModel(get(), get(), get()) }
     viewModel { PlaylistDetailViewModel(get(), get(), get()) }
@@ -101,11 +102,29 @@ val downloadModule = module {
             userPreferencesRepository = get()
         )
     }
+    single {
+        AutoDownloadHandler(
+            userPreferencesRepository = get(),
+            episodeDao = get(),
+            downloadDao = get(),
+            episodeDownloadEnqueuer = get<EpisodeDownloadManager>(),
+        )
+    }
+    single {
+        PlayedEpisodeDownloadCleanup(
+            userPreferencesRepository = get(),
+            episodeDao = get(),
+            playlistDao = get(),
+            downloadDao = get(),
+        )
+    }
+    // Depends on AutoDownloadHandler from this module
+    single { PlaylistAutoAddHandler(get(), get(), get()) }
 }
 
 val playbackModule = module {
     single { PlaybackManager(androidContext(), get()) }
-    single { PlaybackEpisodeCompletionHandler(get(), get(), get(), get()) }
+    single { PlaybackEpisodeCompletionHandler(get(), get(), get()) }
     single { PackageValidator(androidContext(), R.xml.allowed_media_browser_callers) }
     single { AutoMediaBrowser(androidContext(), get(), get(), get(), get()) }
 }

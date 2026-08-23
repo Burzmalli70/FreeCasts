@@ -105,13 +105,4 @@ class FavoriteEpisodeDownloadCoordinatorTest {
         assertEquals(1, enqueued)
         assertEquals(1, recordingEnqueuer.enqueuedEpisodeIds.size)
     }
-
-    private class RecordingEpisodeDownloadEnqueuer : EpisodeDownloadEnqueuer {
-        val enqueuedEpisodeIds = mutableListOf<Long>()
-
-        override suspend fun enqueueDownload(request: DownloadRequest): Boolean {
-            enqueuedEpisodeIds += request.episodeId
-            return true
-        }
-    }
 }

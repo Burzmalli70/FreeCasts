@@ -3,6 +3,8 @@ package com.lazysimulation.freecasts.data.playlist
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.lazysimulation.freecasts.data.download.AutoDownloadHandler
+import com.lazysimulation.freecasts.data.download.NoOpEpisodeDownloadEnqueuer
 import com.lazysimulation.freecasts.data.download.NoOpFavoriteEpisodeDownloadHandler
 import com.lazysimulation.freecasts.data.export.EpisodeStateImportSupport
 import com.lazysimulation.freecasts.data.export.ExportedPlaylist
@@ -57,7 +59,16 @@ class PlaylistMembershipPreservationTest {
         syncHandler = PodcastEpisodeSyncHandler(
             episodeDao = database.episodeDao(),
             podcastDao = database.podcastDao(),
-            playlistAutoAddHandler = PlaylistAutoAddHandler(playlistDao, database.episodeDao()),
+            playlistAutoAddHandler = PlaylistAutoAddHandler(
+                playlistDao,
+                database.episodeDao(),
+                AutoDownloadHandler(
+                    userPreferencesRepository = UserPreferencesRepository(context),
+                    episodeDao = database.episodeDao(),
+                    downloadDao = database.downloadDao(),
+                    episodeDownloadEnqueuer = NoOpEpisodeDownloadEnqueuer,
+                )
+            ),
             episodeStateImportSupport = EpisodeStateImportSupport(
                 podcastDao = database.podcastDao(),
                 episodeDao = database.episodeDao(),

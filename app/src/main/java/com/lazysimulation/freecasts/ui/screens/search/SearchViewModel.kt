@@ -3,10 +3,7 @@ package com.lazysimulation.freecasts.ui.screens.search
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lazysimulation.freecasts.data.download.DownloadRequest
-import com.lazysimulation.freecasts.data.download.EpisodeDownloadManager
-import com.lazysimulation.freecasts.data.local.dao.EpisodeDao
-import com.lazysimulation.freecasts.data.preferences.UserPreferencesRepository
+import com.lazysimulation.freecasts.data.download.AutoDownloadHandler
 import com.lazysimulation.freecasts.data.remote.model.ItunesPodcast
 import com.lazysimulation.freecasts.data.repository.PodcastRepository
 import kotlinx.coroutines.Job
@@ -14,7 +11,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -24,9 +20,7 @@ import kotlin.math.abs
  */
 class SearchViewModel(
     private val podcastRepository: PodcastRepository,
-    private val userPreferencesRepository: UserPreferencesRepository,
-    private val episodeDownloadManager: EpisodeDownloadManager,
-    private val episodeDao: EpisodeDao
+    private val autoDownloadHandler: AutoDownloadHandler,
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(SearchState())
@@ -68,11 +62,7 @@ class SearchViewModel(
             )}
             
             result.onSuccess { podcastId ->
-                // Check if auto-download is enabled
-                val autoDownload = userPreferencesRepository.autoDownloadOnSubscribe.first()
-                if (autoDownload) {
-                    downloadLatestEpisode(podcastId, podcast.collectionName)
-                }
+                autoDownloadHandler.downloadLatestEpisodeIfEnabled(podcastId)
             }
             
             result.onFailure { exception ->
@@ -84,29 +74,8 @@ class SearchViewModel(
     }
     
     /**
-     * Download the latest episode for a podcast.
+     * Unsubscribe from a podcast.
      */
-    private suspend fun downloadLatestEpisode(podcastId: Long, podcastName: String) {
-        // Get the most recent episode for this podcast
-        val episodes = episodeDao.observeByPodcastIdLimited(podcastId, 1).first()
-        val latestEpisode = episodes.firstOrNull() ?: return
-        
-        // Skip if no audio URL
-        if (latestEpisode.audioUrl.isBlank()) return
-        
-        // Create download request
-        val downloadRequest = DownloadRequest(
-            episodeId = latestEpisode.id,
-            episodeName = latestEpisode.title,
-            podcastName = podcastName,
-            downloadUrl = latestEpisode.audioUrl,
-            mimeType = latestEpisode.mimeType
-        )
-        
-        // Enqueue the download
-        episodeDownloadManager.enqueueDownload(downloadRequest)
-    }
-
     fun unsubscribeFromPodcast(podcast: ItunesPodcast) {
         val feedUrl = podcast.feedUrl ?: return
 

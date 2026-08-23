@@ -30,6 +30,8 @@ internal suspend fun UserPreferencesRepository.toExportedAppSettings(
         .takeIf { it >= 0 }
         ?.let { podcastDao.getById(it)?.feedUrl }
 
+    // Prefer the stable wire names used since backups first included app settings.
+    // autoDownloadOnSubscribe also gates playlist-add downloads at runtime.
     return ExportedAppSettings(
         autoDownloadOnSubscribe = preferences.autoDownloadOnSubscribe,
         keepFavoriteDownloads = preferences.keepFavoriteDownloads,

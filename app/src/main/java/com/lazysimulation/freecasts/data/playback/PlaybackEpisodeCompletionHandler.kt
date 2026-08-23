@@ -1,13 +1,11 @@
 package com.lazysimulation.freecasts.data.playback
 
 import androidx.media3.common.MediaItem
-import com.lazysimulation.freecasts.data.local.dao.DownloadDao
+import com.lazysimulation.freecasts.data.download.PlayedEpisodeDownloadCleanup
 import com.lazysimulation.freecasts.data.local.dao.EpisodeDao
 import com.lazysimulation.freecasts.data.playlist.PlaylistAutoRemoveHandler
-import com.lazysimulation.freecasts.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -17,8 +15,7 @@ import kotlinx.coroutines.launch
 class PlaybackEpisodeCompletionHandler(
     private val playlistAutoRemoveHandler: PlaylistAutoRemoveHandler,
     private val episodeDao: EpisodeDao,
-    private val downloadDao: DownloadDao,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val playedEpisodeDownloadCleanup: PlayedEpisodeDownloadCleanup,
 ) {
     private val tracker = PlaybackEpisodeTracker()
 
@@ -44,15 +41,12 @@ class PlaybackEpisodeCompletionHandler(
     private fun completeEpisode(scope: CoroutineScope, episodeId: Long) {
         scope.launch(Dispatchers.IO) {
             episodeDao.setPlaybackPosition(episodeId, 0)
+            // Auto-remove from playlists before download cleanup so membership reflects
+            // post-listen playlist state (keep download if still on another playlist).
             playlistAutoRemoveHandler.markEpisodeAsPlayed(episodeId)
             episodeDao.incrementListenCount(episodeId)
             episodeDao.incrementReplayPriority(episodeId)
-            if (userPreferencesRepository.deletePlayedDownloads.first() &&
-                (!userPreferencesRepository.keepFavoriteDownloads.first() ||
-                    episodeDao.getById(episodeId)?.isFavorite == false)
-            ) {
-                downloadDao.deleteByEpisodeId(episodeId)
-            }
+            playedEpisodeDownloadCleanup.cleanupIfNeeded(episodeId)
         }
     }
 }

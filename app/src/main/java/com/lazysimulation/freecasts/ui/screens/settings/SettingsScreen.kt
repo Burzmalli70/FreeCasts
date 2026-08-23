@@ -127,8 +127,8 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             SettingsSwitch(
-                title = "Auto-download latest episode",
-                description = "Automatically download the most recent episode when subscribing to a new podcast",
+                title = "Auto-download episodes",
+                description = "Automatically download the latest episode when subscribing, and download episodes when they are added to a playlist",
                 checked = state.autoDownloadOnSubscribe,
                 onCheckedChange = { viewModel.setAutoDownloadOnSubscribe(it) }
             )
@@ -137,7 +137,7 @@ fun SettingsScreen(
 
             SettingsSwitch(
                 title = "Delete played episode downloads",
-                description = "Delete downloaded episodes once they've been played",
+                description = "Delete downloaded episodes once they've been played, unless they are still on a playlist",
                 checked = state.deletePlayedDownloads,
                 onCheckedChange = { viewModel.setDeletePlayedDownloads(it) }
             )

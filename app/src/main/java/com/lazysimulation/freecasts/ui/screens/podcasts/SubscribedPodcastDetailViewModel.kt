@@ -11,10 +11,10 @@ import com.lazysimulation.freecasts.ui.components.hasPartialPlayback
 import com.lazysimulation.freecasts.data.local.dao.PlaylistDao
 import com.lazysimulation.freecasts.data.local.dao.PodcastDao
 import com.lazysimulation.freecasts.data.local.entity.Episode
-import com.lazysimulation.freecasts.data.local.entity.PlaylistEpisodeCrossRef
 import com.lazysimulation.freecasts.data.local.entity.Podcast
 import com.lazysimulation.freecasts.data.local.relation.EpisodeWithDownload
 import com.lazysimulation.freecasts.data.local.relation.PlaylistWithEpisodeCount
+import com.lazysimulation.freecasts.data.playlist.PlaylistAutoAddHandler
 import com.lazysimulation.freecasts.data.playlist.PlaylistAutoRemoveHandler
 import com.lazysimulation.freecasts.data.repository.PodcastRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +35,8 @@ class SubscribedPodcastDetailViewModel(
     private val playlistDao: PlaylistDao,
     private val podcastRepository: PodcastRepository,
     private val downloadManager: EpisodeDownloadManager,
-    private val playlistAutoRemoveHandler: PlaylistAutoRemoveHandler
+    private val playlistAutoRemoveHandler: PlaylistAutoRemoveHandler,
+    private val playlistAutoAddHandler: PlaylistAutoAddHandler,
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(SubscribedPodcastDetailState())
@@ -205,21 +206,11 @@ class SubscribedPodcastDetailViewModel(
     
     /**
      * Add an episode to the given playlist if it is not already present.
+     * Triggers auto-download when the global setting is enabled.
      */
     fun addEpisodeToPlaylist(playlistId: Long, episodeId: Long) {
         viewModelScope.launch {
-            if (playlistDao.isEpisodeInPlaylist(playlistId, episodeId)) return@launch
-            
-            val maxPosition = playlistDao.getMaxPosition(playlistId) ?: -1
-            playlistDao.insertPlaylistEpisode(
-                PlaylistEpisodeCrossRef(
-                    playlistId = playlistId,
-                    episodeId = episodeId,
-                    position = maxPosition + 1,
-                    addedAt = System.currentTimeMillis()
-                )
-            )
-            playlistDao.updateTimestamp(playlistId)
+            playlistAutoAddHandler.addEpisodeToPlaylist(playlistId, episodeId)
         }
     }
 }

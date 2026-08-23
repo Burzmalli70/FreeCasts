@@ -18,6 +18,16 @@ data class ExportedPodcast(
     val maxDownloadsToKeep: Int? = null,
 )
 
+/**
+ * Global app preferences included in a FreeCasts backup.
+ *
+ * Wire field names are stable for backward-compatible import. Missing keys in older
+ * backups decode to the defaults below ([PodcastSubscriptionsFileManager] uses
+ * `ignoreUnknownKeys`).
+ *
+ * [autoDownloadOnSubscribe] is the historical JSON/preference name; at runtime it also
+ * enables downloading episodes when they are added to a playlist.
+ */
 @Serializable
 data class ExportedAppSettings(
     val autoDownloadOnSubscribe: Boolean = false,
