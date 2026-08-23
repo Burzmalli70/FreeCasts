@@ -49,6 +49,7 @@ class SettingsViewModel(
                         deletePlayedDownloads = preferences.deletePlayedDownloads,
                         skipForwardIntervalSeconds = preferences.skipForwardIntervalSeconds,
                         skipBackwardIntervalSeconds = preferences.skipBackwardIntervalSeconds,
+                        externalPrevNextUsesSkipIntervals = preferences.externalPrevNextUsesSkipIntervals,
                         isLoading = false
                     )
                 }
@@ -83,6 +84,12 @@ class SettingsViewModel(
     fun setSkipBackwardIntervalSeconds(seconds: Int) {
         viewModelScope.launch {
             userPreferencesRepository.setSkipBackwardIntervalSeconds(seconds)
+        }
+    }
+
+    fun setExternalPrevNextUsesSkipIntervals(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setExternalPrevNextUsesSkipIntervals(enabled)
         }
     }
 
@@ -317,6 +324,7 @@ data class SettingsState(
     val deletePlayedDownloads: Boolean = false,
     val skipForwardIntervalSeconds: Int = 30,
     val skipBackwardIntervalSeconds: Int = 30,
+    val externalPrevNextUsesSkipIntervals: Boolean = false,
     val isLoading: Boolean = true,
     val isExporting: Boolean = false,
     val isImporting: Boolean = false,

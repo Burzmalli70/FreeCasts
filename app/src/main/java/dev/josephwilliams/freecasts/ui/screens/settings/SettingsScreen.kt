@@ -182,6 +182,17 @@ fun SettingsScreen(
                 onSelected = { viewModel.setSkipBackwardIntervalSeconds(it) }
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsSwitch(
+                title = "External prev/next uses skip intervals",
+                description = "When enabled, Bluetooth remotes, lock screen, and notification " +
+                    "prev/next buttons skip by your configured interval instead of changing " +
+                    "tracks. When disabled, they move to the previous or next episode in a playlist.",
+                checked = state.externalPrevNextUsesSkipIntervals,
+                onCheckedChange = { viewModel.setExternalPrevNextUsesSkipIntervals(it) }
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(

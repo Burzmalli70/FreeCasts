@@ -37,6 +37,7 @@ internal suspend fun UserPreferencesRepository.toExportedAppSettings(
         randomPodcastFavoriteFeedUrl = randomFeedUrl,
         skipForwardIntervalSeconds = preferences.skipForwardIntervalSeconds,
         skipBackwardIntervalSeconds = preferences.skipBackwardIntervalSeconds,
+        externalPrevNextUsesSkipIntervals = preferences.externalPrevNextUsesSkipIntervals,
     )
 }
 
@@ -76,6 +77,9 @@ internal suspend fun applyExportedAppSettings(
     )
     userPreferencesRepository.setSkipBackwardIntervalSeconds(
         normalizeSkipIntervalSeconds(settings.skipBackwardIntervalSeconds)
+    )
+    userPreferencesRepository.setExternalPrevNextUsesSkipIntervals(
+        settings.externalPrevNextUsesSkipIntervals
     )
 
     val randomFeedUrl = settings.randomPodcastFavoriteFeedUrl?.normalizeFeedUrl()

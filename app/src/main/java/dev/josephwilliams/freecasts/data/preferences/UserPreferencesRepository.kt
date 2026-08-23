@@ -36,6 +36,8 @@ class UserPreferencesRepository(
         val FAVORITE_DOWNLOADS_AFTER_IMPORT_PENDING = booleanPreferencesKey("favorite_downloads_after_import_pending")
         val SKIP_FORWARD_INTERVAL_SECONDS = intPreferencesKey("skip_forward_interval_seconds")
         val SKIP_BACKWARD_INTERVAL_SECONDS = intPreferencesKey("skip_backward_interval_seconds")
+        val EXTERNAL_PREV_NEXT_USES_SKIP_INTERVALS =
+            booleanPreferencesKey("external_prev_next_uses_skip_intervals")
     }
 
     private val json = Json {
@@ -52,6 +54,7 @@ class UserPreferencesRepository(
         val randomPodcastFavoriteId: Long = -1L,
         val skipForwardIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS,
         val skipBackwardIntervalSeconds: Int = DEFAULT_SKIP_INTERVAL_SECONDS,
+        val externalPrevNextUsesSkipIntervals: Boolean = false,
     )
     
     /**
@@ -69,6 +72,8 @@ class UserPreferencesRepository(
             skipBackwardIntervalSeconds = normalizeSkipIntervalSeconds(
                 preferences[PreferencesKeys.SKIP_BACKWARD_INTERVAL_SECONDS] ?: DEFAULT_SKIP_INTERVAL_SECONDS
             ),
+            externalPrevNextUsesSkipIntervals =
+                preferences[PreferencesKeys.EXTERNAL_PREV_NEXT_USES_SKIP_INTERVALS] ?: false,
         )
     }
     
@@ -153,6 +158,12 @@ class UserPreferencesRepository(
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SKIP_BACKWARD_INTERVAL_SECONDS] =
                 normalizeSkipIntervalSeconds(seconds)
+        }
+    }
+
+    suspend fun setExternalPrevNextUsesSkipIntervals(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.EXTERNAL_PREV_NEXT_USES_SKIP_INTERVALS] = enabled
         }
     }
 

@@ -325,11 +325,7 @@ class PlaybackManager(
      * Skip forward by the configured interval.
      */
     fun skipForward() {
-        mediaController?.sendCustomCommand(
-            SessionCommand(PlaybackService.CUSTOM_COMMAND_SKIP_FORWARD, Bundle.EMPTY),
-            Bundle.EMPTY
-        )
-        // Update UI immediately for responsiveness
+        mediaController?.seekForward()
         scope.launch {
             delay(100)
             syncStateFromPlayer()
@@ -340,11 +336,7 @@ class PlaybackManager(
      * Skip backward by the configured interval.
      */
     fun skipBackward() {
-        mediaController?.sendCustomCommand(
-            SessionCommand(PlaybackService.CUSTOM_COMMAND_SKIP_BACK, Bundle.EMPTY),
-            Bundle.EMPTY
-        )
-        // Update UI immediately for responsiveness
+        mediaController?.seekBack()
         scope.launch {
             delay(100)
             syncStateFromPlayer()

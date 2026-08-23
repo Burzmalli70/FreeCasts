@@ -125,6 +125,7 @@ class FreeCastsBackupTest {
         userPreferencesRepository.setRandomPodcastId(podcastId)
         userPreferencesRepository.setSkipForwardIntervalSeconds(45)
         userPreferencesRepository.setSkipBackwardIntervalSeconds(20)
+        userPreferencesRepository.setExternalPrevNextUsesSkipIntervals(true)
 
         val backup = backupBuilder.buildBackup()
 
@@ -133,6 +134,7 @@ class FreeCastsBackupTest {
         assertEquals("https://example.com/feed.xml", backup.appSettings?.randomPodcastFavoriteFeedUrl)
         assertEquals(45, backup.appSettings?.skipForwardIntervalSeconds)
         assertEquals(20, backup.appSettings?.skipBackwardIntervalSeconds)
+        assertEquals(true, backup.appSettings?.externalPrevNextUsesSkipIntervals)
     }
 
     @Test
@@ -143,12 +145,14 @@ class FreeCastsBackupTest {
             settings = ExportedAppSettings(
                 skipForwardIntervalSeconds = 60,
                 skipBackwardIntervalSeconds = 10,
+                externalPrevNextUsesSkipIntervals = true,
             ),
         )
 
         val preferences = userPreferencesRepository.userPreferences.first()
         assertEquals(60, preferences.skipForwardIntervalSeconds)
         assertEquals(10, preferences.skipBackwardIntervalSeconds)
+        assertTrue(preferences.externalPrevNextUsesSkipIntervals)
     }
 
     @Test
@@ -167,6 +171,7 @@ class FreeCastsBackupTest {
 
         assertEquals(30, backup.appSettings?.skipForwardIntervalSeconds)
         assertEquals(30, backup.appSettings?.skipBackwardIntervalSeconds)
+        assertFalse(backup.appSettings?.externalPrevNextUsesSkipIntervals ?: true)
     }
 
     @Test

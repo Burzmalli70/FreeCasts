@@ -26,6 +26,7 @@ data class ExportedAppSettings(
     val randomPodcastFavoriteFeedUrl: String? = null,
     val skipForwardIntervalSeconds: Int = 30,
     val skipBackwardIntervalSeconds: Int = 30,
+    val externalPrevNextUsesSkipIntervals: Boolean = false,
 )
 
 @Serializable
