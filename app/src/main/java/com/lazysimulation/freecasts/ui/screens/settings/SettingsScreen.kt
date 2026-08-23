@@ -186,9 +186,9 @@ fun SettingsScreen(
 
             SettingsSwitch(
                 title = "External prev/next uses skip intervals",
-                description = "When enabled, Bluetooth remotes, lock screen, and notification " +
-                    "prev/next buttons skip by your configured interval instead of changing " +
-                    "tracks. When disabled, they move to the previous or next episode in a playlist.",
+                description = "When enabled, Android Auto, Bluetooth remotes, lock screen, and " +
+                    "notification controls use skip-interval buttons instead of previous/next " +
+                    "track. When disabled, they move to the previous or next episode in a playlist.",
                 checked = state.externalPrevNextUsesSkipIntervals,
                 onCheckedChange = { viewModel.setExternalPrevNextUsesSkipIntervals(it) }
             )

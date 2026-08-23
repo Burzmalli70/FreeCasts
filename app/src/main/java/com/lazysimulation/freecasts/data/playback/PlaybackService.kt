@@ -8,7 +8,7 @@ import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
-import androidx.media3.common.ForwardingPlayer
+import androidx.media3.common.ForwardingSimpleBasePlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -18,6 +18,7 @@ import androidx.media3.session.CommandButton
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
+import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
@@ -33,6 +34,7 @@ import com.lazysimulation.freecasts.data.playback.auto.AutoMediaBrowser
 import com.lazysimulation.freecasts.data.playback.auto.AutoMediaIds
 import com.lazysimulation.freecasts.data.playback.auto.PackageValidator
 import com.lazysimulation.freecasts.data.preferences.UserPreferencesRepository
+import android.view.KeyEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -64,6 +66,7 @@ class PlaybackService : MediaLibraryService() {
     private var mediaLibrarySession: MediaLibrarySession? = null
     private var exoPlayer: ExoPlayer? = null
     private var player: Player? = null
+    private var externalControlsPlayer: ExternalControlsPlayer? = null
     
     private val episodeDao: EpisodeDao by inject()
 
@@ -99,7 +102,8 @@ class PlaybackService : MediaLibraryService() {
             .setSeekBackIncrementMs(skipBackwardDurationMs)
             .setSeekForwardIncrementMs(skipForwardDurationMs)
             .build()
-        player = SeekIncrementPlayer(exoPlayer!!)
+        externalControlsPlayer = ExternalControlsPlayer(exoPlayer!!)
+        player = externalControlsPlayer
 
         serviceScope.launch {
             userPreferencesRepository.userPreferences.collect { preferences ->
@@ -128,94 +132,57 @@ class PlaybackService : MediaLibraryService() {
         applyExternalPlaybackControls()
     }
 
-    private fun applyExternalPlaybackControls() {
-        mediaLibrarySession?.setCustomLayout(buildOsCustomLayout())
+    private fun currentExternalControlButtons(): List<CommandButton> {
+        return ExternalPlaybackControls.mediaButtonPreferences(
+            useSkipIntervals = externalPrevNextUsesSkipIntervals,
+            skipBackwardDurationMs = skipBackwardDurationMs,
+            skipForwardDurationMs = skipForwardDurationMs,
+        )
     }
 
-    private fun buildOsCustomLayout(): List<CommandButton> {
-        return if (externalPrevNextUsesSkipIntervals) {
-            buildSkipIntervalCustomLayout()
-        } else {
-            buildTrackNavigationCustomLayout()
+    private fun applyExternalPlaybackControls() {
+        // Force PlaybackState rebuild from filtered player commands (what Auto reads).
+        externalControlsPlayer?.invalidateExternalControls()
+
+        val session = mediaLibrarySession ?: return
+        val buttons = currentExternalControlButtons()
+        // Custom layout → legacy PlaybackState custom actions (Android Auto).
+        session.setCustomLayout(buttons)
+        // Media button preferences → Media3 notification / modern surfaces.
+        session.setMediaButtonPreferences(buttons)
+
+        val sessionCommands = sessionCommandsForExternalControls()
+        val playerCommands = playerCommandsForExternalSurfaces(session.player.availableCommands)
+        for (controller in session.connectedControllers) {
+            if (isInAppController(controller)) continue
+            session.setCustomLayout(controller, buttons)
+            session.setMediaButtonPreferences(controller, buttons)
+            session.setAvailableCommands(controller, sessionCommands, playerCommands)
         }
     }
 
-    private fun buildSkipIntervalCustomLayout(): List<CommandButton> {
-        val backSeconds = (skipBackwardDurationMs / 1000L).toInt()
-        val forwardSeconds = (skipForwardDurationMs / 1000L).toInt()
-        return listOf(
-            CommandButton.Builder(skipBackIconForInterval(backSeconds))
-                .setPlayerCommand(Player.COMMAND_SEEK_BACK)
-                .setDisplayName("${backSeconds}s")
-                .build(),
-            CommandButton.Builder(CommandButton.ICON_PLAY)
-                .setPlayerCommand(Player.COMMAND_PLAY_PAUSE)
-                .build(),
-            CommandButton.Builder(skipForwardIconForInterval(forwardSeconds))
-                .setPlayerCommand(Player.COMMAND_SEEK_FORWARD)
-                .setDisplayName("${forwardSeconds}s")
-                .build(),
-        )
+    private fun sessionCommandsForExternalControls(): androidx.media3.session.SessionCommands {
+        val builder = MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS
+            .buildUpon()
+            .add(SessionCommand(CUSTOM_COMMAND_PLAY_RANDOM_FAVORITE, Bundle.EMPTY))
+        if (externalPrevNextUsesSkipIntervals) {
+            builder
+                .add(ExternalPlaybackControls.seekBackCommand())
+                .add(ExternalPlaybackControls.seekForwardCommand())
+        }
+        return builder.build()
     }
 
-    private fun buildTrackNavigationCustomLayout(): List<CommandButton> {
-        return listOf(
-            CommandButton.Builder(CommandButton.ICON_PREVIOUS)
-                .setPlayerCommand(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
-                .build(),
-            CommandButton.Builder(CommandButton.ICON_PLAY)
-                .setPlayerCommand(Player.COMMAND_PLAY_PAUSE)
-                .build(),
-            CommandButton.Builder(CommandButton.ICON_NEXT)
-                .setPlayerCommand(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
-                .build(),
-        )
-    }
-
-    private fun skipBackIconForInterval(seconds: Int): Int = when (seconds) {
-        5 -> CommandButton.ICON_SKIP_BACK_5
-        10 -> CommandButton.ICON_SKIP_BACK_10
-        15 -> CommandButton.ICON_SKIP_BACK_15
-        30 -> CommandButton.ICON_SKIP_BACK_30
-        else -> CommandButton.ICON_REWIND
-    }
-
-    private fun skipForwardIconForInterval(seconds: Int): Int = when (seconds) {
-        5 -> CommandButton.ICON_SKIP_FORWARD_5
-        10 -> CommandButton.ICON_SKIP_FORWARD_10
-        15 -> CommandButton.ICON_SKIP_FORWARD_15
-        30 -> CommandButton.ICON_SKIP_FORWARD_30
-        else -> CommandButton.ICON_FAST_FORWARD
+    private fun playerCommandsForExternalSurfaces(defaultCommands: Player.Commands): Player.Commands {
+        return if (externalPrevNextUsesSkipIntervals) {
+            ExternalPlaybackControls.filterPlayerCommandsForSkipIntervals(defaultCommands)
+        } else {
+            defaultCommands
+        }
     }
 
     private fun isInAppController(controller: MediaSession.ControllerInfo): Boolean {
         return controller.packageName == packageName
-    }
-
-    private fun playerCommandsFor(
-        controller: MediaSession.ControllerInfo,
-        defaultCommands: Player.Commands,
-    ): Player.Commands {
-        if (isInAppController(controller) || !externalPrevNextUsesSkipIntervals) {
-            return defaultCommands
-        }
-        return Player.Commands.Builder()
-            .addAll(defaultCommands)
-            .add(Player.COMMAND_SEEK_BACK)
-            .add(Player.COMMAND_SEEK_FORWARD)
-            .build()
-    }
-
-    private fun isPreviousTrackCommand(command: Int): Boolean {
-        return command == Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM ||
-            command == Player.COMMAND_SEEK_TO_PREVIOUS ||
-            command == Player.COMMAND_SEEK_TO_PREVIOUS_WINDOW
-    }
-
-    private fun isNextTrackCommand(command: Int): Boolean {
-        return command == Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM ||
-            command == Player.COMMAND_SEEK_TO_NEXT ||
-            command == Player.COMMAND_SEEK_TO_NEXT_WINDOW
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
@@ -239,16 +206,38 @@ class PlaybackService : MediaLibraryService() {
         }
         serviceScope.cancel()
         player = null
+        externalControlsPlayer = null
         exoPlayer = null
         super.onDestroy()
     }
 
-    private inner class SeekIncrementPlayer(
+    /**
+     * Filters track prev/next out of the player's advertised commands when skip-interval
+     * mode is on, so Android Auto's PlaybackState no longer enables ACTION_SKIP_TO_*.
+     */
+    private inner class ExternalControlsPlayer(
         player: ExoPlayer,
-    ) : ForwardingPlayer(player) {
-        override fun getSeekBackIncrement(): Long = skipBackwardDurationMs
+    ) : ForwardingSimpleBasePlayer(player) {
+        fun invalidateExternalControls() {
+            invalidateState()
+        }
 
-        override fun getSeekForwardIncrement(): Long = skipForwardDurationMs
+        override fun getState(): State {
+            val state = super.getState()
+            val withIncrements = state.buildUpon()
+                .setSeekBackIncrementMs(skipBackwardDurationMs)
+                .setSeekForwardIncrementMs(skipForwardDurationMs)
+            if (!externalPrevNextUsesSkipIntervals) {
+                return withIncrements.build()
+            }
+            return withIncrements
+                .setAvailableCommands(
+                    ExternalPlaybackControls.filterPlayerCommandsForSkipIntervals(
+                        state.availableCommands
+                    )
+                )
+                .build()
+        }
     }
     
     private inner class PlayerListener : Player.Listener {
@@ -487,23 +476,46 @@ class PlaybackService : MediaLibraryService() {
             controller: MediaSession.ControllerInfo,
             playerCommand: Int,
         ): Int {
-            // Must return a SessionResult code (RESULT_SUCCESS=0), NOT a Player.Command value.
-            // Returning playerCommand (e.g. COMMAND_PLAY_PAUSE=1) rejects the request and
-            // leaves Android Auto stuck on "Getting your selection...".
+            // Track-skip commands are removed from available commands in skip mode; keep a
+            // remap here for any controller that still sends them.
             if (!externalPrevNextUsesSkipIntervals || isInAppController(controller)) {
                 return androidx.media3.session.SessionResult.RESULT_SUCCESS
             }
-            return when {
-                isPreviousTrackCommand(playerCommand) -> {
+            return when (playerCommand) {
+                Player.COMMAND_SEEK_TO_PREVIOUS,
+                Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
+                Player.COMMAND_SEEK_TO_PREVIOUS_WINDOW -> {
                     player?.seekBack()
-                    // Reject the original prev-track command; seekBack already ran.
                     androidx.media3.session.SessionResult.RESULT_INFO_SKIPPED
                 }
-                isNextTrackCommand(playerCommand) -> {
+                Player.COMMAND_SEEK_TO_NEXT,
+                Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM,
+                Player.COMMAND_SEEK_TO_NEXT_WINDOW -> {
                     player?.seekForward()
                     androidx.media3.session.SessionResult.RESULT_INFO_SKIPPED
                 }
                 else -> androidx.media3.session.SessionResult.RESULT_SUCCESS
+            }
+        }
+
+        override fun onMediaButtonEvent(
+            session: MediaSession,
+            controllerInfo: MediaSession.ControllerInfo,
+            intent: Intent,
+        ): Boolean {
+            if (!externalPrevNextUsesSkipIntervals) return false
+            val keyEvent = intent.getMediaKeyEvent() ?: return false
+            if (keyEvent.action != KeyEvent.ACTION_DOWN) return false
+            return when (keyEvent.keyCode) {
+                KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                    player?.seekBack()
+                    true
+                }
+                KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                    player?.seekForward()
+                    true
+                }
+                else -> false
             }
         }
 
@@ -515,25 +527,57 @@ class PlaybackService : MediaLibraryService() {
                 return MediaSession.ConnectionResult.reject()
             }
             val connectionResult = super.onConnect(session, controller)
-            val availableCommands = connectionResult.availableSessionCommands.buildUpon()
-                .add(androidx.media3.session.SessionCommand(CUSTOM_COMMAND_PLAY_RANDOM_FAVORITE, Bundle.EMPTY))
+            val availableSessionCommands = connectionResult.availableSessionCommands.buildUpon()
+                .add(SessionCommand(CUSTOM_COMMAND_PLAY_RANDOM_FAVORITE, Bundle.EMPTY))
+            if (externalPrevNextUsesSkipIntervals) {
+                availableSessionCommands
+                    .add(ExternalPlaybackControls.seekBackCommand())
+                    .add(ExternalPlaybackControls.seekForwardCommand())
+            }
+            val availablePlayerCommands = if (isInAppController(controller)) {
+                connectionResult.availablePlayerCommands
+            } else {
+                playerCommandsForExternalSurfaces(connectionResult.availablePlayerCommands)
+            }
+            val mediaButtonPreferences = if (isInAppController(controller)) {
+                emptyList()
+            } else {
+                currentExternalControlButtons()
+            }
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(availableSessionCommands.build())
+                .setAvailablePlayerCommands(availablePlayerCommands)
+                .setCustomLayout(mediaButtonPreferences)
+                .setMediaButtonPreferences(mediaButtonPreferences)
                 .build()
-            return MediaSession.ConnectionResult.accept(
-                availableCommands,
-                playerCommandsFor(controller, connectionResult.availablePlayerCommands)
-            )
+        }
+
+        override fun onPostConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+        ) {
+            if (isInAppController(controller)) return
+            val buttons = currentExternalControlButtons()
+            session.setCustomLayout(controller, buttons)
+            session.setMediaButtonPreferences(controller, buttons)
         }
 
         override fun onCustomCommand(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
-            customCommand: androidx.media3.session.SessionCommand,
+            customCommand: SessionCommand,
             args: Bundle
         ): ListenableFuture<androidx.media3.session.SessionResult> {
             when (customCommand.customAction) {
                 CUSTOM_COMMAND_PLAY_RANDOM_FAVORITE -> {
                     val excludeCurrent = args.getBoolean(ARG_EXCLUDE_CURRENT_EPISODE, true)
                     playRandomFavorite(excludeCurrentEpisode = excludeCurrent)
+                }
+                ExternalPlaybackControls.CUSTOM_ACTION_SEEK_BACK -> {
+                    player?.seekBack()
+                }
+                ExternalPlaybackControls.CUSTOM_ACTION_SEEK_FORWARD -> {
+                    player?.seekForward()
                 }
             }
             return Futures.immediateFuture(
@@ -742,4 +786,13 @@ private fun playbackUri(localFilePath: String?, audioUrl: String): Uri {
         }
     }
     return Uri.parse(audioUrl)
+}
+
+@Suppress("DEPRECATION")
+private fun Intent.getMediaKeyEvent(): KeyEvent? {
+    return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+    } else {
+        getParcelableExtra(Intent.EXTRA_KEY_EVENT) as? KeyEvent
+    }
 }
