@@ -361,25 +361,60 @@ fun String.parseDuration(): Int {
 
 @OptIn(kotlin.time.ExperimentalTime::class)
 fun String.toTimeMillis(): Long {
+    val trimmed = trim()
+    if (trimmed.isEmpty()) return 0
+
     // First try LocalDateTime format
     try {
-        return LocalDateTime.parse(this).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+        return LocalDateTime.parse(trimmed).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
     } catch (_: Exception) {
         // Continue to try other formats
     }
-    
-    // Try each defined format using DateTimeComponents
-    for (format in DEFINED_FORMATS) {
-        try {
-            val components = format.parse(this)
-            return components.toInstantUsingOffset().toEpochMilliseconds()
-        } catch (_: Exception) {
-            continue
+
+    // RSS feeds often use obsolete RFC 822 zone names (EST, PDT, …) that
+    // kotlinx-datetime's RFC_1123 parser rejects. Normalize those to offsets.
+    val candidates = listOf(trimmed, trimmed.withRfc822ZoneAsOffset()).distinct()
+
+    for (candidate in candidates) {
+        for (format in DEFINED_FORMATS) {
+            try {
+                val components = format.parse(candidate)
+                return components.toInstantUsingOffset().toEpochMilliseconds()
+            } catch (_: Exception) {
+                continue
+            }
         }
     }
-    
+
     return 0
 }
+
+/**
+ * Maps common RFC 822 timezone abbreviations to numeric offsets.
+ * Many podcast feeds (e.g. Film Junk) publish pubDates like
+ * "Mon, 24 Aug 2026 12:00:00 EST" which fail kotlinx RFC_1123 parsing.
+ */
+internal fun String.withRfc822ZoneAsOffset(): String {
+    val lastSpace = lastIndexOf(' ')
+    if (lastSpace < 0 || lastSpace == length - 1) return this
+    val zone = substring(lastSpace + 1)
+    val offset = RFC822_ZONE_OFFSETS[zone.uppercase()] ?: return this
+    return substring(0, lastSpace + 1) + offset
+}
+
+/** Obsolete RFC 822 / RFC 1123 named zones still seen in RSS pubDate values. */
+private val RFC822_ZONE_OFFSETS = mapOf(
+    "UT" to "+0000",
+    "GMT" to "+0000",
+    "EST" to "-0500",
+    "EDT" to "-0400",
+    "CST" to "-0600",
+    "CDT" to "-0500",
+    "MST" to "-0700",
+    "MDT" to "-0600",
+    "PST" to "-0800",
+    "PDT" to "-0700",
+)
 
 val DEFINED_FORMATS = listOf(
     DateTimeComponents.Formats.RFC_1123,

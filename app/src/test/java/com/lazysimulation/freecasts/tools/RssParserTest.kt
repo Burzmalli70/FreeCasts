@@ -1,6 +1,7 @@
 package com.lazysimulation.freecasts.tools
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -9,6 +10,42 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class RssParserTest {
+
+    @Test
+    fun `parses pubDate with EST timezone used by Film Junk feed`() {
+        // Film Junk (feeds.feedburner.com/filmjunk) uses EST, which kotlinx RFC_1123 rejects.
+        val estMillis = "Mon, 24 Aug 2026 12:00:00 EST".toTimeMillis()
+        val equivalentOffsetMillis = "Mon, 24 Aug 2026 12:00:00 -0500".toTimeMillis()
+
+        assertNotEquals("EST pubDate should not fall back to epoch", 0L, estMillis)
+        assertEquals(equivalentOffsetMillis, estMillis)
+        // 12:00 EST = 17:00 UTC on 2026-08-24
+        assertEquals(1_787_590_800_000L, estMillis)
+    }
+
+    @Test
+    fun `parses Film Junk style rss item with EST pubDate`() {
+        val xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <rss version="2.0">
+              <channel>
+                <title>Film Junk Podcast</title>
+                <item>
+                  <title>Episode 1000</title>
+                  <enclosure url="https://example.com/ep1000.mp3" type="audio/mpeg" />
+                  <guid>https://example.com/ep1000.mp3</guid>
+                  <pubDate>Mon, 24 Aug 2026 12:00:00 EST</pubDate>
+                </item>
+              </channel>
+            </rss>
+        """.trimIndent()
+
+        val result = RssParser.parsePodcastFeed(xml.byteInputStream())
+
+        assertNotNull(result)
+        assertEquals(1, result!!.episodes.size)
+        assertEquals(1_787_590_800_000L, result.episodes.first().publishedAt)
+    }
 
     @Test
     fun `parses filmjunk rss feed`() {
