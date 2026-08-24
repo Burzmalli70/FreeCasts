@@ -11,6 +11,7 @@ import com.lazysimulation.freecasts.data.playlist.PlaylistAutoRemoveHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -41,30 +42,58 @@ class PlaylistDetailViewModel(
         _state.update { it.copy(isLoading = true) }
         
         viewModelScope.launch {
-            playlistDao.observePlaylistWithEpisodes(playlistId).collect { playlistWithEpisodes ->
-                if (playlistWithEpisodes != null) {
-                    // Get podcast info for each episode
-                    val episodesWithPodcast = playlistWithEpisodes.episodes.map { episode ->
-                        val podcast = getPodcast(episode.podcastId)
-                        PlaylistEpisodeItem(
-                            episode = episode,
-                            podcastName = podcast?.title ?: "Unknown Podcast",
-                            podcastArtworkUrl = podcast?.artworkUrl
-                        )
+            combine(
+                playlistDao.observeById(playlistId),
+                playlistDao.observeEpisodesInPlaylistOrdered(playlistId)
+            ) { playlist, episodes -> playlist to episodes }
+                .collect { (playlist, episodes) ->
+                    if (playlist != null) {
+                        val episodesWithPodcast = episodes.map { episode ->
+                            val podcast = getPodcast(episode.podcastId)
+                            PlaylistEpisodeItem(
+                                episode = episode,
+                                podcastName = podcast?.title ?: "Unknown Podcast",
+                                podcastArtworkUrl = podcast?.artworkUrl
+                            )
+                        }
+                        
+                        _state.update { it.copy(
+                            playlist = playlist,
+                            episodes = episodesWithPodcast,
+                            isLoading = false,
+                            error = null
+                        )}
+                    } else {
+                        _state.update { it.copy(
+                            isLoading = false,
+                            error = "Playlist not found"
+                        )}
                     }
-                    
-                    _state.update { it.copy(
-                        playlist = playlistWithEpisodes.playlist,
-                        episodes = episodesWithPodcast,
-                        isLoading = false
-                    )}
-                } else {
-                    _state.update { it.copy(
-                        isLoading = false,
-                        error = "Playlist not found"
-                    )}
                 }
+        }
+    }
+
+    /**
+     * Toggles publish-date sort between ascending (oldest first) and descending (newest first),
+     * and rewrites playlist positions to match.
+     */
+    fun toggleDateSortOrder() {
+        if (currentPlaylistId == -1L) return
+
+        viewModelScope.launch {
+            val playlist = playlistDao.getById(currentPlaylistId) ?: return@launch
+            val ascending = !playlist.sortEpisodesAscending
+            val episodes = playlistDao.getEpisodesInPlaylistOrdered(currentPlaylistId)
+            val sorted = if (ascending) {
+                episodes.sortedBy { it.publishedAt ?: 0L }
+            } else {
+                episodes.sortedByDescending { it.publishedAt ?: 0L }
             }
+            sorted.forEachIndexed { index, episode ->
+                playlistDao.updateEpisodePosition(currentPlaylistId, episode.id, index)
+            }
+            playlistDao.setSortEpisodesAscending(currentPlaylistId, ascending)
+            playlistDao.updateTimestamp(currentPlaylistId)
         }
     }
     

@@ -53,6 +53,7 @@ data class ExportedPlaylist(
     val name: String,
     val description: String? = null,
     val removeAfterListening: Boolean = false,
+    val sortEpisodesAscending: Boolean = true,
     val autoAddPodcastFeedUrls: List<String> = emptyList(),
     val createdAt: Long? = null,
     val updatedAt: Long? = null,

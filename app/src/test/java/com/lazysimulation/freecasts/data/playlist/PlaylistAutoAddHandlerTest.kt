@@ -92,22 +92,22 @@ class PlaylistAutoAddHandlerTest {
 
     private suspend fun createAutoAddPlaylist(
         name: String,
-        autoAddPodcastIds: String
+        autoAddPodcastIds: String,
+        sortEpisodesAscending: Boolean = true
     ): Long {
         return database.playlistDao().insert(
             Playlist(
                 name = name,
-                autoAddPodcastIds = autoAddPodcastIds
+                autoAddPodcastIds = autoAddPodcastIds,
+                sortEpisodesAscending = sortEpisodesAscending
             )
         )
     }
 
     private suspend fun playlistEpisodeIds(playlistId: Long): List<Long> {
         return database.playlistDao()
-            .getPlaylistWithEpisodes(playlistId)
-            ?.episodes
-            ?.map { it.id }
-            ?: emptyList()
+            .getEpisodesInPlaylistOrdered(playlistId)
+            .map { it.id }
     }
 
     // === Sync auto-add: all newly synced unplayed episodes ===
@@ -193,6 +193,103 @@ class PlaylistAutoAddHandlerTest {
 
         assertEquals(
             listOf(olderNewEpisode.id, mostRecentNewEpisode.id),
+            playlistEpisodeIds(playlistId)
+        )
+    }
+
+    @Test
+    fun appendsNewerEpisodeAfterExistingEpisodesWhenSortAscending() = runTest {
+        val playlistId = createAutoAddPlaylist("Daily", podcastId1.toString())
+        val existingOlder = insertEpisode(
+            podcastId = podcastId1,
+            guid = "existing",
+            title = "Existing",
+            publishedAt = 1_000L
+        )
+        database.playlistDao().insertPlaylistEpisode(
+            PlaylistEpisodeCrossRef(
+                playlistId = playlistId,
+                episodeId = existingOlder.id,
+                position = 0
+            )
+        )
+        val newerEpisode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "newer",
+            title = "Newer",
+            publishedAt = 3_000L
+        )
+
+        handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(newerEpisode))
+
+        assertEquals(
+            listOf(existingOlder.id, newerEpisode.id),
+            playlistEpisodeIds(playlistId)
+        )
+    }
+
+    @Test
+    fun prependsNewerEpisodesWhenSortDescending() = runTest {
+        val playlistId = createAutoAddPlaylist(
+            name = "Daily",
+            autoAddPodcastIds = podcastId1.toString(),
+            sortEpisodesAscending = false
+        )
+        val olderNewEpisode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "older-new",
+            title = "Older New",
+            publishedAt = 1_000L
+        )
+        val mostRecentNewEpisode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "latest-new",
+            title = "Latest New",
+            publishedAt = 3_000L
+        )
+
+        handler.addNewEpisodesToAutoAddPlaylists(
+            podcastId1,
+            listOf(olderNewEpisode, mostRecentNewEpisode)
+        )
+
+        assertEquals(
+            listOf(mostRecentNewEpisode.id, olderNewEpisode.id),
+            playlistEpisodeIds(playlistId)
+        )
+    }
+
+    @Test
+    fun prependsNewerEpisodeBeforeExistingWhenSortDescending() = runTest {
+        val playlistId = createAutoAddPlaylist(
+            name = "Daily",
+            autoAddPodcastIds = podcastId1.toString(),
+            sortEpisodesAscending = false
+        )
+        val existingOlder = insertEpisode(
+            podcastId = podcastId1,
+            guid = "existing",
+            title = "Existing",
+            publishedAt = 1_000L
+        )
+        database.playlistDao().insertPlaylistEpisode(
+            PlaylistEpisodeCrossRef(
+                playlistId = playlistId,
+                episodeId = existingOlder.id,
+                position = 0
+            )
+        )
+        val newerEpisode = insertEpisode(
+            podcastId = podcastId1,
+            guid = "newer",
+            title = "Newer",
+            publishedAt = 3_000L
+        )
+
+        handler.addNewEpisodesToAutoAddPlaylists(podcastId1, listOf(newerEpisode))
+
+        assertEquals(
+            listOf(newerEpisode.id, existingOlder.id),
             playlistEpisodeIds(playlistId)
         )
     }

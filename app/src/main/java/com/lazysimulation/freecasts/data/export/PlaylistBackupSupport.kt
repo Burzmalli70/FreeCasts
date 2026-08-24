@@ -41,6 +41,7 @@ private suspend fun exportPlaylist(
         name = playlist.name,
         description = playlist.description,
         removeAfterListening = playlist.removeAfterListening,
+        sortEpisodesAscending = playlist.sortEpisodesAscending,
         autoAddPodcastFeedUrls = autoAddFeedUrls,
         createdAt = playlist.createdAt,
         updatedAt = playlist.updatedAt,

@@ -24,7 +24,7 @@ import com.lazysimulation.freecasts.data.local.entity.Podcast
         PlaylistEpisodeCrossRef::class,
         Download::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

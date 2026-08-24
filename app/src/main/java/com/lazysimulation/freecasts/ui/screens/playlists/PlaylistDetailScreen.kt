@@ -24,6 +24,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.AutoDelete
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
@@ -104,6 +106,22 @@ fun PlaylistDetailScreen(
                     }
                 },
                 actions = {
+                    // Date sort toggle (ascending = oldest first / newer at end)
+                    val ascending = state.playlist?.sortEpisodesAscending != false
+                    IconButton(onClick = { viewModel.toggleDateSortOrder() }) {
+                        Icon(
+                            imageVector = if (ascending) {
+                                Icons.Default.ArrowUpward
+                            } else {
+                                Icons.Default.ArrowDownward
+                            },
+                            contentDescription = if (ascending) {
+                                "Sort by date ascending (oldest first). Tap for newest first"
+                            } else {
+                                "Sort by date descending (newest first). Tap for oldest first"
+                            }
+                        )
+                    }
                     // Edit button
                     IconButton(onClick = { onEditPlaylist(playlistId) }) {
                         Icon(

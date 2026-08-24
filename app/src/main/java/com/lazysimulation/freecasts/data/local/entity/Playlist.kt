@@ -33,7 +33,13 @@ data class Playlist(
      * Comma-separated list of podcast IDs whose new episodes should be 
      * automatically added to this playlist when synced.
      */
-    val autoAddPodcastIds: String? = null
+    val autoAddPodcastIds: String? = null,
+
+    /**
+     * When true (default), episodes are ordered oldest→newest by publish date
+     * so newly auto-added episodes appear at the end. When false, newest→oldest.
+     */
+    val sortEpisodesAscending: Boolean = true
 ) {
     /** Get the list of podcast IDs that auto-add to this playlist */
     fun getAutoAddPodcastIdList(): List<Long> {

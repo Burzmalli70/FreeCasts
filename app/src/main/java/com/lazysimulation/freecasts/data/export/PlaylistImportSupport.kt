@@ -41,6 +41,7 @@ class PlaylistImportSupport(
                     name = exported.name,
                     description = exported.description,
                     removeAfterListening = exported.removeAfterListening,
+                    sortEpisodesAscending = exported.sortEpisodesAscending,
                     createdAt = exported.createdAt ?: System.currentTimeMillis(),
                     updatedAt = exported.updatedAt ?: System.currentTimeMillis(),
                 )

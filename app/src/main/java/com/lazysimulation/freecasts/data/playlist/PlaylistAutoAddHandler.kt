@@ -13,6 +13,10 @@ import com.lazysimulation.freecasts.data.local.entity.PlaylistEpisodeCrossRef
  * When auto-add is first enabled on a playlist, only the most recent unplayed episode
  * is seeded (if the podcast's latest episode is already played, nothing is added).
  *
+ * Insertion order follows each playlist's [com.lazysimulation.freecasts.data.local.entity.Playlist.sortEpisodesAscending]
+ * setting: ascending (default) appends so newer episodes end up at the end; descending
+ * prepends so newer episodes appear at the start.
+ *
  * When an episode is newly added to a playlist and auto-download is enabled,
  * a download is enqueued for that episode.
  */
@@ -23,7 +27,8 @@ class PlaylistAutoAddHandler(
 ) {
     /**
      * Adds newly synced episodes to every playlist configured to auto-add from [podcastId].
-     * All unplayed episodes in [newEpisodes] are added, oldest first.
+     * Unplayed episodes in [newEpisodes] are added oldest-first so append/prepend yields
+     * the correct date order for each playlist's sort preference.
      */
     suspend fun addNewEpisodesToAutoAddPlaylists(
         podcastId: Long,
@@ -33,7 +38,7 @@ class PlaylistAutoAddHandler(
 
         val episodesToAdd = newEpisodes
             .filter { !it.isPlayed && it.id > 0 }
-            .sortedBy { it.publishedAt }
+            .sortedBy { it.publishedAt ?: 0L }
 
         for (episode in episodesToAdd) {
             addEpisodeToAutoAddPlaylists(podcastId, episode)
@@ -66,7 +71,7 @@ class PlaylistAutoAddHandler(
 
         var addedToAnyPlaylist = false
         for (playlist in playlists) {
-            if (insertEpisodeIntoPlaylist(playlist.id, episode)) {
+            if (insertEpisodeIntoPlaylist(playlist.id, episode, append = playlist.sortEpisodesAscending)) {
                 addedToAnyPlaylist = true
             }
         }
@@ -76,22 +81,41 @@ class PlaylistAutoAddHandler(
     }
 
     private suspend fun addEpisodeToPlaylist(playlistId: Long, episode: Episode): Boolean {
-        val added = insertEpisodeIntoPlaylist(playlistId, episode)
+        val playlist = playlistDao.getById(playlistId) ?: return false
+        val added = insertEpisodeIntoPlaylist(
+            playlistId = playlistId,
+            episode = episode,
+            append = playlist.sortEpisodesAscending
+        )
         if (added) {
             autoDownloadHandler.downloadEpisodeIfEnabled(episode.id)
         }
         return added
     }
 
-    private suspend fun insertEpisodeIntoPlaylist(playlistId: Long, episode: Episode): Boolean {
+    /**
+     * @param append when true, insert after the last episode (newer at end for ascending sort);
+     * when false, insert at the start (newer at start for descending sort).
+     */
+    private suspend fun insertEpisodeIntoPlaylist(
+        playlistId: Long,
+        episode: Episode,
+        append: Boolean
+    ): Boolean {
         if (playlistDao.isEpisodeInPlaylist(playlistId, episode.id)) return false
 
-        val maxPosition = playlistDao.getMaxPosition(playlistId) ?: -1
+        val position = if (append) {
+            (playlistDao.getMaxPosition(playlistId) ?: -1) + 1
+        } else {
+            playlistDao.incrementAllPositions(playlistId)
+            0
+        }
+
         playlistDao.insertPlaylistEpisode(
             PlaylistEpisodeCrossRef(
                 playlistId = playlistId,
                 episodeId = episode.id,
-                position = maxPosition + 1,
+                position = position,
                 addedAt = System.currentTimeMillis()
             )
         )

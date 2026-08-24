@@ -77,8 +77,8 @@ class AutoMediaBrowser(
                         .map { episode -> episode.toPlayableMediaItem() }
                 }
                 AutoMediaIds.parsePlaylistId(parentId)?.let { playlistId ->
-                    val playlist = playlistDao.getPlaylistWithEpisodes(playlistId) ?: return emptyList()
-                    return playlist.episodes
+                    val episodes = playlistDao.getEpisodesInPlaylistOrdered(playlistId)
+                    return episodes
                         .drop(offset)
                         .take(limit)
                         .map { episode -> episode.toPlayableMediaItem() }

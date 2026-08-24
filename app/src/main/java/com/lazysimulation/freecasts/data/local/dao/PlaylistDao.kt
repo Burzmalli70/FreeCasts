@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import com.lazysimulation.freecasts.data.local.entity.Episode
 import com.lazysimulation.freecasts.data.local.entity.Playlist
 import com.lazysimulation.freecasts.data.local.entity.PlaylistEpisodeCrossRef
 import com.lazysimulation.freecasts.data.local.relation.PlaylistWithEpisodeCount
@@ -93,11 +94,39 @@ interface PlaylistDao {
     @Query("SELECT * FROM playlist_episode_cross_ref WHERE playlistId = :playlistId ORDER BY position ASC")
     suspend fun getPlaylistEpisodesOrdered(playlistId: Long): List<PlaylistEpisodeCrossRef>
 
+    @Query(
+        """
+        SELECT episodes.* FROM episodes
+        INNER JOIN playlist_episode_cross_ref
+          ON episodes.id = playlist_episode_cross_ref.episodeId
+        WHERE playlist_episode_cross_ref.playlistId = :playlistId
+        ORDER BY playlist_episode_cross_ref.position ASC
+        """
+    )
+    suspend fun getEpisodesInPlaylistOrdered(playlistId: Long): List<Episode>
+
+    @Query(
+        """
+        SELECT episodes.* FROM episodes
+        INNER JOIN playlist_episode_cross_ref
+          ON episodes.id = playlist_episode_cross_ref.episodeId
+        WHERE playlist_episode_cross_ref.playlistId = :playlistId
+        ORDER BY playlist_episode_cross_ref.position ASC
+        """
+    )
+    fun observeEpisodesInPlaylistOrdered(playlistId: Long): Flow<List<Episode>>
+
     @Query("SELECT MAX(position) FROM playlist_episode_cross_ref WHERE playlistId = :playlistId")
     suspend fun getMaxPosition(playlistId: Long): Int?
+
+    @Query("UPDATE playlist_episode_cross_ref SET position = position + 1 WHERE playlistId = :playlistId")
+    suspend fun incrementAllPositions(playlistId: Long)
     
     @Query("UPDATE playlist_episode_cross_ref SET position = :position WHERE playlistId = :playlistId AND episodeId = :episodeId")
     suspend fun updateEpisodePosition(playlistId: Long, episodeId: Long, position: Int)
+
+    @Query("UPDATE playlists SET sortEpisodesAscending = :ascending WHERE id = :playlistId")
+    suspend fun setSortEpisodesAscending(playlistId: Long, ascending: Boolean)
     
     @Query("SELECT COUNT(*) FROM playlist_episode_cross_ref WHERE playlistId = :playlistId")
     suspend fun getEpisodeCount(playlistId: Long): Int
